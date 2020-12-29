@@ -1,6 +1,6 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
-from core.dcc.main import DCC
+from pipe.dcc import DCC
 
 
 class Houdini(DCC):

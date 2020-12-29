@@ -1,7 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import subprocess
-from core.dcc.main import DCC
+from pipe.dcc import DCC
 
 
 class Maya(DCC):

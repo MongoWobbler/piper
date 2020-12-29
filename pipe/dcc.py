@@ -2,6 +2,8 @@
 
 import os
 import winreg
+import subprocess
+import pipe.util
 
 
 class DCC(object):
@@ -207,6 +209,38 @@ class DCC(object):
 
         return batch_paths
 
+    def runInstaller(self, install_script, install_directory):
+        """
+        Runs the given install_script with the given install_directory passed to it on all versions of the DCC.
+        """
+        self.printInfo()
+        pipe.util.deleteCompiledScripts(install_directory)
+
+        for python in self.getPythonPaths():
+            print('Starting ' + self.name + '\'s ' + python)
+            # output = subprocess.Popen([python, install_script, install_directory]).communicate()[0]
+            # os.system(r'"' + r' '.join([python, install_script, install_directory]) + r'"')
+            subprocess.run([python, install_script, install_directory], shell=True)
+            # subprocess.run([python,
+            #                install_script,
+            #                install_directory],
+            #                shell=True,
+            #                stdout=subprocess.PIPE,
+            #                stderr=subprocess.PIPE)
+
+    @staticmethod
+    def _printInfo(text, iterables):
+        """
+        Convenience method for printing information about the dcc.
+
+        Args:
+            text (string): Text to display
+
+            iterables (list or dictionary or set): Each item will be displayed.
+        """
+        print('\n' + text)
+        [print(iterable) for iterable in iterables]
+
     def printInfo(self):
         """
         Prints all the information this class can gather.
@@ -219,14 +253,8 @@ class DCC(object):
         print('\n' + ('=' * 20))
         print('DCC: ' + self.name)
 
-        print('\nVERSION(S): ')
-        [print(version) for version in versions]
-
-        print('\nINSTALL DIRECTORY(IES): ')
-        [print(install_directory) for install_directory in install_directories]
-
-        print('\nPYTHON PATH(S): ')
-        [print(python_path) for python_path in python_paths]
-
-        print('\nBATCH PATH(S): ')
-        [print(batch_path) for batch_path in batch_paths]
+        self._printInfo('VERSION(S): ', versions)
+        self._printInfo('INSTALL DIRECTORY(S): ', install_directories)
+        self._printInfo('PYTHON PATH(S): ', python_paths)
+        self._printInfo('BATCH PATH(S): ', batch_paths)
+        print('\n')
