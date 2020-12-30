@@ -3,7 +3,7 @@
 import os
 import winreg
 import subprocess
-import pipe.util
+import piper.core.util as pcu
 
 
 class DCC(object):
@@ -40,9 +40,12 @@ class DCC(object):
         if not self.name:
             raise ValueError('Please set class\' name.')
 
-    def getVersions(self):
+    def getVersions(self, error=False):
         """
         Gets all the installed versions of the dcc.
+
+        Args:
+            error (boolean): If True, will raise error if no versions are found.
 
         Returns:
             (set): Versions installed as strings.
@@ -53,7 +56,16 @@ class DCC(object):
         versions = set()
         self.preValidateVersions()
         access_registry = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-        h_key = winreg.OpenKey(access_registry, self.registry_path)
+
+        # try to find registry path, if not found return empty or raise error
+        try:
+            h_key = winreg.OpenKey(access_registry, self.registry_path)
+        except FileNotFoundError as error_message:
+            if error:
+                raise error_message
+            else:
+                self._versions = versions
+                return versions
 
         # if user has more than 20 versions installed, I will be impressed, and user has a problem.
         for key in range(20):
@@ -68,6 +80,15 @@ class DCC(object):
 
         self._versions = versions
         return versions
+
+    def isInstalled(self):
+        """
+        Gets whether the DCC is installed in the registry or not.
+
+        Returns:
+            (boolean): True if installed, false if not.
+        """
+        return True if self.getVersions() else False
 
     def preValidateInstall(self):
         """
@@ -212,21 +233,24 @@ class DCC(object):
     def runInstaller(self, install_script, install_directory):
         """
         Runs the given install_script with the given install_directory passed to it on all versions of the DCC.
+
+        Args:
+            install_script (string): Full path to the python script the DCC is going to run to install
+            environment variables.
+
+            install_directory (string): Full path to directory that the given
+            install_script will add to the environment.
         """
+        if not self.isInstalled():
+            print(self.name + ' is not installed, skipping.')
+            return
+
         self.printInfo()
-        pipe.util.deleteCompiledScripts(install_directory)
+        pcu.deleteCompiledScripts(install_directory)
 
         for python in self.getPythonPaths():
             print('Starting ' + self.name + '\'s ' + python)
-            # output = subprocess.Popen([python, install_script, install_directory]).communicate()[0]
-            # os.system(r'"' + r' '.join([python, install_script, install_directory]) + r'"')
             subprocess.run([python, install_script, install_directory], shell=True)
-            # subprocess.run([python,
-            #                install_script,
-            #                install_directory],
-            #                shell=True,
-            #                stdout=subprocess.PIPE,
-            #                stderr=subprocess.PIPE)
 
     @staticmethod
     def _printInfo(text, iterables):
@@ -253,8 +277,12 @@ class DCC(object):
         print('\n' + ('=' * 20))
         print('DCC: ' + self.name)
 
-        self._printInfo('VERSION(S): ', versions)
-        self._printInfo('INSTALL DIRECTORY(S): ', install_directories)
-        self._printInfo('PYTHON PATH(S): ', python_paths)
-        self._printInfo('BATCH PATH(S): ', batch_paths)
+        if self.isInstalled():
+            self._printInfo('VERSION(S): ', versions)
+            self._printInfo('INSTALL DIRECTORY(S): ', install_directories)
+            self._printInfo('PYTHON PATH(S): ', python_paths)
+            self._printInfo('BATCH PATH(S): ', batch_paths)
+        else:
+            print('No versions found in registry. Is ' + self.name + ' installed?')
+
         print('\n')

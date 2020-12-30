@@ -3,7 +3,7 @@
 import os
 import sys
 import traceback
-from pipe.maya_dcc import Maya
+from piper.core.maya_dcc import Maya
 
 
 def getInstallPaths(install_file):
@@ -19,7 +19,7 @@ def getInstallPaths(install_file):
     # the installer MUST be placed right inside the piper directory.
     current_path = sys.executable if getattr(sys, 'frozen', False) else __file__
     piper_directory = os.path.dirname(current_path)
-    install_script_path = os.path.join(piper_directory, 'pipe', install_file)
+    install_script_path = os.path.join(piper_directory, 'piper', 'core', install_file)
     piper_directory = piper_directory.replace('\\', '/')
 
     if not os.path.exists(install_script_path):

@@ -1,0 +1,179 @@
+#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+
+import os
+import sys
+import inspect
+import platform
+import sysconfig
+import subprocess
+import webbrowser
+
+
+def getCurrentPath():
+    """
+    Gets the path to the file that is calling the function.
+    Takes into account whether it is being called by an executable or python script.
+
+    Returns:
+        (string): Path to file calling the getCurrentPath function.
+    """
+    return sys.executable if getattr(sys, 'frozen', False) else __file__.replace('\\', '/')
+
+
+def getPiperDirectory():
+    """
+    Convenience method for getting the piper directory.
+
+    Returns:
+        (string): Path to piper directory.
+    """
+    return os.environ['PIPER_DIR']
+
+
+def getApp():
+    """
+    Gets the application that is running the current python script.
+
+    Returns:
+        (string): Maya or Houdini.
+    """
+    path = sysconfig.get_path('scripts')
+
+    if 'Maya' in path:
+        return 'Maya'
+    elif 'HOUDIN' in path:
+        return 'Houdini'
+    else:
+        raise ValueError('Current compatible software is Maya or Houdini')
+
+
+def openWithOS(path):
+    """
+    Opens the given path with the OS. Useful for opening windows in Explorer or such.
+
+    Args:
+        path (string): Path to open.
+    """
+    path = path.replace('/', '\\')
+    subprocess.call('explorer "{0}"'.format(path))
+
+
+def getAllFilesEndingWithWord(word, starting_directory):
+    """
+    Gets all the files that end with the given word. Searches from the given starting_directory downwards.
+
+    Args:
+        word (string or tuple): Word to filter search.
+
+        starting_directory (string): Name of directory to start search at.
+
+    Returns:
+        (list): All files that end with given word inside given starting_directory.
+    """
+    matched_files = []
+
+    for directory, _, files in os.walk(starting_directory):
+        for file_name in files:
+            if file_name.lower().endswith(word):
+                directory = directory.replace('\\', '/')
+                matched_files.append(os.path.join(directory, file_name))
+
+    return matched_files
+
+
+def copyToClipboard(text):
+    """
+    Copies the given text to the clipboard
+
+    Args:
+        text (string): Text to copy to clipboard.
+    """
+    operating_system = platform.system()
+    command = 'echo ' + text.strip()
+
+    if operating_system == 'Darwin':  # macOS
+        command += '|pbcopy'
+    else:
+        command += '|clip'  # Windows
+
+    return subprocess.check_call(command, shell=True)
+
+
+def deleteCompiledScripts(directory=None):
+    """
+    Deletes all compiled python files (.pyc) from the given directory and all its subdirectories.
+
+    Args:
+        directory (string): Name of directory to delete .pyc files from.
+    """
+
+    if not directory:
+        current_file = getCurrentPath()
+        directory = os.path.dirname(current_file)
+
+    compiled_scripts = getAllFilesEndingWithWord('.pyc', directory)
+
+    if compiled_scripts:
+        print('Deleting all compiled python scripts (.pyc) in: ' + directory + '\n')
+
+    [os.remove(script) for script in compiled_scripts]
+
+
+def reloadALl(path=None, exclude_path=None, print_debug=True):
+    """
+    https://medium.com/@nicholasRodgers/sidestepping-pythons-reload-function-without-restarting-maya-2448bab9476e
+    Removes all the modules under given path that are currently loaded in memory.
+
+    Args:
+        path (string): Path to remove loaded modules under.
+
+        exclude_path (string): Name of path to NOT remove.
+
+        print_debug (boolean): If true, will print all the modules that were removed.
+    """
+    import sys
+
+    if path is None:
+        path = os.path.dirname(__file__)
+
+    path = path.lower()
+    to_delete = []
+
+    for key, module in sys.modules.items():
+        try:
+            modules_path = inspect.getfile(module).lower()
+
+            if exclude_path:
+                if not modules_path.startswith(exclude_path.lower()) and modules_path.startswith(path):
+
+                    if print_debug:
+                        print("Reloading: %s" % key)
+
+                    to_delete.append(key)
+            else:
+                if modules_path.startswith(path):
+
+                    if print_debug:
+                        print("Reloading: %s" % key)
+
+                    to_delete.append(key)
+        except TypeError:
+            pass
+
+    import sys  # have to reimport sys here in case we delete self
+    for module in to_delete:
+        del (sys.modules[module])
+
+
+def openDocumentation():
+    """
+    Opens the documentation for piper in the default web browser.
+    """
+    webbrowser.open('https://github.com/MongoWobbler/piper', new=2)
+
+
+def welcome():
+    """
+    Convenience method for welcoming user to piper.
+    """
+    print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp())
