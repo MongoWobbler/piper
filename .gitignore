@@ -133,6 +133,7 @@ dmypy.json
 # Pycharm project
 .idea/
 
+
 #############################################################
 # C++ IGNORE START
 # Prerequisites
@@ -167,3 +168,22 @@ dmypy.json
 *.exe
 *.out
 *.app
+
+# CMake
+.cmake/
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
+Debug/
+
+# Visual Studio files
+*.vcxproj
+*.filters
+*.sln
+
+
+#############################################################
+# PIPER SPECIFIC IGNORE START
+
+plug-ins/CharcoalEditor*.mll
+settings/

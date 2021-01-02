@@ -30,28 +30,6 @@ class PiperMenu(QtWidgets.QMenu):
         return action
 
 
-class _PiperMainMenu(QtWidgets.QMenu):
-
-    # used to keep track of piper main menu in order to make it a singleton.
-    piper_menu_instance = None
-
-    def __init__(self, title='Piper', parent=None):
-        super(_PiperMainMenu, self).__init__(title=title, parent=parent)
-        self.setTearOffEnabled(True)
-
-
-def PiperMainMenu():
-    """
-    Used to create the Piper Main Menu, there can only be ONE in the scene at a time.
-
-    Returns:
-        (_PiperMainMenu): Piper main menu class.
-    """
-    if _PiperMainMenu.piper_menu_instance is None:
-        _PiperMainMenu.piper_menu_instance = _PiperMainMenu()
-    return _PiperMainMenu.piper_menu_instance
-
-
 class PiperSceneMenu(PiperMenu):
 
     def __init__(self, title='Scene', parent=None):
@@ -61,8 +39,6 @@ class PiperSceneMenu(PiperMenu):
         self.open_current = None
         self.reload_scene = None
         self.open_documentation = None
-        self.reload_all = None
-
         self.build()
 
     def build(self):
@@ -73,7 +49,6 @@ class PiperSceneMenu(PiperMenu):
         self.addSeparator()
 
         self.open_documentation = self.add('Open Piper Documentation', self.openDocumentation)
-        self.reload_all = self.add('Reload All', self.reloadAll)
 
     def openSceneInOS(self):
         pass
@@ -82,14 +57,69 @@ class PiperSceneMenu(PiperMenu):
         pass
 
     @staticmethod
-    def reloadAll():
-        piper_main_menu = PiperMainMenu()
+    def openDocumentation():
+        pcu.openDocumentation()
+
+
+class PiperExportMenu(PiperMenu):
+
+    def __init__(self, title='Export', parent=None):
+        super(PiperExportMenu, self).__init__(title, parent=parent)
+        self.export_to_game = None
+        self.set_art_directory = None
+        self.set_game_directory = None
+        self.build()
+
+    def build(self):
+        self.export_to_game = self.add('Export To Game', self.exportToGame)
+        self.addSeparator()
+
+        self.set_art_directory = self.add('Set Art Directory', self.setArtDirectory)
+        self.set_game_directory = self.add('Set Game Directory', self.setGameDirectory)
+
+    def exportToGame(self):
+        pass
+
+    def setArtDirectory(self):
+        pass
+
+    def setGameDirectory(self):
+        pass
+
+
+class _PiperMainMenu(PiperMenu):
+
+    # used to keep track of piper main menu in order to make it a singleton.
+    instance = None
+
+    def __init__(self, title='Piper', parent=None):
+        # NOTE: PiperMainMenu needs its submenus defined in the DCC and its build() called by the DCC.
+        super(_PiperMainMenu, self).__init__(title=title, parent=parent)
+        self.scene_menu = None
+        self.export_menu = None
+        self.reload_all = None
+
+    def build(self):
+        self.addMenu(self.scene_menu)
+        self.addMenu(self.export_menu)
+        self.addSeparator()
+
+        self.reload_all = self.add('Reload All', self.reloadAll)
+
+    def reloadAll(self):
         pcu.reloadALl(path=pcu.getPiperDirectory())
-        piper_main_menu.deleteLater()
+        self.deleteLater()
 
         import scripts.setup
         scripts.setup.mayaPiper()
 
-    @staticmethod
-    def openDocumentation():
-        pcu.openDocumentation()
+
+def getPiperMainMenu():
+    """
+    Used to create or get the Piper Main Menu, there can only be ONE in the scene at a time.
+
+    Returns:
+        (_PiperMainMenu): Piper main menu class.
+    """
+    _PiperMainMenu.instance = _PiperMainMenu() if _PiperMainMenu.instance is None else _PiperMainMenu.instance
+    return _PiperMainMenu.instance

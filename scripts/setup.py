@@ -16,6 +16,11 @@ def mayaPiper():
     As well as creating menus, and welcoming user when everything is done.
     """
     import piper.core.util as pcu
+    import piper.mayapy.plugin as plugin
     import piper.mayapy.ui.menu as mymenu
+    import piper.mayapy.settings as settings
+
+    plugin.loadAll()
+    settings.startup()
     mymenu.create()
     pcu.welcome()

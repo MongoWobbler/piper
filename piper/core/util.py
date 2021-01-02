@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import inspect
 import platform
 import sysconfig
@@ -43,6 +44,8 @@ def getApp():
         return 'Maya'
     elif 'HOUDIN' in path:
         return 'Houdini'
+    elif 'UnrealEnginePython' in path:
+        return 'UE4'
     else:
         raise ValueError('Current compatible software is Maya or Houdini')
 
@@ -56,6 +59,47 @@ def openWithOS(path):
     """
     path = path.replace('/', '\\')
     subprocess.call('explorer "{0}"'.format(path))
+
+
+def writeJson(file_name, data):
+    """
+    Writes given dict data to given file_name as json.
+
+    Args:
+        file_name (string): Path to write data to.
+
+        data (dict): dict to write to given file_name.
+
+    Returns:
+        (string): full path where json file is.
+    """
+    # create directory if it does not exist
+    directory_name = os.path.dirname(file_name)
+    if not os.path.exists(directory_name):
+        os.makedirs(directory_name)
+
+    with open(file_name, 'w') as open_file:
+        json.dump(data, open_file, indent=4)
+
+    return file_name
+
+
+def readJson(file_name, hook=None):
+    """
+    Gets the dictionary data from the given json file.
+
+    Args:
+        file_name (string): Path to json file.
+
+        hook (orderedDict): if orderedDict is passed, json loads dict in order.
+
+    Returns:
+        (dict): Data loaded from given file_name.
+    """
+    with open(file_name, 'r') as open_file:
+        data = json.load(open_file, object_pairs_hook=hook)
+
+    return data
 
 
 def getAllFilesEndingWithWord(word, starting_directory):
