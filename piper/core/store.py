@@ -1,11 +1,11 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import copy
 import piper.core.util as pcu
 
 
 class Store(object):
-
     # turning store into a singleton
     instance = None
 
@@ -15,6 +15,9 @@ class Store(object):
         self._version = ''
         self._path = None
         self._settings = {}
+        self._default_settings = {'art_directory': None,
+                                  'game_directory': None,
+                                  'use_piper_units': True}
 
     def getVersion(self):
         """
@@ -23,16 +26,28 @@ class Store(object):
         pass
 
     def getApp(self):
+        """
+        Gets the app name with version attached to it.
+
+        Returns:
+            (string): Name of app currently running this script.
+        """
         if self._app:
             return self._app
 
         if not self._version:
             self.getVersion()
 
-        self._app = '_'.join([self._app_name, self._version])
+        self._app = '_'.join([self._app_name, self._version]) if self._version else self._app_name
         return self._app
 
     def getPath(self):
+        """
+        Gets the path to the stored settings .json file.
+
+        Returns:
+            (string):
+        """
         if self._path:
             return self._path
 
@@ -42,15 +57,26 @@ class Store(object):
         return self._path
 
     def create(self, force=False):
+        """
+        Writes the defaults settings.
+
+        Args:
+            force (boolean): If True, will overwrite current settings with default.
+        """
         if self._settings and not force:
-            return ValueError('Settings already exist! Please pass "force" as True to overwrite.')
+            raise ValueError('Settings already exist! Please pass "force" as True to overwrite.')
 
-        self._settings = {'art_directory': None,
-                          'game_directory': None}
-
+        self._settings = copy.deepcopy(self._default_settings)
         pcu.writeJson(self.getPath(), self._settings)
 
     def getSettings(self):
+        """
+        Gets the stored settings. Will first attempt to get from memory, if nothing stored in memory,
+        Then will read from disk and store what it read in the disk.
+
+        Returns:
+            (dictionary): Stored settings.
+        """
         if self._settings:
             return self._settings
 
@@ -63,12 +89,34 @@ class Store(object):
         return self._settings
 
     def get(self, variable):
+        """
+        Gets the stored setting associated with the given variable.
+
+        Args:
+            variable (string): Name of setting to search for.
+
+        Returns:
+            (Any): Setting stored.
+        """
         if not self._settings:
             self.getSettings()
+
+        # updating settings when NEW default settings variables might not have been added
+        # to existing settings .json file on disk
+        if variable not in self._settings:
+            self.set(variable, self._default_settings[variable])
 
         return self._settings[variable]
 
     def set(self, variable, value):
+        """
+        Sets and stores the given setting based on variable and value.
+
+        Args:
+            variable (string): Name of setting to store.
+
+            value (Any): Value of given variable to store.
+        """
         if not self._settings:
             self.getSettings()
 
@@ -77,5 +125,8 @@ class Store(object):
 
 
 def get():
+    """
+    Gets the instance to the store since it is meant to be a singleton.
+    """
     Store.instance = Store() if Store.instance is None else Store.instance
     return Store.instance

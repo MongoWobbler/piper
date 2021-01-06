@@ -11,6 +11,7 @@ class PiperMenu(QtWidgets.QMenu):
         super(PiperMenu, self).__init__(title, parent=parent)
         self.setTearOffEnabled(True)
         self.icon = QtGui.QIcon(os.path.join(pcu.getPiperDirectory(), 'icons', 'piper.png'))
+        self.actions = []  # stores QWidgets so that they are not garbage collected
 
     def add(self, name, on_pressed):
         """
@@ -27,30 +28,50 @@ class PiperMenu(QtWidgets.QMenu):
         action = QtWidgets.QAction(name.decode('utf-8'), self)
         action.triggered.connect(on_pressed)
         self.addAction(action)
+        self.actions.append(action)
         return action
+
+    def addCheckbox(self, name, state, on_pressed):
+        action = QtWidgets.QAction(name.decode('utf-8'), self)
+        action.setCheckable(True)
+        action.setChecked(state)
+        action.triggered.connect(on_pressed)
+        self.addAction(action)
+        self.actions.append(action)
+        return action
+
+    def addMenuP(self, menu):
+        return self.addMenu(menu) if menu else None
 
 
 class PiperSceneMenu(PiperMenu):
 
     def __init__(self, title='Scene', parent=None):
         super(PiperSceneMenu, self).__init__(title, parent=parent)
-
-        # must store QActions in class so that garbage collector doesn't delete them
-        self.open_current = None
-        self.reload_scene = None
-        self.open_documentation = None
         self.build()
 
     def build(self):
-        self.open_current = self.add('Open Current Scene in OS', self.openSceneInOS)
+        self.add('Open Current Scene in OS', self.openSceneInOS)
+        self.add('Open Art Directory in OS', self.openArtDirectoryInOS)
+        self.add('Open Game Directory in OS', self.openGameDirectoryInOS)
         self.addSeparator()
 
-        self.reload_scene = self.add('Reload Current Scene', self.reloadCurrentScene)
+        self.add('Copy Current Scene to Clipboard', self.copyCurrentSceneToClipboard)
+        self.add('Reload Current Scene', self.reloadCurrentScene)
         self.addSeparator()
 
-        self.open_documentation = self.add('Open Piper Documentation', self.openDocumentation)
+        self.add('Open Piper Documentation', self.openDocumentation)
 
     def openSceneInOS(self):
+        pass
+
+    def openArtDirectoryInOS(self):
+        pass
+
+    def openGameDirectoryInOS(self):
+        pass
+
+    def copyCurrentSceneToClipboard(self):
         pass
 
     def reloadCurrentScene(self):
@@ -65,19 +86,20 @@ class PiperExportMenu(PiperMenu):
 
     def __init__(self, title='Export', parent=None):
         super(PiperExportMenu, self).__init__(title, parent=parent)
-        self.export_to_game = None
-        self.set_art_directory = None
-        self.set_game_directory = None
         self.build()
 
     def build(self):
-        self.export_to_game = self.add('Export To Game', self.exportToGame)
+        self.add('Export To Game', self.exportToGame)
+        self.add('Export To Current Directory', self.exportToCurrentDirectory)
         self.addSeparator()
 
-        self.set_art_directory = self.add('Set Art Directory', self.setArtDirectory)
-        self.set_game_directory = self.add('Set Game Directory', self.setGameDirectory)
+        self.add('Set Art Directory', self.setArtDirectory)
+        self.add('Set Game Directory', self.setGameDirectory)
 
     def exportToGame(self):
+        pass
+
+    def exportToCurrentDirectory(self):
         pass
 
     def setArtDirectory(self):
@@ -96,22 +118,25 @@ class _PiperMainMenu(PiperMenu):
         # NOTE: PiperMainMenu needs its submenus defined in the DCC and its build() called by the DCC.
         super(_PiperMainMenu, self).__init__(title=title, parent=parent)
         self.scene_menu = None
+        self.nodes_menu = None
         self.export_menu = None
-        self.reload_all = None
+        self.settings_menu = None
 
     def build(self):
-        self.addMenu(self.scene_menu)
-        self.addMenu(self.export_menu)
+        self.addMenuP(self.scene_menu)
+        self.addMenuP(self.nodes_menu)
+        self.addMenuP(self.export_menu)
+        self.addMenuP(self.settings_menu)
         self.addSeparator()
 
-        self.reload_all = self.add('Reload All', self.reloadAll)
+        self.add('Reload Piper', self.reloadPiper)
 
-    def reloadAll(self):
-        pcu.reloadALl(path=pcu.getPiperDirectory())
+    def reloadPiper(self):
+        pcu.removeModules(path=pcu.getPiperDirectory())
         self.deleteLater()
 
-        import scripts.setup
-        scripts.setup.mayaPiper()
+        import setup
+        setup.mayaPiper()
 
 
 def getPiperMainMenu():

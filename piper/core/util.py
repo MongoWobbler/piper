@@ -4,8 +4,10 @@ import os
 import sys
 import json
 import inspect
+import operator
 import platform
 import sysconfig
+import functools
 import subprocess
 import webbrowser
 
@@ -29,6 +31,17 @@ def getPiperDirectory():
         (string): Path to piper directory.
     """
     return os.environ['PIPER_DIR']
+
+
+def validateDirectory(directory):
+    """
+    Creates the given directory if it does not already exist.
+
+    Args:
+        directory (string): Directory to create.
+    """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 def getApp():
@@ -57,7 +70,7 @@ def openWithOS(path):
     Args:
         path (string): Path to open.
     """
-    path = path.replace('/', '\\')
+    path = os.path.normpath(path)
     subprocess.call('explorer "{0}"'.format(path))
 
 
@@ -75,8 +88,7 @@ def writeJson(file_name, data):
     """
     # create directory if it does not exist
     directory_name = os.path.dirname(file_name)
-    if not os.path.exists(directory_name):
-        os.makedirs(directory_name)
+    validateDirectory(directory_name)
 
     with open(file_name, 'w') as open_file:
         json.dump(data, open_file, indent=4)
@@ -125,6 +137,19 @@ def getAllFilesEndingWithWord(word, starting_directory):
     return matched_files
 
 
+def flatten(laundry):
+    """
+    Flattens a list
+
+    Args:
+        laundry (list): list to flatten
+
+    Returns:
+        (list): Flattened list.
+    """
+    return functools.reduce(operator.iconcat, laundry, [])
+
+
 def copyToClipboard(text):
     """
     Copies the given text to the clipboard
@@ -163,7 +188,7 @@ def deleteCompiledScripts(directory=None):
     [os.remove(script) for script in compiled_scripts]
 
 
-def reloadALl(path=None, exclude_path=None, print_debug=True):
+def removeModules(path=None, exclude_path=None, print_debug=True):
     """
     https://medium.com/@nicholasRodgers/sidestepping-pythons-reload-function-without-restarting-maya-2448bab9476e
     Removes all the modules under given path that are currently loaded in memory.
@@ -191,14 +216,14 @@ def reloadALl(path=None, exclude_path=None, print_debug=True):
                 if not modules_path.startswith(exclude_path.lower()) and modules_path.startswith(path):
 
                     if print_debug:
-                        print("Reloading: %s" % key)
+                        print("Removing: %s" % key)
 
                     to_delete.append(key)
             else:
                 if modules_path.startswith(path):
 
                     if print_debug:
-                        print("Reloading: %s" % key)
+                        print("Removing: %s" % key)
 
                     to_delete.append(key)
         except TypeError:
@@ -220,4 +245,4 @@ def welcome():
     """
     Convenience method for welcoming user to piper.
     """
-    print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp())
+    print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp()),

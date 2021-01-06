@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import copy
 import winreg
 import subprocess
 import piper.core.util as pcu
@@ -166,7 +167,7 @@ class DCC(object):
 
         self.preValidatePython()
         install_directory = self.getInstallDirectory(version)
-        python_path = self.relative_python_path.copy()
+        python_path = copy.deepcopy(self.relative_python_path)
         python_path.insert(0, install_directory)
         python_path = os.path.join(*python_path)
         self._python_paths[version] = python_path
@@ -209,7 +210,7 @@ class DCC(object):
 
         self.preValidateBatch()
         install_directory = self.getInstallDirectory(version)
-        batch_path = self.relative_batch_path.copy()
+        batch_path = copy.deepcopy(self.relative_batch_path)
         batch_path.insert(0, install_directory)
         batch_path = os.path.join(*batch_path)
         self._batch_paths[version] = batch_path

@@ -1,8 +1,8 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
-import os
 import pymel.core as pm
-import piper.mayapy.pipe.store as store
+import piper.core.util as pcu
+from piper.mayapy.pipe.store import store
 
 
 def setProject(directory):
@@ -12,9 +12,7 @@ def setProject(directory):
     Args:
         directory (string): path where project will be set to.
     """
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
+    pcu.validateDirectory(directory)
     pm.workspace(directory, o=True)
     pm.workspace(fr=['scene', directory])
 
@@ -23,7 +21,7 @@ def setStartupProject():
     """
     Sets the art directory project
     """
-    art_directory = store.enter().get('art_directory')
+    art_directory = store.get('art_directory')
 
     if art_directory:
         setProject(art_directory)
@@ -45,5 +43,7 @@ def startup():
     """
     To called when Maya starts up.
     """
-    loadDefaults()
+    if store.get('use_piper_units'):
+        loadDefaults()
+
     setStartupProject()

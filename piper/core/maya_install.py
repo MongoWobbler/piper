@@ -10,7 +10,8 @@ maya.standalone.initialize()
 # global variables to define your own environment
 MODULE_NAME = 'PIPER'
 ENVIRONMENT_KEY = 'PIPER_DIR'
-ENVIRONMENT = ['MAYA_ENABLE_LEGACY_VIEWPORT=1']
+ENVIRONMENT = ['MAYA_ENABLE_LEGACY_VIEWPORT=1',
+               'MAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1']
 
 # directory to add to environment should be passed to this script as an argument
 if len(sys.argv) < 2:
