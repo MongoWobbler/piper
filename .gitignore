@@ -187,3 +187,8 @@ Debug/
 
 plug-ins/CharcoalEditor*.mll
 settings/
+
+# builds
+mayacpp/Piper.dir
+mayacpp/x64
+mayacpp/Release

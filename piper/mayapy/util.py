@@ -3,54 +3,6 @@
 import pymel.core as pm
 
 
-def cycleManipulatorSpace():
-    """
-    Cycles through the different manipulator spaces. Usually parent, world, and object.
-    """
-    if not pm.selected():
-        pm.warning('Please select something to switch the manipulator space.')
-        return
-
-    current_context = pm.currentCtx()
-    context_title = pm.contextInfo(current_context, t=True)
-
-    if 'Move' in context_title:
-        context_mode = pm.manipMoveContext('Move', q=True, mode=True)
-        if context_mode == 0:
-            pm.manipMoveContext('Move', edit=True, mode=context_mode + 1)
-            print('In Parent space.'),
-        elif context_mode == 1:
-            pm.manipMoveContext('Move', edit=True, mode=context_mode + 1)
-            print('In World space.'),
-        else:
-            pm.manipMoveContext('Move', edit=True, mode=0)
-            print('In Object space.'),
-
-    elif 'Rotate' in context_title:
-        context_mode = pm.manipRotateContext('Rotate', q=True, mode=True)
-        if context_mode == 0:
-            pm.manipRotateContext('Rotate', edit=True, mode=context_mode + 1)
-            print('In World space.'),
-        elif context_mode == 1:
-            pm.manipRotateContext('Rotate', edit=True, mode=context_mode + 1)
-            print('In Gimbal space.'),
-        else:
-            pm.manipRotateContext('Rotate', edit=True, mode=0)
-            print('In Object space.'),
-
-    elif 'Scale' in context_title:
-        context_mode = pm.manipScaleContext('Scale', q=True, mode=True)
-        if context_mode == 0:
-            pm.manipScaleContext('Scale', edit=True, mode=context_mode + 1)
-            print('In Parent space.'),
-        elif context_mode == 1:
-            pm.manipScaleContext('Scale', edit=True, mode=context_mode + 1)
-            print('In World space.'),
-        else:
-            pm.manipScaleContext('Scale', edit=True, mode=0)
-            print('In Object space.'),
-
-
 def isShiftHeld():
     """
     Gets whether shift is held or not. Returns false during batch.
@@ -81,23 +33,14 @@ def isAltHeld():
     return False if pm.about(batch=True) else (pm.getModifiers() & 8) > 0
 
 
-def getAllParents(start):
+def freezeTransformations(transform):
     """
-    Gets all the parents from the given start node.
-    NOTE: You could also do PyNode.getAllParents().
+    Convenience method for making current transform the identity matrix.
 
     Args:
-        start (PyNode): node to start getting all the parents.
-
-    Returns:
-        (generator): Generator of all parents of given start node.
+        transform (string or PyNode): Transform to freeze transformations on
     """
-    parent = start.getParent()
-
-    while parent:
-        node = parent
-        yield parent
-        parent = node.getParent()
+    pm.makeIdentity(transform, apply=True, t=True, r=True, s=True)
 
 
 def getRootParent(node):
@@ -134,6 +77,45 @@ def getRootParents(nodes):
     return {getRootParent(node) for node in nodes}
 
 
+def getFirstTypeParent(start, node_type):
+    """
+    Gets the first type of parent found in all of the parents from the given start.
+
+    Args:
+        start (pm.nodetypes.Transform): Transform to find type of parent.
+
+        node_type (string): Type of transform to find.
+
+    Returns:
+        (pm.nodetypes.Transform or None): First parent in of given node type if found, else None.
+    """
+    parents = start.getAllParents()
+    for parent in parents:
+        if parent.nodeType() == node_type:
+            return parent
+
+    return None
+
+
+def getAllParents(start):
+    """
+    Gets all the parents from the given start node.
+    NOTE: You could also do PyNode.getAllParents().
+
+    Args:
+        start (PyNode): node to start getting all the parents.
+
+    Returns:
+        (generator): Generator of all parents of given start node.
+    """
+    parent = start.getParent()
+
+    while parent:
+        node = parent
+        yield parent
+        parent = node.getParent()
+
+
 def hasMeshes(node):
     """
     Gets whether the given node consists of mesh(es)
@@ -168,6 +150,23 @@ def getSkinnedMeshes(skin_clusters):
     return skin_info
 
 
+def getManipulatorPosition(transform):
+    """
+    Gets position of move manipulator where control is.
+
+    Args:
+        transform (string, PyNode, list, tuple, or set): Name of object(s) to get position from.
+
+    Returns:
+        (list): [x, y, z], World position of object in three coordinates.
+    """
+    pm.select(transform)
+    pm.setToolTo('Move')
+    position = pm.manipMoveContext('Move', q=1, p=1)
+    pm.select(clear=True)
+    return position
+
+
 def getConstrainedTargets(driver, constraint_type='parentConstraint'):
     """
     Gets all the transforms the given driver is driving through the giving constraint type.
@@ -188,3 +187,51 @@ def getConstrainedTargets(driver, constraint_type='parentConstraint'):
         targets.update(set(constraint.connections(source=False, destination=True, et=True, type='transform')))
 
     return targets
+
+
+def cycleManipulatorSpace():
+    """
+    Cycles through the different manipulator spaces. Usually parent, world, and object.
+    """
+    if not pm.selected():
+        pm.warning('Please select something to switch the manipulator space.')
+        return
+
+    current_context = pm.currentCtx()
+    context_title = pm.contextInfo(current_context, t=True)
+
+    if 'Move' in context_title:
+        context_mode = pm.manipMoveContext('Move', q=True, mode=True)
+        if context_mode == 0:
+            pm.manipMoveContext('Move', edit=True, mode=context_mode + 1)
+            pm.displayInfo('In Parent space.')
+        elif context_mode == 1:
+            pm.manipMoveContext('Move', edit=True, mode=context_mode + 1)
+            pm.displayInfo('In World space.')
+        else:
+            pm.manipMoveContext('Move', edit=True, mode=0)
+            pm.displayInfo('In Object space.')
+
+    elif 'Rotate' in context_title:
+        context_mode = pm.manipRotateContext('Rotate', q=True, mode=True)
+        if context_mode == 0:
+            pm.manipRotateContext('Rotate', edit=True, mode=context_mode + 1)
+            pm.displayInfo('In World space.')
+        elif context_mode == 1:
+            pm.manipRotateContext('Rotate', edit=True, mode=context_mode + 1)
+            pm.displayInfo('In Gimbal space.')
+        else:
+            pm.manipRotateContext('Rotate', edit=True, mode=0)
+            pm.displayInfo('In Object space.')
+
+    elif 'Scale' in context_title:
+        context_mode = pm.manipScaleContext('Scale', q=True, mode=True)
+        if context_mode == 0:
+            pm.manipScaleContext('Scale', edit=True, mode=context_mode + 1)
+            pm.displayInfo('In Parent space.')
+        elif context_mode == 1:
+            pm.manipScaleContext('Scale', edit=True, mode=context_mode + 1)
+            pm.displayInfo('In World space.')
+        else:
+            pm.manipScaleContext('Scale', edit=True, mode=0)
+            pm.displayInfo('In Object space.')

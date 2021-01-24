@@ -8,9 +8,10 @@ import piper.mayapy.settings as settings
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipernode as pipernode
+
+from PySide2 import QtWidgets
 from piper.mayapy.pipe.store import store
 from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperExportMenu, getPiperMainMenu
-from PySide2 import QtWidgets
 
 
 class MayaSceneMenu(PiperSceneMenu):
@@ -107,6 +108,7 @@ class MayaSettingsMenu(PiperMenu):
 
     def build(self):
         self.addCheckbox('Use Piper Units', store.get('use_piper_units'), self.onUseUnitsPressed)
+        self.addCheckbox('Export In Ascii', store.get('export_ascii'), self.onExportInAsciiPressed)
         self.addSeparator()
 
         self.add('Uninstall Piper', self.uninstall)
@@ -115,8 +117,13 @@ class MayaSettingsMenu(PiperMenu):
     def onUseUnitsPressed(state):
         store.set('use_piper_units', state)
 
-    def uninstall(self):
-        pass
+    @staticmethod
+    def onExportInAsciiPressed(state):
+        store.set('export_ascii', state)
+
+    @staticmethod
+    def uninstall():
+        pm.warning('Uninstall currently not implemented')
 
 
 def create():

@@ -2,10 +2,10 @@
 
 import os
 import pymel.core as pm
-import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.pipe.fbxpreset as fbxpreset
 from piper.mayapy.pipe.store import store
 
 
@@ -13,40 +13,26 @@ from piper.mayapy.pipe.store import store
 plugin.load('fbxmaya')
 
 
-def fbx(export_path, preset_name):
+def fbx(export_path, preset=fbxpreset.default):
     """
-    Exports selected nodes to the given export path with the given preset_name export settings.
+    Exports selected nodes to the given export path with the given preset export settings.
 
     Args:
         export_path (string): Full path to export .fbx to.
 
-        preset_name (string): Name of preset to load for export options.
+        preset (method): Name of preset to load for export options.
     """
     # make export directory if it does not exist already
     export_directory = os.path.dirname(export_path)
     pcu.validateDirectory(export_directory)
 
-    # find export preset path to load our preset settings for exporting.
-    piper_directory = pcu.getPiperDirectory()
-    preset_path = os.path.join(piper_directory, 'presets', preset_name + '.fbxexportpreset')
-
-    if not os.path.exists(preset_path):
-        pm.warning(preset_path + ' does not exist! Exporting with default preset.')
-        preset_path = os.path.join(piper_directory, 'presets', 'default.fbxexportpreset')
-
-    if not os.path.exists(preset_path):
-        pm.error('Default preset does not exist! Should be found in: ' + preset_path)
-
-    preset_path = preset_path.replace('\\', '/')
-    pm.mel.eval('FBXLoadExportPresetFile -f "{}"'.format(preset_path))
-    pm.mel.eval('FBXExportFileVersion -v FBX201800')
-    pm.mel.eval('FBXExportInAscii -v true')
-    pm.mel.eval('FBXExport -f "{}" -s'.format(export_path))
-
-    print('\nExported ' + export_path),
+    # set the given preset and export
+    preset()
+    pm.FBXExport('-s', '-f', export_path)
+    pm.displayInfo('Exported: ' + export_path)
 
 
-def fbxToSelf(name, preset):
+def fbxToSelf(name, preset=fbxpreset.default):
     """
     Exports .fbx of selected nodes to the folder that the current scene is in.
     If file is not saved, will export to root of art directory.
@@ -54,7 +40,7 @@ def fbxToSelf(name, preset):
     Args:
         name (string): Name of .fbx file.
 
-        preset (string): Preset to load for export options.
+        preset (method): Preset to load for export options.
     """
     scene_path = pm.sceneName()
     if scene_path:
@@ -70,14 +56,14 @@ def fbxToSelf(name, preset):
     fbx(export_path, preset)
 
 
-def fbxToGame(name, preset):
+def fbxToGame(name, preset=fbxpreset.default):
     """
     Exports selected nodes to the game directory + the relative directory the file is found in with the given file name.
 
     Args:
         name (string): Name of .fbx file.
 
-        preset (string): Preset to load for export options.
+        preset (method): Preset to load for export options.
     """
     scene_path = pm.sceneName()
     game_directory = store.get('game_directory')
@@ -113,11 +99,15 @@ def mesh(piper_meshes, export_method):
         children = piper_mesh.getChildren()
         pm.parent(children, w=True)
         pm.select(children)
-        export_method(piper_mesh.nodeName(), pcfg.mesh_preset)
+        export_method(piper_mesh.nodeName(), fbxpreset.mesh)
         pm.parent(children, piper_mesh)
 
 
 def skinnedMesh(skinned_meshes, export_method):
+    pass
+
+
+def animation(animations, export_method):
     pass
 
 
@@ -128,10 +118,19 @@ def piperNodes(export_method):
     Args:
         export_method (method): Export function to run for each piper node.
     """
+    selected = pm.selected()  # store selection
     piper_meshes = pipernode.get('piperMesh')
     piper_skinned_meshes = pipernode.get('piperSkinnedMesh')
+    piper_animation = pipernode.get('piperAnimation')
+
+    if not piper_meshes and not piper_skinned_meshes and not piper_animation:
+        pm.warning('No Piper Nodes found! Please select or make a Piper Export node. (Piper>Nodes>Create)')
+        return
 
     mesh(piper_meshes, export_method)
+    skinnedMesh(piper_skinned_meshes, export_method)
+    animation(piper_animation, export_method)
+    pm.select(selected)  # selected originally selected nodes
 
 
 def piperNodesToGameAsFBX():

@@ -150,6 +150,25 @@ def flatten(laundry):
     return functools.reduce(operator.iconcat, laundry, [])
 
 
+def getMedian(laundry):
+    """
+    Gets the median item in the given list.
+
+    Args:
+        laundry (list): Items to get middle item from.
+
+    Returns:
+        (Any): The median item in the list.
+    """
+    length = len(laundry)
+
+    if length == 0:
+        return None
+
+    median_index = (length - 1) / 2
+    return laundry[median_index]
+
+
 def copyToClipboard(text):
     """
     Copies the given text to the clipboard
@@ -190,6 +209,7 @@ def deleteCompiledScripts(directory=None):
 
 def removeModules(path=None, exclude_path=None, print_debug=True):
     """
+    Thanks to Nicholas Rodgers for the script.
     https://medium.com/@nicholasRodgers/sidestepping-pythons-reload-function-without-restarting-maya-2448bab9476e
     Removes all the modules under given path that are currently loaded in memory.
 

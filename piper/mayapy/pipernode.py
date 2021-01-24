@@ -3,6 +3,8 @@
 import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
+import piper.mayapy.convert as convert
+import piper.mayapy.rig.createshape as createshape
 
 
 def get(node_type):
@@ -16,11 +18,23 @@ def get(node_type):
         (list) All nodes of the given node type.
     """
     selected = pm.selected()
-    piper_nodes = pm.ls(selected, type=node_type) if selected else pm.ls(type=node_type)
+    if selected:
+
+        # get only the piper nodes from selection
+        piper_nodes = pm.ls(selected, type=node_type)
+
+        # traverse hierarchy for piper nodes
+        if not piper_nodes:
+            piper_nodes = {myu.getFirstTypeParent(node, node_type) for node in selected}
+
+    # search the whole scene for the piper node
+    else:
+        piper_nodes = pm.ls(type=node_type)
+
     return piper_nodes
 
 
-def create(node_type, color, name=None, parent=None):
+def create(node_type, color=None, name=None, parent=None):
     """
     Creates the given node type with the given color and given name/parent.
 
@@ -37,22 +51,36 @@ def create(node_type, color, name=None, parent=None):
     Returns:
         (PyNode): Node created.
     """
-
-    if color == 'cyan':
-        rgb = [0, 1, 1]
-    elif color == 'pink':
-        rgb = [1, 0, 1]
-    else:
-        rgb = None
-
     name = name if name else node_type
     piper_node = pm.createNode(node_type, name=name, parent=parent, skipSelect=True)
-    piper_node.useOutlinerColor.set(True)
+    rgb = convert.colorToRGB(color)
 
     if rgb:
+        piper_node.useOutlinerColor.set(True)
         piper_node.outlinerColor.set(rgb)
 
     return piper_node
+
+
+def createIK(name=None, control_shape=createshape.circle):
+    """
+    Creates piper IK transform with given control shape curve
+
+    Args:
+        name (string): Name for the piper IK nodes.
+
+        control_shape (method): Method that generates nurbs curve that Piper IK transform will use.
+
+    Returns:
+        (PyNode): Piper IK node created.
+    """
+    piper_ik = create('piperIK', name=name)
+    control = control_shape()
+    curves = control.getChildren(type='nurbsCurve')
+    pm.parent(curves, piper_ik, shape=True, add=True)
+    pm.delete(control)
+
+    return piper_ik
 
 
 def createMesh():

@@ -24,6 +24,9 @@ set(SOURCE_FILES
         "MainPlugin.cpp"
         "PiperTransforms.cpp"
         "PiperTransforms.h"
+        "PiperIK.cpp"
+        "PiperIK.h"
+        "util.h"
         )
 
 find_package(Maya REQUIRED)

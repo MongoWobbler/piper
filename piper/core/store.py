@@ -17,7 +17,8 @@ class Store(object):
         self._settings = {}
         self._default_settings = {'art_directory': None,
                                   'game_directory': None,
-                                  'use_piper_units': True}
+                                  'use_piper_units': True,
+                                  'export_ascii': 0}
 
     def getVersion(self):
         """

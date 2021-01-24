@@ -1,6 +1,7 @@
 //  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 #include "PiperTransforms.h"
+#include "PiperIK.h"
 #include <maya/MFnPlugin.h>
 
 
@@ -8,6 +9,8 @@ MStatus initializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin_fn(obj, "Christian Corsica", "1.0", "Any");
+
+    // Piper Mesh
     status = plugin_fn.registerTransform(PiperMesh::node_name,
                                          PiperMesh::type_ID,
                                          PiperMesh::creator,
@@ -20,6 +23,7 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Mesh node.");
     }
 
+    // Piper Skinned Mesh
     status = plugin_fn.registerTransform(PiperSkinnedMesh::node_name,
                                          PiperSkinnedMesh::type_ID,
                                          PiperSkinnedMesh::creator,
@@ -32,6 +36,7 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Skinned Mesh node.");
     }
 
+    // Piper Rig
     status = plugin_fn.registerTransform(PiperRig::node_name,
                                          PiperRig::type_ID,
                                          PiperRig::creator,
@@ -44,6 +49,7 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Rig node.");
     }
 
+    // Piper Animation
     status = plugin_fn.registerTransform(PiperAnimation::node_name,
                                          PiperAnimation::type_ID,
                                          PiperAnimation::creator,
@@ -56,6 +62,19 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Animation node.");
     }
 
+    // Piper IK
+    status = plugin_fn.registerTransform(PiperIK::node_name,
+                                         PiperIK::type_ID,
+                                         PiperIK::creator,
+                                         PiperIK::initialize,
+                                         PiperMatrix::creator,
+                                         PiperMatrix::type_ID);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper IK node.");
+    }
+
     return status;
 }
 
@@ -63,6 +82,7 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
+    plugin_fn.deregisterNode(PiperIK::type_ID);
     plugin_fn.deregisterNode(PiperAnimation::type_ID);
     plugin_fn.deregisterNode(PiperRig::type_ID);
     plugin_fn.deregisterNode(PiperSkinnedMesh::type_ID);
