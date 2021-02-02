@@ -339,3 +339,47 @@ def createJointAtPivot():
     else:
         name = selection[-1].nodeName() if alt_held else ''
         pm.joint(p=myu.getManipulatorPosition(selection), n=name)
+
+
+def getNextAvailableIndexFromTargetMatrix(node, start_index=0):
+    """
+    Gets the first available index in which the target matrix is open and equal to the identity matrix.
+    Usually used in matrix blend nodes.
+
+    Args:
+        node (PyNode): Node to get target[i].targetMatrix of.
+
+        start_index (integer): index to start searching for the available target matrix.
+
+    Returns:
+        (Attribute): First available target attribute.
+    """
+    i = start_index
+    max_iterations = 1000000
+
+    while i < max_iterations:
+        attribute = node.attr('target[{}].targetMatrix'.format(str(i)))
+        plug = pm.connectionInfo(attribute, sfd=True)
+        if not plug and attribute.get() == pm.dt.Matrix():
+            return i
+
+        i += 1
+
+    return 0
+
+
+def getNextAvailableTarget(node, start_index=0):
+    """
+    Gets the first available target attribute that is equal to the identity matrix.
+    Usually used in matrix blend nodes.
+
+    Args:
+        node (PyNode): Node to get target[i].targetMatrix of.
+
+        start_index (integer): index to start searching for the available target matrix.
+
+    Returns:
+        (Attribute): First available target attribute.
+    """
+    i = getNextAvailableIndexFromTargetMatrix(node, start_index)
+    return node.attr('target[{}]'.format(str(i)))

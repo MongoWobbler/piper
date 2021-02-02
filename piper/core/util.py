@@ -266,3 +266,4 @@ def welcome():
     Convenience method for welcoming user to piper.
     """
     print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp()),
+    print('\n')

@@ -10,4 +10,4 @@ if mc.about(batch=True):
     os.environ['PYMEL_SKIP_MEL_INIT'] = '1'
 else:
     import pymel.mayautils as pmu
-    pmu.executeDeferred('pmu.executeDeferred(setup.mayaPiper)')
+    pmu.executeDeferred('pmu.executeDeferred(setup.mayaPiper)', lp=True)
