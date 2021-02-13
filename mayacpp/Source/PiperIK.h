@@ -1,9 +1,8 @@
 #pragma once
 
+#include <maya/MTypeId.h>
 #include <maya/MPxNode.h>
 #include <maya/MPxTransform.h>
-#include <maya/MTypeId.h>
-#include "PiperTransforms.h"
 
 class PiperIK : public MPxTransform
 {
@@ -11,9 +10,7 @@ public:
     PiperIK() = default;
     static void* creator() {return new PiperIK();};
 	static MStatus initialize();
-	virtual MStatus compute(const MPlug& plug, MDataBlock& data);
-	MPxTransformationMatrix* createTransformationMatrix() override {return new PiperMatrix();};
-	PiperMatrix* getPiperMatrix();
+	MStatus compute(const MPlug& plug, MDataBlock& data) override;
 
 public:
 	static MTypeId type_ID;

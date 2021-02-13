@@ -37,7 +37,10 @@ COLORS_INDEX = {0: 'default',
                 31: 'magenta'}
 
 COLORS_RGB = {'cyan': [0, 1, 1],
-              'pink': [1, 0, 1]}
+              'pink': [1, 0, 1],
+              'dark red': [.7, 0, 0],
+              'dark green': [0, .7, 0],
+              'burnt orange': [.85, .6, 0]}
 
 AXES = {'x': (1, 0, 0),
         'y': (0, 1, 0),

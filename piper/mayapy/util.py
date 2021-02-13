@@ -116,9 +116,31 @@ def getAllParents(start):
         parent = node.getParent()
 
 
+def hasAttributes(node, attributes, error=False):
+    """
+    Gets whether the given node has the given attributes.
+
+    Args:
+        node (PyNode): Node to check whether it has given attributes or not.
+
+        attributes (list): Strings of attributes to check whether they are in node or not.
+
+        error (boolean): If True and an attribute is NOT found, will raise error.
+
+    Returns:
+        (boolean): True if given node has ALL the given attributes, False if node is one attribute.
+    """
+    for attribute in attributes:
+        if not node.hasAttr(attribute):
+            return pm.error(node + ' is missing the ' + attribute + ' attribute!') if error else False
+
+    return True
+
+
 def hasMeshes(node):
     """
-    Gets whether the given node consists of mesh(es)
+    Gets whether the given node consists of mesh(es).
+    NOTE: You could also do PyNode.getShapes().
 
     Args:
         node (string or PyNode): node to check whether it hs meshes or not.

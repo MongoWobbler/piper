@@ -6,8 +6,6 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MFnEnumAttribute.h>
-#include <maya/MFloatVector.h>
-#include <maya/MMatrix.h>
 
 #include <iso646.h>
 
@@ -31,13 +29,6 @@ MObject PiperIK::pole_vector_matrix;
 MObject PiperIK::pole_vector_lock;
 MObject PiperIK::twist;
 MObject PiperIK::output_scale;
-
-
-PiperMatrix* PiperIK::getPiperMatrix()
-{
-    PiperMatrix* piper_matrix = (PiperMatrix *) transformationMatrixPtr();
-    return piper_matrix;
-}
 
 
 MStatus PiperIK::initialize()
@@ -207,7 +198,7 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
 
 		MVector start_position = getPosition(start_matrix_value);
 		MVector end_position = getPosition(end_matrix_value);
-		
+
 		double current_chain_length = getDistance(start_position, end_position);
 		double start_output_value = start_initial_length_value;
 		double end_output_value = end_initial_length_value;
@@ -256,7 +247,7 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
 		if (pole_vector_lock_value > 0.001)
 		{
 			MVector pole_position = getPosition(pole_vector_matrix_value);
-			
+
 			double start_pole_distance = getDistance(start_position, pole_position);
 			double end_pole_distance = getDistance(pole_position, end_position);
 
@@ -270,29 +261,9 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
 		data.outputValue(end_output).set(end_output_value * output_scale_value);
 		data.outputValue(end_output).setClean();
 
-        return MS::kSuccess;
-	}
 
-	else if( (plug.attribute() == MPxTransform::matrix)
-         or  (plug.attribute() == MPxTransform::inverseMatrix)
-         or  (plug.attribute() == MPxTransform::worldMatrix)
-         or  (plug.attribute() == MPxTransform::worldInverseMatrix)
-         or  (plug.attribute() == MPxTransform::parentMatrix)
-         or  (plug.attribute() == MPxTransform::parentInverseMatrix) )
-    {
-        PiperMatrix* piper_matrix = getPiperMatrix();
-        if (piper_matrix)
-        {
-            computeLocalTransformation(piper_matrix, data);
-        }
-        else
-        {
-            MGlobal::displayError("Failed to get Piper IK's matrix");
-        }
-
-        return MPxTransform::compute(plug, data);
     }
 
-    return MS::kSuccess;
+    return MPxTransform::compute(plug, data);
 
 }

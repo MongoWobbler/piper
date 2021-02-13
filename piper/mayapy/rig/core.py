@@ -4,6 +4,7 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
 import piper.mayapy.pipermath as pipermath
+import piper.mayapy.convert as convert
 
 
 def transformToOffsetMatrix(transform):
@@ -28,12 +29,24 @@ def lockAndHide(attribute):
     pm.setAttr(attribute, k=False, lock=True)
 
 
-def lockAndHideCompound(transform, attributes=None, axes=None):
+def nonKeyable(attribute):
+    """
+    Makes the given attribute non keyable in the channel box.
+
+    Args:
+        attribute (pm.nodetypes.Attribute): Attribute to make not keyable.
+    """
+    pm.setAttr(attribute, k=False, cb=True)
+
+
+def attributeCompound(transform, action, attributes=None, axes=None):
     """
     Locks and hides several compound attributes with several axis.
 
     Args:
         transform (PyNode): Transform with attribute(s) to hide all of its the given axis.
+
+        action (method): action that will be performed on given transform attributes.
 
         attributes (list): Compound attributes to hide. If None given, will hide t, r, and s.
 
@@ -45,7 +58,35 @@ def lockAndHideCompound(transform, attributes=None, axes=None):
     if not axes:
         axes = ['x', 'y', 'z']
 
-    [lockAndHide(transform.attr(attribute + axis)) for axis in axes for attribute in attributes]
+    [action(transform.attr(attribute + axis)) for axis in axes for attribute in attributes]
+
+
+def lockAndHideCompound(transform, attributes=None, axes=None):
+    """
+    Locks and hides several compound attributes with several axis.
+
+    Args:
+        transform (PyNode): Transform with attribute(s) to hide all of its the given axis.
+
+        attributes (list): Compound attributes to hide. If None given, will hide t, r, and s.
+
+        axes (list): All axis to hide.
+    """
+    attributeCompound(transform, lockAndHide, attributes=attributes, axes=axes)
+
+
+def nonKeyableCompound(transform, attributes=None, axes=None):
+    """
+    Makes given transform's given attributes with given axis non keyable
+
+    Args:
+        transform (PyNode): Transform with attribute(s) to make non keyable for given attributes and axis.
+
+        attributes (list): Compound attributes to make non keyable. If None given, will use t, r, and s.
+
+        axes (list): All axis to make non keyable.
+    """
+    attributeCompound(transform, nonKeyable, attributes=attributes, axes=axes)
 
 
 def addSeparator(transform):
@@ -99,6 +140,29 @@ def getChain(start, end=None):
     chain = parents[start_index:]
     chain.append(end)
     return chain
+
+
+def duplicateChain(chain, prefix='new_', color='default'):
+    """
+    Duplicates the given chain, renames it, and parents it to the world.
+
+    Args:
+        chain (list): Transforms to duplicate.
+
+        prefix (string): Prefix to add to duplicate transforms.
+
+        color (string): Color to set the duplicate chain.
+
+    Returns:
+        (list): Duplicated transforms with new name.
+    """
+    new_chain = pm.duplicate(chain, parentOnly=True, renameChildren=True)
+    [new_chain[i].rename(prefix + chain[i].nodeName()) for i in range(len(chain))]
+    start = new_chain[0]
+    pm.parent(start, w=True)
+    start.overrideEnabled.set(True)
+    start.overrideColor.set(convert.colorToInt(color))
+    return new_chain
 
 
 def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, offset=False, joint_orient=False):

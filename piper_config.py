@@ -6,6 +6,10 @@ axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
 # Export
 mesh_prefix = 'SM_'
 skinned_mesh_prefix = 'SKM_'
+animation_prefix = 'A_'
+
+# Rig
+rig_suffix = '_Rig'
 
 # Controls
 offset_suffix = '_offset'
@@ -27,3 +31,11 @@ space_use_translate = 'useTranslate'
 space_use_rotate = 'useRotate'
 space_use_scale = 'useScale'
 space_blend_matrix_suffix = '_Spaces_BlendMatrix'
+
+# FKIK
+fk_ik_attribute = 'fk_ik'
+switcher_suffix = '_switcher'
+switcher_fk = 'fkControls'
+switcher_ik = 'ikControls'
+switcher_transforms = 'transforms'
+switcher_attributes = [fk_ik_attribute, switcher_fk, switcher_ik, switcher_transforms]

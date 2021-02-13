@@ -1,8 +1,10 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
+import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.rig.core as rig
+import piper.mayapy.rig.space as space
 import piper.mayapy.rig.control as control
 import piper.mayapy.rig.createshape as createshape
 import piper.mayapy.pipernode as pipernode
@@ -102,9 +104,7 @@ def IK(start, end, parent=None, shape=createshape.ring):
         elif transform == mid:
             ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=createshape.orb)
             translation, rotate, scale = rig.calculatePoleVectorTransform(start, mid, end)
-            ctrl.t.set(translation)
-            ctrl.r.set(rotate)
-            ctrl.s.set(scale)
+            pm.xform(ctrl, t=translation, ro=rotate, s=scale)
             rig.transformToOffsetMatrix(ctrl)
             rig.lockAndHideCompound(ctrl, ['r', 's'])
             mid_ctrl = ctrl
@@ -146,3 +146,63 @@ def IK(start, end, parent=None, shape=createshape.ring):
     piper_ik._.lock()
 
     return controls
+
+
+def FKIK(start, end, parent=None, axis=None, fk_shape=createshape.circle, ik_shape=createshape.ring):
+    """
+    Creates a FK and IK controls that drive the chain from start to end.
+
+    Args:
+        Args:
+        start (pm.nodetypes.Transform): Start of the chain to be driven by FK controls.
+
+        end (pm.nodetypes.Transform): End of the chain to be driven by FK controls. If none given, will only drive start
+
+        parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
+
+        axis (string): Only used if no end joint given for shape's axis to match rotations.
+
+        fk_shape (method): Used to create curve or visual representation for the FK controls.
+
+        ik_shape (method): Used to create curve or visual representation for the IK controls.
+
+    Returns:
+        (list): Two lists, FK and IK controls created in order from start to end respectively.
+    """
+    # create joint chains that is the same as the given start and end chain for FK and IK then create controls on those
+    original_transforms = rig.getChain(start, end)
+    fk_transforms = rig.duplicateChain(original_transforms, 'fk_', color='green')
+    ik_transforms = rig.duplicateChain(original_transforms, 'ik_', color='purple')
+    fk_controls = FK(fk_transforms[0], fk_transforms[-1], parent=parent, axis=axis, shape=fk_shape)
+    ik_controls = IK(ik_transforms[0], ik_transforms[-1], parent=parent, shape=ik_shape)
+
+    # create the switcher control that holds the fk to ik attribute and make the end transform drive it
+    switcher_control, _ = control.create(end,
+                                         name=end.nodeName() + pcfg.switcher_suffix,
+                                         axis=axis,
+                                         shape=createshape.cube,
+                                         scale=0.5)
+
+    rig.addSeparator(switcher_control)
+    switcher_control.addAttr(pcfg.fk_ik_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+    switcher_control.addAttr(pcfg.switcher_fk, dt='string', k=False, h=True, s=True)
+    switcher_control.addAttr(pcfg.switcher_ik, dt='string', k=False, h=True, s=True)
+    switcher_control.addAttr(pcfg.switcher_transforms, dt='string', k=False, h=True, s=True)
+    switcher_control.attr(pcfg.switcher_fk).set(', '.join([fk.nodeName() for fk in fk_controls]))
+    switcher_control.attr(pcfg.switcher_ik).set(', '.join([ik.nodeName() for ik in ik_controls]))
+    switcher_control.attr(pcfg.switcher_transforms).set(', '.join([node.nodeName() for node in original_transforms]))
+    end.worldMatrix >> switcher_control.offsetParentMatrix
+    rig.nonKeyableCompound(switcher_control)
+
+    # use spaces to drive original chain with fk and ik transforms and hook up switcher attributes
+    for original_transform, fk_transform, ik_transform in zip(original_transforms, fk_transforms, ik_transforms):
+        world_space, fk_space, ik_space = space.create([fk_transform, ik_transform], original_transform)
+        original_transform.attr(fk_space).set(1)
+        switcher_control.attr(pcfg.fk_ik_attribute) >> original_transform.attr(ik_space)
+
+        # make joints smaller so that they are easier to visualize
+        if original_transform.hasAttr('radius'):
+            fk_transform.radius.set(fk_transform.radius.get() * .5)
+            ik_transform.radius.set(ik_transform.radius.get() * .5)
+
+    return [fk_controls + ik_controls]

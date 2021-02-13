@@ -2,6 +2,8 @@
 
 import pymel.core as pm
 import piper_config as pcfg
+import piper.core.util as pcu
+import piper.mayapy.util as myu
 import piper.mayapy.rig.core as rig
 
 
@@ -22,7 +24,7 @@ def _connect(transform, target, space):
     transform.attr(pcfg.space_use_scale) >> target.useScale
 
 
-def getAll(transform):
+def getAll(transform, attribute=pcfg.spaces_name, cast=False):
     """
     Gets all the piper made spaces. Uses names stored in a string attribute to get these spaces.
     Will return empty list if no spaces attributes found.
@@ -30,15 +32,42 @@ def getAll(transform):
     Args:
         transform (pm.nodetypes.Transform): Transform to get spaces from.
 
+        attribute (string): The name of the attribute to get the spaces from.
+
+        cast (boolean): If True, will cast each value of the attribute found into a PyNode.
+
     Returns:
         (list): All space attributes given transform has, if any.
     """
     attributes = None
 
-    if transform.hasAttr(pcfg.spaces_name):
-        attributes = transform.attr(pcfg.spaces_name).get()
+    if transform.hasAttr(attribute):
+        attributes = transform.attr(attribute).get()
 
-    return attributes.split(':') if attributes else []
+    if attributes:
+        attributes = attributes.split(', ')
+        return [pm.PyNode(attribute) for attribute in attributes] if cast else attributes
+    else:
+        return []
+
+
+def getFkIkAttributes(switcher):
+    """
+    Check whether given node has all needed attributes to perform a switch, raise error if it does not.
+
+    Args:
+        switcher (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
+
+    Returns:
+        (list): Transforms, FK controls, IK controls, and fk_ik attribute value. Transforms and controls are in order.
+    """
+    myu.hasAttributes(switcher, pcfg.switcher_attributes, error=True)
+    transforms = getAll(switcher, pcfg.switcher_transforms, cast=True)
+    fk_controls = getAll(switcher, pcfg.switcher_fk, cast=True)
+    ik_controls = getAll(switcher, pcfg.switcher_ik, cast=True)
+    fk_ik_value = switcher.attr(pcfg.fk_ik_attribute).get()
+
+    return transforms, fk_controls, ik_controls, fk_ik_value
 
 
 def create(spaces, transform):
@@ -110,11 +139,11 @@ def create(spaces, transform):
     # update the spaces attribute
     old_spaces = getAll(transform)
     updated_spaces = old_spaces + space_attributes
-    transform.attr(pcfg.spaces_name).set(':'.join(updated_spaces))
+    transform.attr(pcfg.spaces_name).set(', '.join(updated_spaces))
     return space_attributes
 
 
-def switch(transform, new_space, t=True, r=True, s=True):
+def switch(transform, new_space=None, t=True, r=True, s=True):
     """
     Switches the given transform to the given new_space while maintaining the world transform of the given transform.
     Choose to switch driving translate, rotate, or scale attributes on or off too.
@@ -136,5 +165,67 @@ def switch(transform, new_space, t=True, r=True, s=True):
     transform.useScale.set(s)
     spaces = getAll(transform)
     [transform.attr(space_attribute).set(0) for space_attribute in spaces]
-    transform.attr(new_space).set(1)
+
+    if new_space:
+        transform.attr(new_space).set(1)
+
     pm.xform(transform, ws=True, m=position)
+
+
+def switchFKIK(switcher, key=True, match_only=False):
+    """
+    Moves the FK or IK controls to the transform of the other based on the FK_IK attribute on the switcher control.
+
+    Args:
+        switcher (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
+
+        key (boolean): If True, will set a key at the previous frame.
+
+        match_only (boolean): If True, will match the FK/IK space, but will not switch the FK_IK attribute.
+    """
+    # check whether given node has all needed attributes to perform a switch, raise error if it does not.
+    transforms, fk_controls, ik_controls, fk_ik_value = getFkIkAttributes(switcher)
+    current_frame = pm.currentTime(q=True)
+
+    if not (fk_ik_value == 1 or fk_ik_value == 0):
+        pm.warning('FK IK attribute = {}, which is not a whole number, matching might be off!'.format(str(fk_ik_value)))
+
+    # FK is being used, move IK to original joints
+    if fk_ik_value <= 0.5:
+        new_fk_ik_value = 1
+        mid = pcu.getMedian(transforms)
+
+        if key:
+            pm.setKeyframe(ik_controls + [switcher], time=current_frame - 1)
+
+        for transform, ik_control in zip(transforms, ik_controls[1:]):
+
+            # start of chain
+            if transform == transforms[0]:
+                translate = pm.xform(transform, q=True, ws=True, t=True)
+                scale = pm.xform(transform, q=True, ws=True, s=True)
+                pm.xform(ik_control, ws=True, t=translate)
+                pm.xform(ik_controls[0], ws=True, s=scale)
+
+            # middle transform
+            elif transform == mid:
+                translate, _, _ = rig.calculatePoleVectorTransform(transforms[0], mid, transforms[-1])
+                pm.xform(ik_control, ws=True, t=translate)
+
+            else:
+                matrix = transform.worldMatrix.get()
+                pm.xform(ik_control, ws=True, m=matrix)
+
+    # IK is being used, move FK to original joints
+    else:
+        new_fk_ik_value = 0
+
+        if key:
+            pm.setKeyframe(fk_controls + [switcher], time=current_frame - 1)
+
+        for transform, fk_control in zip(transforms, fk_controls):
+            matrix = transform.worldMatrix.get()
+            pm.xform(fk_control, ws=True, m=matrix)
+
+    if not match_only:
+        switcher.attr(pcfg.fk_ik_attribute).set(new_fk_ik_value)

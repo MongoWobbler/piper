@@ -15,8 +15,8 @@ MStatus initializePlugin(MObject obj)
                                          PiperMesh::type_ID,
                                          PiperMesh::creator,
                                          PiperMesh::initialize,
-                                         PiperMatrix::creator,
-                                         PiperMatrix::type_ID);
+                                         MPxTransformationMatrix::creator,
+                                         MPxTransformationMatrix::baseTransformationMatrixId);
 
     if (status != MS::kSuccess)
     {
@@ -28,8 +28,8 @@ MStatus initializePlugin(MObject obj)
                                          PiperSkinnedMesh::type_ID,
                                          PiperSkinnedMesh::creator,
                                          PiperSkinnedMesh::initialize,
-                                         PiperMatrix::creator,
-                                         PiperMatrix::type_ID);
+                                         MPxTransformationMatrix::creator,
+                                         MPxTransformationMatrix::baseTransformationMatrixId);
 
     if (status != MS::kSuccess)
     {
@@ -41,8 +41,8 @@ MStatus initializePlugin(MObject obj)
                                          PiperRig::type_ID,
                                          PiperRig::creator,
                                          PiperRig::initialize,
-                                         PiperMatrix::creator,
-                                         PiperMatrix::type_ID);
+                                         MPxTransformationMatrix::creator,
+                                         MPxTransformationMatrix::baseTransformationMatrixId);
 
     if (status != MS::kSuccess)
     {
@@ -54,8 +54,8 @@ MStatus initializePlugin(MObject obj)
                                          PiperAnimation::type_ID,
                                          PiperAnimation::creator,
                                          PiperAnimation::initialize,
-                                         PiperMatrix::creator,
-                                         PiperMatrix::type_ID);
+                                         MPxTransformationMatrix::creator,
+                                         MPxTransformationMatrix::baseTransformationMatrixId);
 
     if (status != MS::kSuccess)
     {
@@ -67,8 +67,8 @@ MStatus initializePlugin(MObject obj)
                                          PiperIK::type_ID,
                                          PiperIK::creator,
                                          PiperIK::initialize,
-                                         PiperMatrix::creator,
-                                         PiperMatrix::type_ID);
+                                         MPxTransformationMatrix::creator,
+                                         MPxTransformationMatrix::baseTransformationMatrixId);
 
     if (status != MS::kSuccess)
     {

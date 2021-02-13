@@ -91,5 +91,5 @@ def create(transform,
         else:
             pm.matchTransform(control, transform)
 
-    pm.setAttr(control.visibility, k=False, cb=True)
+    rig.nonKeyable(control.visibility)
     return control, group_offset

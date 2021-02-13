@@ -4,17 +4,6 @@
 
 #include <maya/MTypeId.h>
 #include <maya/MPxTransform.h>
-#include <maya/MPxTransformationMatrix.h>
-
-
-class PiperMatrix : public MPxTransformationMatrix
-{
-public:
-    static MPxTransformationMatrix* creator();
-
-public:
-    static MTypeId type_ID;
-};
 
 
 class PiperMesh : public MPxTransform

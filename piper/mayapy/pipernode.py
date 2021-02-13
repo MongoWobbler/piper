@@ -107,7 +107,7 @@ def createMesh():
             return piper_meshes
         else:
             # If user selected stuff that is not a mesh, warn the user.
-            non_mesh_transforms = [node for node in selected if not myu.hasMeshes(node)]
+            non_mesh_transforms = [node for node in selected if not node.getShapes()]
             if non_mesh_transforms:
                 pm.warning('The following are not meshes! \n' + '\n'.join(non_mesh_transforms))
 
@@ -165,6 +165,11 @@ def createSkinnedMesh():
     return piper_skinned_meshes
 
 
+def createRig():
+    piper_rig = create('piperRig', 'burnt orange', name='piper' + pcfg.rig_suffix)
+    return piper_rig
+
+
 def createAnimation():
-    # animation should be dark green (0, .7, 0)
-    pass
+    piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + 'piperAnimation')
+    return piper_animation
