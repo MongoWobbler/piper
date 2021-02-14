@@ -39,3 +39,16 @@ switcher_fk = 'fkControls'
 switcher_ik = 'ikControls'
 switcher_transforms = 'transforms'
 switcher_attributes = [fk_ik_attribute, switcher_fk, switcher_ik, switcher_transforms]
+
+# Textures
+diffuse_suffix = '_D'
+normal_suffix = '_N'
+ambient_occlusion_suffix = '_AO'
+roughness_suffix = '_R'
+metal_suffix = '_M'
+emissive_suffix = '_E'
+ao_r_m_suffix = ambient_occlusion_suffix + roughness_suffix + metal_suffix
+texture_file_types = ['.png']
+
+# Materials
+material_prefix = 'MI_'

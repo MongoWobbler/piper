@@ -39,6 +39,14 @@ def loadDefaults():
     pm.currentUnit(linear='cm')
 
 
+def loadRender():
+    """
+    Sets the viewport's render engine to DirectX11 and the tone map to use Stingray
+    """
+    pm.mel.eval('setRenderingEngineInModelPanel "DirectX11";')
+    pm.colorManagementPrefs(e=True, vtn='Stingray tone-map')
+
+
 def startup():
     """
     To called when Maya starts up.
@@ -47,3 +55,4 @@ def startup():
         loadDefaults()
 
     setStartupProject()
+    loadRender()
