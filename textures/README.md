@@ -1,4 +1,6 @@
+Pro Tip: Place the HDR image in project folder and use Piper Settings to assign it as default after moving it.
+
 You can get great HDRIs for free here: https://hdrihaven.com
 
-The HDRI included is "Kiara 9 Dusk" by Greg Zaal.
+The HDR image included is "Kiara 9 Dusk" by Greg Zaal.
 Link: https://hdrihaven.com/hdri/?h=kiara_9_dusk

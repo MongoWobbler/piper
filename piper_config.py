@@ -3,6 +3,31 @@
 # Maths
 axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
 
+# Store
+art_directory = 'art_directory'
+game_directory = 'game_directory'
+use_piper_units = 'use_piper_units'
+export_ascii = 'export_ascii'
+hdr_image_path = 'hdr_image_path'
+store_defaults = {art_directory: None,
+                  game_directory: None,
+                  use_piper_units: True,
+                  export_ascii: 0,
+                  hdr_image_path: ''}
+
+# Maya units
+maya_default_time = 'ntsc'
+maya_default_length = 'cm'
+
+# Maya graphics
+maya_default_rendering_api = 'DirectX11'
+maya_default_tone_map = 'Stingray tone-map'
+maya_default_initial_material = 'lambert'
+
+# Geometry
+low_poly_suffix = '_low'
+high_poly_suffix = '_high'
+
 # Export
 mesh_prefix = 'SM_'
 skinned_mesh_prefix = 'SKM_'
@@ -41,6 +66,8 @@ switcher_transforms = 'transforms'
 switcher_attributes = [fk_ik_attribute, switcher_fk, switcher_ik, switcher_transforms]
 
 # Textures
+textures_directory = '../../Textures'
+texture_file_types = ('.png', '.tga')
 diffuse_suffix = '_D'
 normal_suffix = '_N'
 ambient_occlusion_suffix = '_AO'
@@ -48,7 +75,10 @@ roughness_suffix = '_R'
 metal_suffix = '_M'
 emissive_suffix = '_E'
 ao_r_m_suffix = ambient_occlusion_suffix + roughness_suffix + metal_suffix
-texture_file_types = ['.png']
 
 # Materials
 material_prefix = 'MI_'
+piper_material_attribute = 'piperMaterial'
+norrsken_name = 'Norrsken'
+shader_engine_suffix = '_SG'
+geometry_to_mat_suffixes = (low_poly_suffix, high_poly_suffix)

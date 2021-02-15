@@ -126,15 +126,30 @@ def getAllFilesEndingWithWord(word, starting_directory):
     Returns:
         (list): All files that end with given word inside given starting_directory.
     """
-    matched_files = []
+    matched = []
 
     for directory, _, files in os.walk(starting_directory):
-        for file_name in files:
-            if file_name.lower().endswith(word):
-                directory = directory.replace('\\', '/')
-                matched_files.append(os.path.join(directory, file_name))
+        [matched.append(os.path.join(directory, fn).replace('\\', '/')) for fn in files if fn.lower().endswith(word)]
 
-    return matched_files
+    return matched
+
+
+def removeSuffixes(word, suffixes):
+    """
+    Attempts to remove th given suffixes from the given word.
+
+    Args:
+        word (string): Word to remove suffixes from.
+
+        suffixes (collections.iterable): Suffixes to remove from given word.
+
+    Returns:
+        (string): Word with suffixes removed.
+    """
+    for suffix in suffixes:
+        word = word.rstrip(suffix)
+
+    return word
 
 
 def flatten(laundry):

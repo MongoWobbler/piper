@@ -2,8 +2,10 @@
 
 import os
 import pymel.core as pm
+import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.ui.util as myui
+import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
@@ -26,13 +28,13 @@ class MayaSceneMenu(PiperSceneMenu):
         """
         Opens the art directory in a OS window.
         """
-        pcu.openWithOS(store.get('art_directory'))
+        pcu.openWithOS(store.get(pcfg.art_directory))
 
     def openGameDirectoryInOS(self):
         """
         Opens the game directory in a OS window.
         """
-        pcu.openWithOS(store.get('game_directory'))
+        pcu.openWithOS(store.get(pcfg.game_directory))
 
     def copyCurrentSceneToClipboard(self):
         """
@@ -76,17 +78,17 @@ class MayaExportMenu(PiperExportMenu):
             return
 
         settings.setProject(directory)
-        store.set('art_directory', directory)
+        store.set(pcfg.art_directory, directory)
 
     def setGameDirectory(self):
         dialog = QtWidgets.QFileDialog()
-        starting_directory = store.get('game_directory')
+        starting_directory = store.get(pcfg.game_directory)
         directory = dialog.getExistingDirectory(self, 'Choose directory to export to', starting_directory)
 
         if not directory:
             return
 
-        store.set('game_directory', directory)
+        store.set(pcfg.game_directory, directory)
 
 
 class MayaNodesMenu(PiperMenu):
@@ -100,6 +102,17 @@ class MayaNodesMenu(PiperMenu):
         self.add('Create Skinned Mesh', pipernode.createSkinnedMesh)
 
 
+class MayaGraphicsMenu(PiperMenu):
+
+    def __init__(self, title='Graphics', parent=None):
+        super(MayaGraphicsMenu, self).__init__(title, parent=parent)
+        self.build()
+
+    def build(self):
+        self.add('Create Initial Material', graphics.createInitialMaterial)
+        self.add('Update Materials', graphics.updateMaterials)
+
+
 class MayaSettingsMenu(PiperMenu):
 
     def __init__(self, title='Settings', parent=None):
@@ -107,19 +120,30 @@ class MayaSettingsMenu(PiperMenu):
         self.build()
 
     def build(self):
-        self.addCheckbox('Use Piper Units', store.get('use_piper_units'), self.onUseUnitsPressed)
-        self.addCheckbox('Export In Ascii', store.get('export_ascii'), self.onExportInAsciiPressed)
+        self.addCheckbox('Use Piper Units', store.get(pcfg.use_piper_units), self.onUseUnitsPressed)
+        self.addCheckbox('Export In Ascii', store.get(pcfg.export_ascii), self.onExportInAsciiPressed)
+        self.add('Set HDR Image', self.onSetHdrImagePressed)
         self.addSeparator()
 
         self.add('Uninstall Piper', self.uninstall)
 
     @staticmethod
     def onUseUnitsPressed(state):
-        store.set('use_piper_units', state)
+        store.set(pcfg.use_piper_units, state)
 
     @staticmethod
     def onExportInAsciiPressed(state):
-        store.set('export_ascii', state)
+        store.set(pcfg.export_ascii, state)
+
+    def onSetHdrImagePressed(self):
+        dialog = QtWidgets.QFileDialog()
+        starting_directory = store.get(pcfg.art_directory)
+        file_path = dialog.getOpenFileName(self, 'Choose HDR Image', starting_directory)
+
+        if not file_path:
+            return
+
+        store.set(pcfg.hdr_image_path, file_path[0])
 
     @staticmethod
     def uninstall():
@@ -134,6 +158,7 @@ def create():
     piper_menu.scene_menu = MayaSceneMenu()
     piper_menu.nodes_menu = MayaNodesMenu()
     piper_menu.export_menu = MayaExportMenu()
+    piper_menu.graphics_menu = MayaGraphicsMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()
 

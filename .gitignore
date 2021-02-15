@@ -185,10 +185,10 @@ Debug/
 #############################################################
 # PIPER SPECIFIC IGNORE START
 
-plug-ins/CharcoalEditor*.mll
+maya/plug-ins/CharcoalEditor*.mll
 settings/
 
 # builds
-mayacpp/Piper.dir
-mayacpp/x64
-mayacpp/Release
+maya/cpp/Piper.dir
+maya/cpp/x64
+maya/cpp/Release

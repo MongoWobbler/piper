@@ -25,8 +25,9 @@ if not os.path.exists(modules_directory):
     os.makedirs(modules_directory)
 
 # formatting lines for modules file.
-lines = ['+ {0} 1.0 {1}'.format(MODULE_NAME, environment_directory),
-         '{0}={1}'.format(ENVIRONMENT_KEY, environment_directory)]
+lines = ['+ {0} 1.0 {1}/maya'.format(MODULE_NAME, environment_directory),
+         '{0}={1}'.format(ENVIRONMENT_KEY, environment_directory),
+         'MAYA_CONTENT_PATH+={0}/maya/scenes'.format(environment_directory)]
 
 lines += ENVIRONMENT
 lines = [line + '\n' for line in lines]

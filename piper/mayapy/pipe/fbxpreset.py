@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
+import piper_config as pcfg
 from piper.mayapy.pipe.store import store
 
 
@@ -73,7 +74,7 @@ def default(  # geometry
         ascii (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
     """
     # initial setup
-    ascii = store.get('export_ascii') if ascii is None else ascii
+    ascii = store.get(pcfg.export_ascii) if ascii is None else ascii
     pm.FBXResetExport()
 
     # geometry

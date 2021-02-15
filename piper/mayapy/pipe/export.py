@@ -2,6 +2,7 @@
 
 import os
 import pymel.core as pm
+import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipernode as pipernode
@@ -46,7 +47,7 @@ def fbxToSelf(name, preset=fbxpreset.default):
     if scene_path:
         export_directory = os.path.dirname(scene_path)
     else:
-        art_directory = store.get('art_directory')
+        art_directory = store.get(pcfg.art_directory)
         if not art_directory:
             pm.error('Please save the scene or set the Art Directory before exporting to self.')
 
@@ -66,7 +67,7 @@ def fbxToGame(name, preset=fbxpreset.default):
         preset (method): Preset to load for export options.
     """
     scene_path = pm.sceneName()
-    game_directory = store.get('game_directory')
+    game_directory = store.get(pcfg.game_directory)
     relative_directory = ''
 
     if not game_directory:
@@ -74,7 +75,7 @@ def fbxToGame(name, preset=fbxpreset.default):
 
     if scene_path:
         source_directory = os.path.dirname(scene_path)
-        art_directory = store.get('art_directory')
+        art_directory = store.get(pcfg.art_directory)
 
         # gets the relative path using the art directory
         if scene_path.startswith(art_directory):

@@ -120,12 +120,14 @@ class _PiperMainMenu(PiperMenu):
         self.scene_menu = None
         self.nodes_menu = None
         self.export_menu = None
+        self.graphics_menu = None
         self.settings_menu = None
 
     def build(self):
         self.addMenuP(self.scene_menu)
         self.addMenuP(self.nodes_menu)
         self.addMenuP(self.export_menu)
+        self.addMenuP(self.graphics_menu)
         self.addMenuP(self.settings_menu)
         self.addSeparator()
 

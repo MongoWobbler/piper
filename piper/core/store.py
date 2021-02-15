@@ -2,6 +2,7 @@
 
 import os
 import copy
+import piper_config as pcfg
 import piper.core.util as pcu
 
 
@@ -15,10 +16,7 @@ class Store(object):
         self._version = ''
         self._path = None
         self._settings = {}
-        self._default_settings = {'art_directory': None,
-                                  'game_directory': None,
-                                  'use_piper_units': True,
-                                  'export_ascii': 0}
+        self._default_settings = copy.deepcopy(pcfg.store_defaults)
 
     def getVersion(self):
         """
