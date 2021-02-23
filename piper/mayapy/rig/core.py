@@ -2,9 +2,10 @@
 
 import pymel.core as pm
 import piper_config as pcfg
+import piper.core.util as pcu
 import piper.mayapy.util as myu
-import piper.mayapy.pipermath as pipermath
 import piper.mayapy.convert as convert
+import piper.mayapy.pipermath as pipermath
 
 
 def transformToOffsetMatrix(transform):
@@ -115,6 +116,21 @@ def addSeparator(transform):
     transform.attr(underscore).lock()
 
 
+def addDeleteAttribute(transforms=None):
+    """
+    Adds a "delete" attribute to the given transforms that marks them to be delete on export.
+
+    Args:
+        transforms (list): List of pm.nodetypes.transform to add "delete" attribute to.
+    """
+    transforms = myu.validateSelect(transforms, display=pm.warning)
+
+    for transform in transforms:
+        addSeparator(transform)
+        transform.addAttr(pcfg.delete_node_attribute, at='bool', k=True, dv=1, max=1, min=1)
+        nonKeyable(transform.delete)
+
+
 def getChain(start, end=None):
     """
     Gets all the transforms parented between the given start and end transforms, inclusive.
@@ -163,6 +179,119 @@ def duplicateChain(chain, prefix='new_', color='default'):
     start.overrideEnabled.set(True)
     start.overrideColor.set(convert.colorToInt(color))
     return new_chain
+
+
+def parentTransforms(*transforms):
+    """
+    Parents transforms to the last given transform and gets rid of joint orient values if transform is a joint.
+
+    Args:
+        transforms (list or pm.nodetypes.Transform): Transforms to parent. Last transform is the parent of the rest.
+        Minimum of two objects.
+    """
+    transforms = myu.validateSelect(transforms, minimum=2)
+    for joint in transforms[:-1]:
+
+        if isinstance(joint, pm.nodetypes.Joint):
+            matrix = joint.worldMatrix.get()
+            pm.parent(joint, transforms[-1])
+            joint.jointOrient.set(0, 0, 0)
+            pm.xform(joint, ws=True, m=matrix)
+        else:
+            pm.parent(joint, transforms[-1])
+
+
+def mirrorTranslate(transforms=None, axis=pcfg.default_mirror_axis, swap=None, duplicate=True):
+    """
+    Mirrors the given transforms across the given axis set up to be used as a mirror translate transform.
+
+    Args:
+        transforms (list): Transforms to mirror across given axis.
+
+        axis (string): Name of axis to mirror across.
+
+        swap (list): Text to swap with each other for duplicates name.
+
+        duplicate (boolean): If True will duplicate transforms before mirroring. Else will mirror the given transforms.
+
+    Returns:
+        (list): Transforms mirrored.
+    """
+    transforms = myu.validateSelect(transforms)
+    axis_vector = convert.axisToVector(axis, absolute=True)
+    mirrored_axis = [value * -1 for value in axis_vector]
+    mirrored_axis.append(1)
+    to_mirror = []
+
+    if swap is None:
+        swap = [pcfg.left_suffix, pcfg.right_suffix]
+
+    if duplicate:
+        for transform in transforms:
+            name = transform.nodeName()
+            new_name = pcu.swapText(name, *swap)
+            new_transform = pm.duplicate(transform, ic=False, un=False, n=new_name)[0]
+            to_mirror.append(new_transform)
+    else:
+        to_mirror = transforms
+
+    for transform in to_mirror:
+        matrix = transform.worldMatrix.get()
+        identity = [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]
+        mirrored_matrix = [m * a if m != 0 and a != 0 else m for row in identity for m, a in zip(row, mirrored_axis)]
+        mirrored_matrix = matrix * pm.dt.Matrix(mirrored_matrix)
+        pm.xform(transform, ws=True, m=mirrored_matrix)
+        [transform.attr('s' + axis).set(abs(transform.attr('s' + axis).get())) for axis in ['x', 'y', 'z']]
+
+    return to_mirror
+
+
+def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
+    """
+    Mirrors the given transforms across the given axis set up to be used as a mirror rotate transform.
+
+    Args:
+        transforms (list): Transforms to mirror across given axis.
+
+        axis (string): Name of axis to mirror across.
+
+        swap (list): Words to search and replace. Will search for first index, and replace with second index.
+
+    Returns:
+        (list): Joints that were mirrored. Note that all their children get mirrored as well.
+    """
+    mirrored_transforms = []
+    transforms = myu.validateSelect(transforms)
+    options = {'mxy': False, 'myz': False, 'mxz': False, 'mb': True, 'sr': swap}
+
+    if axis == 'x':
+        options['myz'] = True
+    elif axis == 'y':
+        options['mxz'] = True
+    elif axis == 'z':
+        options['mxy'] = True
+    else:
+        pm.error('No valid axis given. Pick "x", "y", or "z".')
+
+    for transform in transforms:
+        name = transform.nodeName()
+
+        if not swap:
+            if name.endswith(pcfg.left_suffix):
+                options['sr'] = [pcfg.left_suffix, pcfg.right_suffix]
+            elif name.endswith(pcfg.right_suffix):
+                options['sr'] = [pcfg.right_suffix, pcfg.left_suffix]
+
+        mirrored_joint = pm.mirrorJoint(transform, **options)[0]
+        mirrored_joint = pm.PyNode(mirrored_joint)
+        mirrored_transforms.append(mirrored_joint)
+        parent = mirrored_joint.getParent()
+
+        if mirrored_joint.getParent():
+            pm.parent(mirrored_joint, w=True)
+            parentTransforms(mirrored_joint, parent)
+
+    return mirrored_transforms
 
 
 def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, offset=False, joint_orient=False):

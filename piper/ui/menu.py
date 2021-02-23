@@ -92,7 +92,8 @@ class PiperExportMenu(PiperMenu):
         self.add('Export To Game', self.exportToGame)
         self.add('Export To Current Directory', self.exportToCurrentDirectory)
         self.addSeparator()
-
+        self.add('Export Meshes to Current as OBJ', self.exportMeshesToCurrentAsObj)
+        self.addSeparator()
         self.add('Set Art Directory', self.setArtDirectory)
         self.add('Set Game Directory', self.setGameDirectory)
 
@@ -100,6 +101,9 @@ class PiperExportMenu(PiperMenu):
         pass
 
     def exportToCurrentDirectory(self):
+        pass
+
+    def exportMeshesToCurrentAsObj(self):
         pass
 
     def setArtDirectory(self):
@@ -120,6 +124,7 @@ class _PiperMainMenu(PiperMenu):
         self.scene_menu = None
         self.nodes_menu = None
         self.export_menu = None
+        self.bones_menu = None
         self.graphics_menu = None
         self.settings_menu = None
 
@@ -127,6 +132,7 @@ class _PiperMainMenu(PiperMenu):
         self.addMenuP(self.scene_menu)
         self.addMenuP(self.nodes_menu)
         self.addMenuP(self.export_menu)
+        self.addMenuP(self.bones_menu)
         self.addMenuP(self.graphics_menu)
         self.addMenuP(self.settings_menu)
         self.addSeparator()

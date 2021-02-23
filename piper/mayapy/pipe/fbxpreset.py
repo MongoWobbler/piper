@@ -113,3 +113,13 @@ def mesh(ascii=None):
         ascii (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
     """
     default(animation=0, skins=0, shapes=0, cameras=0, lights=0, embed=0, ascii=ascii)
+
+
+def skinnedMesh(ascii=None):
+    """
+    FBX preset settings for a skinned mesh export.
+
+    Args:
+        ascii (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
+    """
+    default(cameras=0, lights=0, embed=0, connections=0, ascii=ascii)

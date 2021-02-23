@@ -37,7 +37,7 @@ def loadAll(version=True):
         version (boolean): If True, will only load plugins with version number extension at the end of file name.
     """
     piper_directory = pcu.getPiperDirectory()
-    plugins_directory = os.path.join(piper_directory, 'plug-ins')
+    plugins_directory = os.path.join(piper_directory, 'maya', 'plug-ins')
     extension = str(pm.about(version=True)) if version else ''
     extension += '.mll'
     plugins = pcu.getAllFilesEndingWithWord(extension, plugins_directory)

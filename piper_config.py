@@ -3,6 +3,11 @@
 # Maths
 axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
 
+# Sides
+left_suffix = '_l'
+right_suffix = '_r'
+default_mirror_axis = 'x'
+
 # Store
 art_directory = 'art_directory'
 game_directory = 'game_directory'
@@ -32,9 +37,11 @@ high_poly_suffix = '_high'
 mesh_prefix = 'SM_'
 skinned_mesh_prefix = 'SKM_'
 animation_prefix = 'A_'
+delete_node_attribute = 'delete'
 
 # Rig
 rig_suffix = '_Rig'
+root_joint_name = 'root'
 
 # Controls
 offset_suffix = '_offset'
@@ -66,7 +73,9 @@ switcher_transforms = 'transforms'
 switcher_attributes = [fk_ik_attribute, switcher_fk, switcher_ik, switcher_transforms]
 
 # Textures
-textures_directory = '../../Textures'
+art_textures_directory_name = '/Textures'
+game_textures_directory_name = '/Materials'
+textures_directory = '../..' + art_textures_directory_name
 texture_file_types = ('.png', '.tga')
 diffuse_suffix = '_D'
 normal_suffix = '_N'

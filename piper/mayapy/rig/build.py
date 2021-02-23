@@ -66,7 +66,7 @@ def IK(start, end, parent=None, shape=createshape.ring):
     transforms = rig.getChain(start, end)
     mid = pcu.getMedian(transforms)
     axis = None
-    mid_ctrl = None
+    mid_control = None
     controls = []
 
     if mid == start or mid == end:
@@ -87,7 +87,7 @@ def IK(start, end, parent=None, shape=createshape.ring):
         # start
         if transform == transforms[0]:
             ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape)
-            rig.lockAndHideCompound(ctrl, ['r', 's'])
+            rig.lockAndHide(ctrl.scale)
             scale_ctrl, _ = control.create(transform,
                                            name=name + '_scale',
                                            axis=axis,
@@ -100,14 +100,19 @@ def IK(start, end, parent=None, shape=createshape.ring):
             scale_ctrl.s >> transform.s
             controls.append(scale_ctrl)
 
+            # dynamic pivot
+            pivot_ctrl, _ = control.create(start, shape=createshape.lever, name=name + '_pivot',
+                                           axis=axis, parent=ctrl, matrix_offset=False)
+            pivot_ctrl.translate >> ctrl.rotatePivot
+            rig.nonKeyableCompound(pivot_ctrl, ['r', 's'])
+            controls.append(pivot_ctrl)
+
         # mid
         elif transform == mid:
-            ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=createshape.orb)
+            ctrl, _ = control.create(transform, createshape.orb, name, axis, parent=control_parent, matrix_offset=False)
             translation, rotate, scale = rig.calculatePoleVectorTransform(start, mid, end)
             pm.xform(ctrl, t=translation, ro=rotate, s=scale)
-            rig.transformToOffsetMatrix(ctrl)
-            rig.lockAndHideCompound(ctrl, ['r', 's'])
-            mid_ctrl = ctrl
+            mid_control = ctrl
 
         # end
         elif transform == transforms[-1]:
@@ -122,7 +127,7 @@ def IK(start, end, parent=None, shape=createshape.ring):
 
         controls.append(ctrl)
 
-    start_control = controls[1]
+    start_control = controls[2]
     piper_ik = controls[-1]
     piper_ik.startInitialLength.set(start_initial_length)
     piper_ik.endInitialLength.set(end_initial_length)
@@ -130,20 +135,27 @@ def IK(start, end, parent=None, shape=createshape.ring):
     if axis.startswith('n'):
         piper_ik.outputScale.set(-1)
 
+    # connect controls to joints, and make ik handle
     rig.parentMatrixConstraint(start_control, start, t=True, r=False, s=False)
     rig.parentMatrixConstraint(piper_ik, end, t=False)
     ik_handle, effector = pm.ikHandle(sj=start, ee=end, sol='ikRPsolver', n=end.nodeName() + '_handle', pw=1, w=1)
     rig.parentMatrixConstraint(piper_ik, ik_handle, r=False, s=False)
-    rig.poleVectorMatrixConstraint(ik_handle, mid_ctrl)
+    rig.poleVectorMatrixConstraint(ik_handle, mid_control)
 
     # connect the rest
     start_control.worldMatrix >> piper_ik.startMatrix
-    mid_ctrl.worldMatrix >> piper_ik.poleVectorMatrix
+    mid_control.worldMatrix >> piper_ik.poleVectorMatrix
     piper_ik.worldMatrix >> piper_ik.endMatrix
     piper_ik.startOutput >> mid.attr('t' + axis.lstrip('n'))
     piper_ik.endOutput >> end.attr('t' + axis.lstrip('n'))
     piper_ik.twist >> ik_handle.twist
     piper_ik._.lock()
+
+    # parent pole vector to end control and create
+    pm.parent(mid_control, piper_ik)
+    rig.transformToOffsetMatrix(mid_control)
+    space.create([start_control], mid_control)
+    rig.lockAndHideCompound(mid_control, ['r', 's'])
 
     return controls
 

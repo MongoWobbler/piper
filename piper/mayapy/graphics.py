@@ -131,6 +131,8 @@ class PiperShader(object):
                 if opacity_tester.fileHasAlpha.get():
                     pm.mel.eval('shaderfx -sfxnode "{}" -edit_bool 1291 "value" false;'.format(material.nodeName()))
 
+                pm.delete(opacity_tester)
+
             # packed ambient occlusion, roughness, and metallic
             elif texture_name.endswith(pcfg.ao_r_m_suffix):
                 material.Use_Occlusion_Roughness_Metallic.set(True)

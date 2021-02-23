@@ -1,148 +1,301 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import shutil
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.core.fbx_sdk as fbx_sdk
 import piper.mayapy.plugin as plugin
+import piper.mayapy.graphics as graphics
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.pipe.fbxpreset as fbxpreset
-from piper.mayapy.pipe.store import store
+import piper.mayapy.pipe.paths as paths
 
-
-# FBX plugin needed to export.
+# FBX and OBJ plugin needed to export.
 plugin.load('fbxmaya')
+plugin.load('objExport')
 
 
-def fbx(export_path, preset=fbxpreset.default):
-    """
-    Exports selected nodes to the given export path with the given preset export settings.
+class Export(object):
 
-    Args:
-        export_path (string): Full path to export .fbx to.
+    def __init__(self):
+        self.extension = None
+        self.mesh_settings = None
+        self.skinned_mesh_settings = None
+        self.animation_settings = None
+        self.export_method = self._write
 
-        preset (method): Name of preset to load for export options.
-    """
-    # make export directory if it does not exist already
-    export_directory = os.path.dirname(export_path)
-    pcu.validateDirectory(export_directory)
+    def write(self, export_path, settings):
+        """
+        Dependent on export method. Meant to be overridden by child class.
 
-    # set the given preset and export
-    preset()
-    pm.FBXExport('-s', '-f', export_path)
-    pm.displayInfo('Exported: ' + export_path)
+        Args:
+            export_path (string): Path to export to.
 
+            settings (any): Extra argument to pass on. Helpful for setting presets or options of write function.
+        """
+        pass
 
-def fbxToSelf(name, preset=fbxpreset.default):
-    """
-    Exports .fbx of selected nodes to the folder that the current scene is in.
-    If file is not saved, will export to root of art directory.
+    def _write(self, export_path, settings, *args, **kwargs):
+        """
+        Called to write file after verifying directory exists, and posts results after export.
 
-    Args:
-        name (string): Name of .fbx file.
+        Args:
+            export_path (string): Path to export to.
 
-        preset (method): Preset to load for export options.
-    """
-    scene_path = pm.sceneName()
-    if scene_path:
-        export_directory = os.path.dirname(scene_path)
-    else:
-        art_directory = store.get(pcfg.art_directory)
-        if not art_directory:
-            pm.error('Please save the scene or set the Art Directory before exporting to self.')
+            settings (any): Extra argument to pass to self.write.
 
-        export_directory = art_directory
+        Returns:
+            (string): Path where file wrote to.
+        """
+        self.onStart(export_path)
+        self.write(export_path, settings)  # this is where the export actually happens
+        self.onFinished(export_path)
+        return export_path
 
-    export_path = os.path.join(export_directory, name + '.fbx').replace('\\', '/')
-    fbx(export_path, preset)
+    def toSelf(self, name, settings, *args, **kwargs):
+        """
+        Exports .fbx of selected nodes to the folder that the current scene is in.
+        If file is not saved, will export to root of art directory.
 
+        Args:
+            name (string): Name of file.
 
-def fbxToGame(name, preset=fbxpreset.default):
-    """
-    Exports selected nodes to the game directory + the relative directory the file is found in with the given file name.
+            settings (any): Extra argument to pass to self.write.
 
-    Args:
-        name (string): Name of .fbx file.
+        Returns:
+            (string): Path where file wrote to.
+        """
+        export_path = paths.getSelfExport(name + self.extension)
+        self._write(export_path, settings)
+        return export_path
 
-        preset (method): Preset to load for export options.
-    """
-    scene_path = pm.sceneName()
-    game_directory = store.get(pcfg.game_directory)
-    relative_directory = ''
+    def toGame(self, name, settings, *args, **kwargs):
+        """
+        Exports selected nodes to the game directory + the relative directory the file is found in with the given name.
 
-    if not game_directory:
-        pm.error('Game directory is not set. Please use "Piper>Export>Set Game Directory" to set export directory.')
+        Args:
+            name (string): Name of file.
 
-    if scene_path:
-        source_directory = os.path.dirname(scene_path)
-        art_directory = store.get(pcfg.art_directory)
+            settings (any): Extra argument to pass to self.write.
 
-        # gets the relative path using the art directory
-        if scene_path.startswith(art_directory):
-            relative_directory = source_directory.lstrip(art_directory)
-        else:
-            pm.warning(scene_path + ' is not in art directory! Exporting to game directory root.')
+        Returns:
+            (string): Path where file wrote to.
+        """
+        export_textures = kwargs.get('textures')
+        if export_textures:
+            self.textures()
 
-    export_path = os.path.join(game_directory, relative_directory, name + '.fbx').replace('\\', '/')
-    fbx(export_path, preset)
+        export_path = paths.getGameExport(name + self.extension)
+        self._write(export_path, settings)
 
+        return export_path
 
-def mesh(piper_meshes, export_method):
-    """
-    Exports all or selected piper mesh groups with the given export method.
+    @staticmethod
+    def textures():
+        shader = graphics.PiperShader()
+        textures = shader.getTextures()
 
-    Args:
-        piper_meshes (list): Piper meshes to export.
+        for texture in textures:
+            export_path = paths.getGameTextureExport(texture)
+            shutil.copyfile(texture, export_path)
+            print('Copying ' + texture + ' to ' + export_path)
 
-        export_method (method): Export function to run on each piper mesh found.
-    """
-    for piper_mesh in piper_meshes:
-        children = piper_mesh.getChildren()
+        print('Finished copying textures ' + '=' * 40)
+
+    def _mesh(self, piper_node, settings, textures):
+        """
+        Moves the contents to export out of the piper node and into the world, exports, and moves everything back.
+
+        Args:
+            piper_node (pm.nodetypes.Transform): Node to export its content.
+
+            settings (any): Settings to include with the export method.
+
+            textures (boolean): If True, will attempt to export textures.
+
+        Returns:
+            (string): Path where file wrote to.
+        """
+        children = piper_node.getChildren()
         pm.parent(children, w=True)
         pm.select(children)
-        export_method(piper_mesh.nodeName(), fbxpreset.mesh)
-        pm.parent(children, piper_mesh)
+        name = piper_node.nodeName()
+        export_path = self.export_method(name, settings, textures=textures)
+        pm.parent(children, piper_node)
+        return export_path
+
+    def mesh(self, piper_meshes=None, textures=True, ignore=None, warn=True):
+        """
+        Exports all or selected piper mesh groups.
+
+        Args:
+            piper_meshes (list): Piper meshes to export.
+
+            textures (boolean): If True, will attempt to export textures.
+
+            ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
+
+            warn (boolean): If True, warns the user of no nodes found.
+        """
+        if not piper_meshes:
+            piper_meshes = pipernode.get('piperMesh', ignore=ignore)
+
+        if not piper_meshes:
+            return pm.warning('No Piper Meshes found! Please select or make Piper Export Node') if warn else None
+
+        [self._mesh(piper_mesh, self.mesh_settings, textures) for piper_mesh in piper_meshes]
+
+    def skinnedMesh(self, skinned_meshes, textures=True, ignore=None, warn=True):
+        """
+        Exports all or selected piper skinned mesh groups.
+
+        Args:
+            skinned_meshes (list): Piper skinned mesh groups to export.
+
+            textures (boolean): If True, will attempt to export textures.
+
+            ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
+
+            warn (boolean): If True, warns the user of no nodes found.
+        """
+        if not skinned_meshes:
+            skinned_meshes = pipernode.get('piperSkinnedMesh', ignore=ignore)
+
+        if not skinned_meshes:
+            return pm.warning('No Piper Skin nodes found! Please select or make Piper Export Node') if warn else None
+
+        # export skinned meshes and delete any joints in the fbx file that have the delete attribute on them
+        for skinned_mesh in skinned_meshes:
+            export_path = self._mesh(skinned_mesh, self.skinned_mesh_settings, textures)
+            fbx_file = fbx_sdk.PiperFBX(export_path)
+            deleted = fbx_file.deleteNodesWithPropertyValue(pcfg.delete_node_attribute, True)
+            fbx_file.save() if deleted else fbx_file.close()
+
+    def animation(self, animations, ignore=None, warn=True):
+        pass
+
+    def piperNodes(self):
+        """
+        Exports all piper nodes from scene.
+        """
+        selected = pm.selected()  # store selection
+        piper_meshes = pipernode.get('piperMesh', ignore='piperSkinnedMesh')
+        piper_skinned_meshes = pipernode.get('piperSkinnedMesh', ignore='piperRig')
+        piper_animation = pipernode.get('piperAnimation')
+
+        if not piper_meshes and not piper_skinned_meshes and not piper_animation:
+            pm.warning('No Piper Nodes found! Please select or make a Piper Export node. (Piper>Nodes>Create)')
+            return
+
+        if piper_meshes:
+            self.mesh(piper_meshes, warn=False)
+
+        if piper_skinned_meshes:
+            self.skinnedMesh(piper_skinned_meshes, warn=False)
+
+        if piper_animation:
+            self.animation(piper_animation, warn=False)
+
+        pm.select(selected)  # selected originally selected nodes
+
+    @staticmethod
+    def onStart(export_path):
+        """
+        Called when the export is about happen, before writing the file.
+
+        Args:
+            export_path (string): Path to export to.
+        """
+        # make export directory if it does not exist already
+        export_directory = os.path.dirname(export_path)
+        pcu.validateDirectory(export_directory)
+
+    @staticmethod
+    def onFinished(export_path):
+        """
+        Called when the export is finished, after writing the file.
+
+        Args:
+            export_path (string): Path exported to, supposedly.
+        """
+        if not os.path.exists(export_path):
+            pm.error(export_path + ' does not exist! Did you specify the export_method of the class?')
+
+        size = pcu.getFileSize(export_path)
+        pm.displayInfo(size + ' exported to: ' + export_path)
 
 
-def skinnedMesh(skinned_meshes, export_method):
-    pass
+class FBX(Export):
+
+    def __init__(self):
+        super(FBX, self).__init__()
+        self.extension = '.fbx'
+        self.mesh_settings = fbxpreset.mesh
+        self.skinned_mesh_settings = fbxpreset.skinnedMesh
+
+    def write(self, export_path, preset):
+        # set the given preset and export
+        preset()
+        pm.FBXExport('-s', '-f', export_path)
 
 
-def animation(animations, export_method):
-    pass
+class FBXtoSelf(FBX):
+
+    def __init__(self):
+        super(FBXtoSelf, self).__init__()
+        self.export_method = self.toSelf
 
 
-def piperNodes(export_method):
-    """
-    Exports all piper nodes from scene.
+class FBXtoGame(FBX):
 
-    Args:
-        export_method (method): Export function to run for each piper node.
-    """
-    selected = pm.selected()  # store selection
-    piper_meshes = pipernode.get('piperMesh')
-    piper_skinned_meshes = pipernode.get('piperSkinnedMesh')
-    piper_animation = pipernode.get('piperAnimation')
-
-    if not piper_meshes and not piper_skinned_meshes and not piper_animation:
-        pm.warning('No Piper Nodes found! Please select or make a Piper Export node. (Piper>Nodes>Create)')
-        return
-
-    mesh(piper_meshes, export_method)
-    skinnedMesh(piper_skinned_meshes, export_method)
-    animation(piper_animation, export_method)
-    pm.select(selected)  # selected originally selected nodes
+    def __init__(self):
+        super(FBXtoGame, self).__init__()
+        self.export_method = self.toGame
 
 
-def piperNodesToGameAsFBX():
-    """
-    Convenience method for exporting all piper nodes to the set game directory as .fbx
-    """
-    piperNodes(fbxToGame)
+class OBJ(Export):
+
+    def __init__(self):
+        super(OBJ, self).__init__()
+        self.extension = '.obj'
+        self.mesh_settings = 'groups=1;ptgroups=1;materials=0;smoothing=1;normals=1'
+
+    def write(self, export_path, options):
+        pm.exportSelected(export_path, type='OBJexport', options=options)
+
+
+class OBJtoSelf(OBJ):
+
+    def __init__(self):
+        super(OBJtoSelf, self).__init__()
+        self.export_method = self.toSelf
+
+
+class OBJtoGame(OBJ):
+
+    def __init__(self):
+        super(OBJtoGame, self).__init__()
+        self.export_method = self.toGame
 
 
 def piperNodesToSelfAsFBX():
     """
     Convenience method for exporting all piper nodes to the current directory as .fbx
     """
-    piperNodes(fbxToSelf)
+    FBXtoSelf().piperNodes()
+
+
+def piperNodesToGameAsFBX():
+    """
+    Convenience method for exporting all piper nodes to the set game directory as .fbx
+    """
+    FBXtoGame().piperNodes()
+
+
+def piperMeshToSelfAsOBJ():
+    """
+    Convenience method for exporting piper mesh export nodes to the current directory as .obj
+    """
+    OBJtoSelf().mesh()

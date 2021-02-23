@@ -2,12 +2,14 @@
 
 import os
 import setup
-import maya.cmds as mc
+import maya.cmds
+import maya.utils
 
 
-if mc.about(batch=True):
+if maya.cmds.about(batch=True):
+    # skip launching pymel and if Maya is in standalone/headless/batch mode
+    # inherently, this also skips any UI setup for piper
     os.environ['MAYA_SKIP_USERSETUP_PY'] = '1'
     os.environ['PYMEL_SKIP_MEL_INIT'] = '1'
 else:
-    import pymel.mayautils as pmu
-    pmu.executeDeferred('pmu.executeDeferred(setup.mayaPiper)', lp=True)
+    maya.utils.executeDeferred(setup.mayaPiper)

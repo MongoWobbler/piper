@@ -43,6 +43,58 @@ def freezeTransformations(transform):
     pm.makeIdentity(transform, apply=True, t=True, r=True, s=True)
 
 
+def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, display=pm.error):
+    """
+    Validates the nodes given. If None given, will try to use selected nodes. Will throw error if validation fails.
+
+    Args:
+        nodes (collections.iterable): Nodes to validate.
+
+        minimum (int): Minimum amount of nodes that we need.
+
+        maximum (int): Maximum amount of nodes that we can operate on.
+
+        find (string): Type of node to look for if no nodes given and nothing selected.
+
+        parent (boolean): Used with the find kwarg. If True, will return the parent of the find type. Useful for shapes.
+
+        display (method): How to display a bad validation.
+
+    Returns:
+        (list): Nodes that are ready to be operated on.
+    """
+    # If user chooses not to display anything, we must pass an empty function
+    if not display:
+
+        def _nothing(*args):
+            pass  # using a function instead of a lambda one-liner because PEP-8
+
+        display = _nothing
+
+    if not nodes:
+        nodes = pm.selected()
+
+    if not nodes and find:
+        nodes = pm.ls(type=find)
+
+        if parent:
+            nodes = list({node.getParent() for node in nodes})
+
+    if not nodes:
+        display('Nothing selected!')
+        return []
+
+    if len(nodes) < minimum:
+        display('Not enough selected. Please select at least ' + str(minimum) + ' objects.')
+        return []
+
+    if 1 < maximum < len(nodes):
+        display('Too many objects selected. Please select up to ' + str(maximum) + ' objects.')
+        return []
+
+    return nodes
+
+
 def getRootParent(node):
     """
     Gets the top most parent of the given node. Note, it could be self.
@@ -215,10 +267,7 @@ def cycleManipulatorSpace():
     """
     Cycles through the different manipulator spaces. Usually parent, world, and object.
     """
-    if not pm.selected():
-        pm.warning('Please select something to switch the manipulator space.')
-        return
-
+    validateSelect()
     current_context = pm.currentCtx()
     context_title = pm.contextInfo(current_context, t=True)
 

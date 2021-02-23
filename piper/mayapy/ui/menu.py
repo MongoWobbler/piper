@@ -5,6 +5,9 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.ui.util as myui
+import piper.mayapy.rig.core as rig
+import piper.mayapy.rig.skin as skin
+import piper.mayapy.health as health
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.window as mywindow
@@ -69,6 +72,9 @@ class MayaExportMenu(PiperExportMenu):
     def exportToCurrentDirectory(self):
         export.piperNodesToSelfAsFBX()
 
+    def exportMeshesToCurrentAsObj(self):
+        export.piperMeshToSelfAsOBJ()
+
     def setArtDirectory(self):
         dialog = QtWidgets.QFileDialog()
         starting_directory = pm.workspace(q=True, dir=True)
@@ -100,6 +106,26 @@ class MayaNodesMenu(PiperMenu):
     def build(self):
         self.add('Create Mesh', pipernode.createMesh)
         self.add('Create Skinned Mesh', pipernode.createSkinnedMesh)
+
+
+class MayaBonesMenu(PiperMenu):
+
+    def __init__(self, title='Bones', parent=None):
+        super(MayaBonesMenu, self).__init__(title, parent=parent)
+        self.binder = skin.Binder()
+        self.build()
+
+    def build(self):
+        self.add('Create Joint at Pivot', rig.createJointAtPivot)
+        self.add('Parent Joints', rig.parentTransforms)
+        self.add('Mirror Translate', rig.mirrorTranslate)
+        self.add('Mirror Rotate', rig.mirrorRotate)
+        self.add('Add Delete Attribute', rig.addDeleteAttribute)
+        self.addSeparator()
+        self.add('Unbind', self.binder.unbind)
+        self.add('Rebind', self.binder.rebind)
+        self.addSeparator()
+        self.add('Health Check', health.skeleton)
 
 
 class MayaGraphicsMenu(PiperMenu):
@@ -158,6 +184,7 @@ def create():
     piper_menu.scene_menu = MayaSceneMenu()
     piper_menu.nodes_menu = MayaNodesMenu()
     piper_menu.export_menu = MayaExportMenu()
+    piper_menu.bones_menu = MayaBonesMenu()
     piper_menu.graphics_menu = MayaGraphicsMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()

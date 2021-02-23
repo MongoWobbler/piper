@@ -7,12 +7,14 @@ import piper.mayapy.convert as convert
 import piper.mayapy.rig.createshape as createshape
 
 
-def get(node_type):
+def get(node_type, ignore=None):
     """
     Gets the selected given node type or all the given node types in the scene if none selected.
 
     Args:
         node_type (string): Type of node to get.
+
+        ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
 
     Returns:
         (list) All nodes of the given node type.
@@ -30,6 +32,10 @@ def get(node_type):
     # search the whole scene for the piper node
     else:
         piper_nodes = pm.ls(type=node_type)
+
+    # don't include any nodes that are a child of the given ignore type
+    if ignore:
+        piper_nodes = [node for node in piper_nodes if not myu.getFirstTypeParent(node, ignore)]
 
     return piper_nodes
 

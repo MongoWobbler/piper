@@ -3,6 +3,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+!*.pyd
 *$py.class
 
 # C extensions
@@ -187,6 +188,7 @@ Debug/
 
 maya/plug-ins/CharcoalEditor*.mll
 settings/
+temp/
 
 # builds
 maya/cpp/Piper.dir

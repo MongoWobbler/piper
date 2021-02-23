@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import re
 import sys
 import json
 import inspect
@@ -10,6 +11,7 @@ import sysconfig
 import functools
 import subprocess
 import webbrowser
+import piper_config as pcfg
 
 
 def getCurrentPath():
@@ -61,6 +63,25 @@ def getApp():
         return 'UE4'
     else:
         raise ValueError('Current compatible software is Maya or Houdini')
+
+
+def getFileSize(path, accuracy=3, string=True):
+    """
+    Gets the size of the given file at the path in megabytes.
+
+    Args:
+        path (string): Path of file to get size of.
+
+        accuracy (int): How many decimal points to round up to.
+
+        string (boolean): If true, will return a string, else a float.
+
+    Returns:
+        (string or float): Size of file in Megabytes.
+    """
+    size = os.path.getsize(path)
+    size = round(size / 1048576.0, accuracy)  # 1048576 is (1024 * 1024).  1024 is the amount of bytes in a kilobyte
+    return str(size) + ' MB' if string else size
 
 
 def openWithOS(path):
@@ -150,6 +171,23 @@ def removeSuffixes(word, suffixes):
         word = word.rstrip(suffix)
 
     return word
+
+
+def swapText(text, first=pcfg.left_suffix, second=pcfg.right_suffix):
+    """
+    Swaps the given first and seconds strings with each other in the given text.
+
+    Args:
+        text (string): Text to look for given first and second string to swap with each other.
+
+        first (string): Text to swap with the second string.
+
+        second (string): Text to swap with the first string.
+
+    Returns:
+        (string): Text with strings swapped if they were found. Else same text as before.
+    """
+    return re.sub(r'{}|{}'.format(first, second), lambda w: first if w.group() == second else second, text)
 
 
 def flatten(laundry):

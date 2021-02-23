@@ -5,6 +5,7 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.rig.core as rig
+import piper.mayapy.pipermath as pipermath
 
 
 def _connect(transform, target, space):
@@ -198,7 +199,7 @@ def switchFKIK(switcher, key=True, match_only=False):
         if key:
             pm.setKeyframe(ik_controls + [switcher], time=current_frame - 1)
 
-        for transform, ik_control in zip(transforms, ik_controls[1:]):
+        for transform, ik_control in zip(transforms, ik_controls[2:]):
 
             # start of chain
             if transform == transforms[0]:
@@ -229,3 +230,25 @@ def switchFKIK(switcher, key=True, match_only=False):
 
     if not match_only:
         switcher.attr(pcfg.fk_ik_attribute).set(new_fk_ik_value)
+
+
+def resetDynamicPivot(pivot_control, key=True):
+    """
+    Resets the position of the dynamic pivot. Maintains world position of control driven by pivot.
+
+    Args:
+        pivot_control (pm.nodetypes.Transform): Pivot control that needs to be reset to zero position.
+
+        key (boolean): If True, will key the pivot and parent control on the previous frame.
+    """
+    parent = pivot_control.getParent()
+    matrix = parent.worldMatrix.get()
+
+    if key:
+        current_frame = pm.currentTime(q=True)
+        pm.setKeyframe(pivot_control, time=current_frame - 1)
+        pm.setKeyframe(parent, time=current_frame - 1)
+
+    pipermath.zeroOut(pivot_control)
+    pm.xform(parent, ws=True, m=matrix)
+    parent.r.set(0, 0, 0)
