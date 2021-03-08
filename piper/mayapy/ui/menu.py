@@ -2,17 +2,20 @@
 
 import os
 import pymel.core as pm
+
 import piper_config as pcfg
 import piper.core.util as pcu
-import piper.mayapy.ui.util as myui
 import piper.mayapy.rig.core as rig
 import piper.mayapy.rig.skin as skin
+import piper.mayapy.rig.curve as curve
 import piper.mayapy.health as health
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
+import piper.mayapy.ui.util as myui
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.attribute as attribute
 
 from PySide2 import QtWidgets
 from piper.mayapy.pipe.store import store
@@ -120,7 +123,8 @@ class MayaBonesMenu(PiperMenu):
         self.add('Parent Joints', rig.parentTransforms)
         self.add('Mirror Translate', rig.mirrorTranslate)
         self.add('Mirror Rotate', rig.mirrorRotate)
-        self.add('Add Delete Attribute', rig.addDeleteAttribute)
+        self.add('Assign Labels', rig.assignLabels)
+        self.add('Add Delete Attribute', attribute.addDelete)
         self.addSeparator()
         self.add('Unbind', self.binder.unbind)
         self.add('Rebind', self.binder.rebind)
@@ -139,6 +143,16 @@ class MayaGraphicsMenu(PiperMenu):
         self.add('Update Materials', graphics.updateMaterials)
 
 
+class MayaOtherMenu(PiperMenu):
+
+    def __init__(self, title='Other', parent=None):
+        super(MayaOtherMenu, self).__init__(title, parent=parent)
+        self.build()
+
+    def build(self):
+        self.add('Create Curve(s) From Cross Section', curve.crossSection)
+
+
 class MayaSettingsMenu(PiperMenu):
 
     def __init__(self, title='Settings', parent=None):
@@ -148,9 +162,12 @@ class MayaSettingsMenu(PiperMenu):
     def build(self):
         self.addCheckbox('Use Piper Units', store.get(pcfg.use_piper_units), self.onUseUnitsPressed)
         self.addCheckbox('Export In Ascii', store.get(pcfg.export_ascii), self.onExportInAsciiPressed)
+        self.addCheckbox('Unload Unwanted Plug-ins', store.get(pcfg.unload_unwanted), self.onUnloadUnwantedPressed)
         self.add('Set HDR Image', self.onSetHdrImagePressed)
         self.addSeparator()
+        self.add('Assign Hotkeys', settings.hotkeys)
 
+        self.addSeparator()
         self.add('Uninstall Piper', self.uninstall)
 
     @staticmethod
@@ -160,6 +177,10 @@ class MayaSettingsMenu(PiperMenu):
     @staticmethod
     def onExportInAsciiPressed(state):
         store.set(pcfg.export_ascii, state)
+
+    @staticmethod
+    def onUnloadUnwantedPressed(state):
+        store.set(pcfg.unload_unwanted, state)
 
     def onSetHdrImagePressed(self):
         dialog = QtWidgets.QFileDialog()
@@ -186,6 +207,7 @@ def create():
     piper_menu.export_menu = MayaExportMenu()
     piper_menu.bones_menu = MayaBonesMenu()
     piper_menu.graphics_menu = MayaGraphicsMenu()
+    piper_menu.other_menu = MayaOtherMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()
 

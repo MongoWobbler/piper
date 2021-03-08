@@ -5,14 +5,15 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.rig.core as rig
 import piper.mayapy.rig.space as space
+import piper.mayapy.rig.curve as curve
 import piper.mayapy.rig.control as control
-import piper.mayapy.rig.createshape as createshape
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.pipermath as pipermath
+import piper.mayapy.attribute as attribute
 import piper.mayapy.convert as convert
 
 
-def FK(start, end=None, parent=None, axis=None, shape=createshape.circle):
+def FK(start, end=None, parent=None, axis=None, shape=curve.circle):
     """
     Creates FK controls for the transform chain deduced by the start and end transforms.
 
@@ -47,7 +48,7 @@ def FK(start, end=None, parent=None, axis=None, shape=createshape.circle):
     return controls
 
 
-def IK(start, end, parent=None, shape=createshape.ring):
+def IK(start, end, parent=None, shape=curve.ring):
     """
     Creates IK controls and IK RP solver and for the given start and end joints.
 
@@ -87,29 +88,29 @@ def IK(start, end, parent=None, shape=createshape.ring):
         # start
         if transform == transforms[0]:
             ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape)
-            rig.lockAndHide(ctrl.scale)
+            attribute.lockAndHide(ctrl.scale)
             scale_ctrl, _ = control.create(transform,
                                            name=name + '_scale',
                                            axis=axis,
                                            scale=0.75,
                                            parent=ctrl,
-                                           shape=createshape.circle,
+                                           shape=curve.circle,
                                            matrix_offset=False)
             rig.parentMatrixConstraint(transform, scale_ctrl, t=False, s=False)
-            rig.lockAndHideCompound(scale_ctrl, ['t', 'r'])
+            attribute.lockAndHideCompound(scale_ctrl, ['t', 'r'])
             scale_ctrl.s >> transform.s
             controls.append(scale_ctrl)
 
             # dynamic pivot
-            pivot_ctrl, _ = control.create(start, shape=createshape.lever, name=name + '_pivot',
+            pivot_ctrl, _ = control.create(start, shape=curve.lever, name=name + '_pivot',
                                            axis=axis, parent=ctrl, matrix_offset=False)
             pivot_ctrl.translate >> ctrl.rotatePivot
-            rig.nonKeyableCompound(pivot_ctrl, ['r', 's'])
+            attribute.nonKeyableCompound(pivot_ctrl, ['r', 's'])
             controls.append(pivot_ctrl)
 
         # mid
         elif transform == mid:
-            ctrl, _ = control.create(transform, createshape.orb, name, axis, parent=control_parent, matrix_offset=False)
+            ctrl, _ = control.create(transform, curve.orb, name, axis, parent=control_parent, matrix_offset=False)
             translation, rotate, scale = rig.calculatePoleVectorTransform(start, mid, end)
             pm.xform(ctrl, t=translation, ro=rotate, s=scale)
             mid_control = ctrl
@@ -155,12 +156,12 @@ def IK(start, end, parent=None, shape=createshape.ring):
     pm.parent(mid_control, piper_ik)
     rig.transformToOffsetMatrix(mid_control)
     space.create([start_control], mid_control)
-    rig.lockAndHideCompound(mid_control, ['r', 's'])
+    attribute.lockAndHideCompound(mid_control, ['r', 's'])
 
     return controls
 
 
-def FKIK(start, end, parent=None, axis=None, fk_shape=createshape.circle, ik_shape=createshape.ring):
+def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=curve.ring):
     """
     Creates a FK and IK controls that drive the chain from start to end.
 
@@ -192,10 +193,10 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=createshape.circle, ik_sha
     switcher_control, _ = control.create(end,
                                          name=end.nodeName() + pcfg.switcher_suffix,
                                          axis=axis,
-                                         shape=createshape.cube,
+                                         shape=curve.cube,
                                          scale=0.5)
 
-    rig.addSeparator(switcher_control)
+    attribute.addSeparator(switcher_control)
     switcher_control.addAttr(pcfg.fk_ik_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
     switcher_control.addAttr(pcfg.switcher_fk, dt='string', k=False, h=True, s=True)
     switcher_control.addAttr(pcfg.switcher_ik, dt='string', k=False, h=True, s=True)
@@ -204,7 +205,7 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=createshape.circle, ik_sha
     switcher_control.attr(pcfg.switcher_ik).set(', '.join([ik.nodeName() for ik in ik_controls]))
     switcher_control.attr(pcfg.switcher_transforms).set(', '.join([node.nodeName() for node in original_transforms]))
     end.worldMatrix >> switcher_control.offsetParentMatrix
-    rig.nonKeyableCompound(switcher_control)
+    attribute.nonKeyableCompound(switcher_control)
 
     # use spaces to drive original chain with fk and ik transforms and hook up switcher attributes
     for original_transform, fk_transform, ik_transform in zip(original_transforms, fk_transforms, ik_transforms):

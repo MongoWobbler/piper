@@ -2,7 +2,6 @@
 
 import pymel.core as pm
 
-
 COLORS_INDEX = {0: 'default',
                 1: 'black',
                 2: 'dark grey',
@@ -49,6 +48,21 @@ AXES = {'x': (1, 0, 0),
         'ny': (0, -1, 0),
         'nz': (0, 0, -1)}
 
+JOINT_LABELS = {None: 0,
+                'root': 1,
+                'thigh': 2,
+                'calf': 3,
+                'foot': 4,
+                'ball': 5,
+                'spine': 6,
+                'neck': 7,
+                'head': 8,
+                'clavicle': 9,
+                'upperarm': 10,
+                'lowerarm': 11,
+                'hand': 12,
+                'other': 18}
+
 
 def reverse(dictionary):
     """
@@ -61,6 +75,20 @@ def reverse(dictionary):
         (dictionary): Reversed dict.
     """
     return {b: a for a, b in dictionary.items()}
+
+
+def jointNameToLabel(name):
+    """
+    Get the label int associated with the given joint name.
+
+    Args:
+        name (string): Name of joint.
+
+    Returns:
+        (int)
+    """
+    label = JOINT_LABELS.get(name)
+    return label if label else JOINT_LABELS[None]
 
 
 def colorToInt(color):

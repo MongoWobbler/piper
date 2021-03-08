@@ -1,0 +1,11 @@
+global proc AEtensionNodeTemplate( string $nodeName )
+{
+    editorTemplate -beginScrollLayout;
+ 
+        editorTemplate -beginLayout "Color Remapping" -collapse 0;
+            AEaddRampControl( $nodeName + ".color" );
+        editorTemplate -endLayout;
+ 
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

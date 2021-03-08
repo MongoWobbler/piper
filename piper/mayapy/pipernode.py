@@ -4,7 +4,7 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-import piper.mayapy.rig.createshape as createshape
+import piper.mayapy.rig.curve as curve
 
 
 def get(node_type, ignore=None):
@@ -27,7 +27,10 @@ def get(node_type, ignore=None):
 
         # traverse hierarchy for piper nodes
         if not piper_nodes:
-            piper_nodes = {myu.getFirstTypeParent(node, node_type) for node in selected}
+            piper_nodes = set()
+            for node in selected:
+                first_type_parent = myu.getFirstTypeParent(node, node_type)
+                piper_nodes.add(first_type_parent) if first_type_parent else None
 
     # search the whole scene for the piper node
     else:
@@ -68,7 +71,7 @@ def create(node_type, color=None, name=None, parent=None):
     return piper_node
 
 
-def createIK(name=None, control_shape=createshape.circle):
+def createIK(name=None, control_shape=curve.circle):
     """
     Creates piper IK transform with given control shape curve
 

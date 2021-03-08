@@ -6,6 +6,7 @@ import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
 import piper.mayapy.pipermath as pipermath
+import piper.mayapy.attribute as attribute
 
 
 def transformToOffsetMatrix(transform):
@@ -18,117 +19,6 @@ def transformToOffsetMatrix(transform):
     """
     transform.offsetParentMatrix.set(transform.matrix.get())
     pipermath.zeroOut(transform)
-
-
-def lockAndHide(attribute):
-    """
-    Locks and hides the given attribute.
-
-    Args:
-        attribute (pm.nodetypes.Attribute): Attribute to lock and hide.
-    """
-    pm.setAttr(attribute, k=False, lock=True)
-
-
-def nonKeyable(attribute):
-    """
-    Makes the given attribute non keyable in the channel box.
-
-    Args:
-        attribute (pm.nodetypes.Attribute): Attribute to make not keyable.
-    """
-    pm.setAttr(attribute, k=False, cb=True)
-
-
-def attributeCompound(transform, action, attributes=None, axes=None):
-    """
-    Locks and hides several compound attributes with several axis.
-
-    Args:
-        transform (PyNode): Transform with attribute(s) to hide all of its the given axis.
-
-        action (method): action that will be performed on given transform attributes.
-
-        attributes (list): Compound attributes to hide. If None given, will hide t, r, and s.
-
-        axes (list): All axis to hide.
-    """
-    if not attributes:
-        attributes = ['t', 'r', 's']
-
-    if not axes:
-        axes = ['x', 'y', 'z']
-
-    [action(transform.attr(attribute + axis)) for axis in axes for attribute in attributes]
-
-
-def lockAndHideCompound(transform, attributes=None, axes=None):
-    """
-    Locks and hides several compound attributes with several axis.
-
-    Args:
-        transform (PyNode): Transform with attribute(s) to hide all of its the given axis.
-
-        attributes (list): Compound attributes to hide. If None given, will hide t, r, and s.
-
-        axes (list): All axis to hide.
-    """
-    attributeCompound(transform, lockAndHide, attributes=attributes, axes=axes)
-
-
-def nonKeyableCompound(transform, attributes=None, axes=None):
-    """
-    Makes given transform's given attributes with given axis non keyable
-
-    Args:
-        transform (PyNode): Transform with attribute(s) to make non keyable for given attributes and axis.
-
-        attributes (list): Compound attributes to make non keyable. If None given, will use t, r, and s.
-
-        axes (list): All axis to make non keyable.
-    """
-    attributeCompound(transform, nonKeyable, attributes=attributes, axes=axes)
-
-
-def addSeparator(transform):
-    """
-    Adds a '_' attribute to help visually separate attributes in channel box to specified transform.
-
-    Args:
-        transform (string or PyNode): transform node to add a '_' attribute to.
-    """
-    transform = pm.PyNode(transform)
-    underscore_count = []
-    underscore = '_'
-
-    # get all the attributes with '_' in the transform's attributes
-    for full_attribute in transform.listAttr():
-        attribute = full_attribute.split(str(transform))
-        if '_' in attribute[1]:
-            underscore_count.append(attribute[1].count('_'))
-
-    # make an underscore that is one '_' longer than the longest underscore
-    if underscore_count:
-        underscore = (underscore * max(underscore_count)) + underscore
-
-    # make the attribute
-    pm.addAttr(transform, longName=underscore, k=True, at='enum', en='_')
-    transform.attr(underscore).lock()
-
-
-def addDeleteAttribute(transforms=None):
-    """
-    Adds a "delete" attribute to the given transforms that marks them to be delete on export.
-
-    Args:
-        transforms (list): List of pm.nodetypes.transform to add "delete" attribute to.
-    """
-    transforms = myu.validateSelect(transforms, display=pm.warning)
-
-    for transform in transforms:
-        addSeparator(transform)
-        transform.addAttr(pcfg.delete_node_attribute, at='bool', k=True, dv=1, max=1, min=1)
-        nonKeyable(transform.delete)
 
 
 def getChain(start, end=None):
@@ -281,6 +171,8 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
                 options['sr'] = [pcfg.left_suffix, pcfg.right_suffix]
             elif name.endswith(pcfg.right_suffix):
                 options['sr'] = [pcfg.right_suffix, pcfg.left_suffix]
+            else:
+                options['sr'] = ['', '']
 
         mirrored_joint = pm.mirrorJoint(transform, **options)[0]
         mirrored_joint = pm.PyNode(mirrored_joint)
@@ -403,7 +295,7 @@ def poleVectorMatrixConstraint(ik_handle, control):
     if ik_handle.nodeType() != 'ikHandle':
         pm.error(ik_handle.nodeName() + ' is not an IK Handle!')
 
-    addSeparator(control)
+    attribute.addSeparator(control)
     pm.addAttr(control, at='float', ln='poleVectorWeight', dv=1, min=0, max=1, k=True, w=True, r=True)
     joint = pm.PyNode(pm.ikHandle(ik_handle, q=True, startJoint=True))
 
@@ -512,6 +404,96 @@ def getOrientAxis(start, target):
     return closest_axis
 
 
+def orientTransforms(start, end, aim=None, up=None, world_up=None):
+    """
+    Orients the chain starting from given start and ending at given end to aim at the child joint with the
+    given aim axis.
+
+    Args:
+        start (pm.nodetypes.Transform): Top parent of the chain.
+
+        end (pm.nodetypes.Transform): The child to end search at. If none given, will return only the given start.
+
+        aim (list): Axis to aim at
+
+        up (list): Axis to aim at the given world direction.
+
+        world_up (list): Axis up will try to aim at.
+    """
+    transforms = getChain(start, end)
+
+    if aim is None:
+        aim = [1, 0, 0]
+
+    if up is None:
+        up = [1, 0, 0]
+
+    if world_up is None:
+        world_up = [1, 0, 0]
+
+    for i, transform in enumerate(transforms):
+        if i != 0:
+            pm.parent(transform, transforms[i - 1])
+
+        if transform.hasAttr('jointOrient'):
+            transform.jointOrient.set((0, 0, 0))
+
+        if transform == transforms[-1]:
+            continue
+
+        constraint = pm.aimConstraint(transforms[i + 1], transform, aim=aim, u=up, wu=world_up, mo=False, wut='vector')
+        pm.delete(constraint)
+
+
+def orientTransformsWithUpObjects(transform_start=None, up_start=None, aim=None, up_axis=None):
+    """
+    Orients the given transforms by aiming the given axis to their child and the up to the respective up transform.
+
+    Args:
+        transform_start (pm.nodetypes.Transform): Start of the chain to orient.
+
+        up_start (pm.nodetypes.Transform): Start of the chain that transforms will have their up axis aim at.
+
+        aim (list): Axis vector to aim towards child joint.
+
+        up_axis (list): Axis vector to aim towards the up object.
+    """
+
+    if not transform_start:
+        transform_start = pm.selected()[0]
+
+    if not up_start:
+        up_start = pm.selected()[-1]
+
+    if aim is None:
+        aim = [0, 1, 0]
+
+    if up_axis is None:
+        up_axis = [1, 0, 0]
+
+    transforms = transform_start.getChildren(ad=True)
+    uppers = up_start.getChildren(ad=True)
+    transforms.append(transform_start)
+    uppers.append(up_start)
+
+    transforms.reverse()
+    uppers.reverse()
+    pm.parent(transforms, w=True)
+
+    for i, (transform, up) in enumerate(zip(transforms, uppers)):
+        if i != 0:
+            pm.parent(transform, transforms[i - 1])
+
+        if transform.hasAttr('jointOrient'):
+            transform.jointOrient.set((0, 0, 0))
+
+        if transform == transforms[-1]:
+            continue
+
+        constraint = pm.aimConstraint(transforms[i + 1], transform, aim=aim, u=up_axis, wuo=up, mo=False, wut='object')
+        pm.delete(constraint)
+
+
 def createJointAtPivot():
     """
     Creates a joint at the current manipulator pivot point.
@@ -534,45 +516,33 @@ def createJointAtPivot():
         pm.joint(p=myu.getManipulatorPosition(selection), n=name)
 
 
-def getNextAvailableIndexFromTargetMatrix(node, start_index=0):
+def assignLabels(joints=None):
     """
-    Gets the first available index in which the target matrix is open and equal to the identity matrix.
-    Usually used in matrix blend nodes.
+    Assigns labels and sides to the given joints based on their names.
 
     Args:
-        node (PyNode): Node to get target[i].targetMatrix of.
-
-        start_index (integer): index to start searching for the available target matrix.
-
-    Returns:
-        (Attribute): First available target attribute.
+        joints (list): Joints to assign labels to.
     """
-    i = start_index
-    max_iterations = 1000000
+    joints = myu.validateSelect(joints, find='joint')
 
-    while i < max_iterations:
-        attribute = node.attr('target[{}].targetMatrix'.format(str(i)))
-        plug = pm.connectionInfo(attribute, sfd=True)
-        if not plug and attribute.get() == pm.dt.Matrix():
-            return i
+    for joint in joints:
+        has_side = False
+        joint_name = joint.nodeName()
 
-        i += 1
+        if joint_name.endswith(pcfg.left_suffix):
+            has_side = True
+            joint.side.set(1)
+            joint_name = pcu.removeSuffixes(joint_name, pcfg.left_suffix)
+        elif joint_name.endswith(pcfg.right_suffix):
+            has_side = True
+            joint.side.set(2)
+            joint_name = pcu.removeSuffixes(joint_name, pcfg.right_suffix)
 
-    return 0
-
-
-def getNextAvailableTarget(node, start_index=0):
-    """
-    Gets the first available target attribute that is equal to the identity matrix.
-    Usually used in matrix blend nodes.
-
-    Args:
-        node (PyNode): Node to get target[i].targetMatrix of.
-
-        start_index (integer): index to start searching for the available target matrix.
-
-    Returns:
-        (Attribute): First available target attribute.
-    """
-    i = getNextAvailableIndexFromTargetMatrix(node, start_index)
-    return node.attr('target[{}]'.format(str(i)))
+        # have to do string "type" because type is a built-in python function
+        if has_side:
+            label = convert.jointNameToLabel('other')
+            joint.attr('type').set(label)
+            joint.otherType.set(joint_name)
+        else:
+            label = convert.jointNameToLabel(joint_name)
+            joint.attr('type').set(label)

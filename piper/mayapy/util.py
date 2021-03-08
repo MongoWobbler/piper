@@ -1,5 +1,6 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+import maya.OpenMaya as om
 import pymel.core as pm
 
 
@@ -33,14 +34,19 @@ def isAltHeld():
     return False if pm.about(batch=True) else (pm.getModifiers() & 8) > 0
 
 
-def freezeTransformations(transform):
+def freezeTransformations(transform, history=True):
     """
     Convenience method for making current transform the identity matrix.
 
     Args:
         transform (string or PyNode): Transform to freeze transformations on
+
+        history (boolean): If True, will delete construction history of given transform.
     """
     pm.makeIdentity(transform, apply=True, t=True, r=True, s=True)
+
+    if history:
+        pm.delete(transform, ch=True)
 
 
 def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, display=pm.error):
@@ -54,7 +60,7 @@ def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, di
 
         maximum (int): Maximum amount of nodes that we can operate on.
 
-        find (string): Type of node to look for if no nodes given and nothing selected.
+        find (string): Type of node to look for if no nodes given and nothing selected. Will also filter for these only.
 
         parent (boolean): Used with the find kwarg. If True, will return the parent of the find type. Useful for shapes.
 
@@ -73,6 +79,9 @@ def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, di
 
     if not nodes:
         nodes = pm.selected()
+
+    if find and not parent:
+        nodes = pm.ls(nodes, type=find)
 
     if not nodes and find:
         nodes = pm.ls(type=find)
@@ -222,6 +231,53 @@ def getSkinnedMeshes(skin_clusters):
         skin_info[root_joint] = skin_info[root_joint] | geometry if root_joint in skin_info else geometry
 
     return skin_info
+
+
+def getVertexPositions(transform_name):
+    """
+    Gets all the vertex positions the given transforms has.
+    Oddly enough, maya commands are faster than the maya python api.
+    https://www.fevrierdorian.com/blog/post/2011/09/27/Quickly-retrieve-vertex-positions-of-a-Maya-mesh-%28English-Translation%29
+
+    Args:
+        transform_name (string): Name of transform to get vertices of
+
+    Returns:
+        (list): Vertex positions.
+    """
+    positions = pm.xform('{}.vtx[*]'.format(transform_name), q=True, ws=True, t=True)
+    return zip(positions[0::3], positions[1::3], positions[2::3])
+
+
+def getVerticesAtHeight(mesh_name, height):
+    """
+    Gets all the vertices that are at the given height (y-axis).
+
+    Args:
+        mesh_name (string): Name of mesh to find vertices at given y value
+
+        height (float): Y axis value to find vertices that have that same y value.
+
+    Returns:
+        (list): mesh_name.vtx[i] of all vertices that have given height in y axis.
+    """
+    # Get Api MDagPath for object
+    vertices = []
+    mesh_path = om.MDagPath()
+    mesh_selection = om.MSelectionList()
+    mesh_selection.add(mesh_name)
+    mesh_selection.getDagPath(0, mesh_path)
+
+    # Iterate over all the mesh vertices and get vertices at the given height
+    vertex_i = om.MItMeshVertex(mesh_path)
+    while not vertex_i.isDone():
+
+        if vertex_i.position(om.MSpace.kWorld).y == height:
+            vertices.append(mesh_name + '.vtx[' + str(vertex_i.index()) + ']')
+
+        vertex_i.next()
+
+    return vertices
 
 
 def getManipulatorPosition(transform):

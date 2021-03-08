@@ -3,11 +3,11 @@
 #       Visual Studio 2017
 #
 # To build visual studio project:
-#       cd piper/mayacpp
+#       cd piper/maya/cpp
 #       cmake -G "Visual Studio 15 2017 Win64" -DMAYA_VERSION=2020 ./Source
 #
 # Once that is done, you can build the .mll by running the following:
-#       cd piper/mayacpp
+#       cd piper/maya/cpp
 #       cmake --build . --config Release
 
 cmake_minimum_required(VERSION 3.1)
@@ -27,6 +27,8 @@ set(SOURCE_FILES
         "PiperIK.cpp"
         "PiperIK.h"
         "util.h"
+        "TensionNode.cpp"
+        "TensionNode.h"
         )
 
 find_package(Maya REQUIRED)

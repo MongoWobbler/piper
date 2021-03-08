@@ -54,6 +54,7 @@ class PiperSceneMenu(PiperMenu):
         self.add('Open Current Scene in OS', self.openSceneInOS)
         self.add('Open Art Directory in OS', self.openArtDirectoryInOS)
         self.add('Open Game Directory in OS', self.openGameDirectoryInOS)
+        self.add('Open Piper Directory in OS', self.openPiperDirectoryInOS)
         self.addSeparator()
 
         self.add('Copy Current Scene to Clipboard', self.copyCurrentSceneToClipboard)
@@ -70,6 +71,11 @@ class PiperSceneMenu(PiperMenu):
 
     def openGameDirectoryInOS(self):
         pass
+
+    @staticmethod
+    def openPiperDirectoryInOS():
+        piper_directory = pcu.getPiperDirectory()
+        pcu.openWithOS(piper_directory)
 
     def copyCurrentSceneToClipboard(self):
         pass
@@ -126,6 +132,7 @@ class _PiperMainMenu(PiperMenu):
         self.export_menu = None
         self.bones_menu = None
         self.graphics_menu = None
+        self.other_menu = None
         self.settings_menu = None
 
     def build(self):
@@ -134,6 +141,7 @@ class _PiperMainMenu(PiperMenu):
         self.addMenuP(self.export_menu)
         self.addMenuP(self.bones_menu)
         self.addMenuP(self.graphics_menu)
+        self.addMenuP(self.other_menu)
         self.addMenuP(self.settings_menu)
         self.addSeparator()
 
@@ -144,7 +152,7 @@ class _PiperMainMenu(PiperMenu):
         self.deleteLater()
 
         import setup
-        setup.mayaPiper()
+        setup.piperTools()
 
 
 def getPiperMainMenu():

@@ -24,6 +24,57 @@ def returnToBindPose(joints=None):
     return poses
 
 
+def createTensionDisplay(transforms=None, shape_display=pm.warning, skin_display=pm.warning):
+    """
+    Creates tension nodes and hooks them up to mesh by intercepting the skin cluster.
+
+    Args:
+        transforms (list): Transforms with mesh shapes that will get tension nodes hooked up.
+
+        shape_display (method): Error to display if there are not two shapes.
+
+        skin_display (method): Error to display if no skin clusters found.
+
+    Returns:
+        (list): Tension nodes created.
+    """
+    tension_nodes = []
+    transforms = myu.validateSelect(transforms, find='mesh', parent=True)
+
+    for transform in transforms:
+        original_shape = None
+        deformed_shape = None
+        skin_cluster = None
+        shapes = transform.getShapes()
+
+        if len(shapes) != 2:
+            shape_display('Need two shapes! A deformed shape and an original one.')
+            continue
+
+        # get skin cluster and figure out which shape is the original and which is the deformed
+        for i, shape in enumerate(shapes):
+            skin_cluster = shape.listHistory(type='skinCluster')
+            if skin_cluster:
+                skin_cluster = skin_cluster[0]
+                deformed_shape = shape
+                original_shape = shapes[0] if i == 1 else shapes[1]
+                break
+
+        if not skin_cluster:
+            skin_display('No skin cluster found.')
+            continue
+
+        # create tension node and hook it up with necessary data
+        tension = pm.createNode('tensionNode', name=transform.nodeName() + '_tension')
+        skin_cluster.outputGeometry[0] >> tension.deformedShape
+        original_shape.worldMesh >> tension.origShape
+        deformed_shape.inMesh.disconnect()
+        tension.out >> deformed_shape.inMesh
+        tension_nodes.append(tension)
+
+    return tension_nodes
+
+
 class Binder(object):
 
     def __init__(self):

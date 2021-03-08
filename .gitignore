@@ -187,6 +187,8 @@ Debug/
 # PIPER SPECIFIC IGNORE START
 
 maya/plug-ins/CharcoalEditor*.mll
+maya/plug-ins/MayaLiveLinkPlugin*.mll
+maya/plug-ins/MayaLiveLinkUI*.py
 settings/
 temp/
 

@@ -12,4 +12,4 @@ if maya.cmds.about(batch=True):
     os.environ['MAYA_SKIP_USERSETUP_PY'] = '1'
     os.environ['PYMEL_SKIP_MEL_INIT'] = '1'
 else:
-    maya.utils.executeDeferred(setup.mayaPiper)
+    maya.utils.executeDeferred(setup.piperTools)

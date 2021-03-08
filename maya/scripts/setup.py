@@ -10,7 +10,7 @@ if piper_directory not in sys.path:
     sys.path.append(piper_directory)
 
 
-def mayaPiper():
+def piperTools():
     """
     Loads all piper plug-ins, loads piper settings, creates the menu, and welcomes the user
     """

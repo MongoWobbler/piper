@@ -1,5 +1,8 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+# Documentation
+documentation_link = 'https://github.com/MongoWobbler/piper'
+
 # Maths
 axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
 
@@ -14,13 +17,33 @@ game_directory = 'game_directory'
 use_piper_units = 'use_piper_units'
 export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
+unload_unwanted = 'unload_unwanted_plugins'
 store_defaults = {art_directory: None,
                   game_directory: None,
                   use_piper_units: True,
+                  unload_unwanted: True,
                   export_ascii: 0,
                   hdr_image_path: ''}
 
+# Maya unwanted plug-ins
+maya_unwanted_plugins = ['xgenToolkit',
+                         'AbcExport',
+                         'AbcImport',
+                         'hairPhysicalShader',
+                         'mayaCharacterization',
+                         'mayaHIK',
+                         'OpenEXRLoader',
+                         'retargeterNodes',
+                         'sceneAssembly',
+                         'stereoCamera',
+                         'Turtle',
+                         'svgFileTranslator',
+                         'VectorRender',
+                         'Type',
+                         'MASH']
+
 # Maya units
+hotkey_set_name = 'PiperKeySet'
 maya_default_time = 'ntsc'
 maya_default_length = 'cm'
 

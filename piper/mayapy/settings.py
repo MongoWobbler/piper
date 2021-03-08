@@ -3,7 +3,12 @@
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.mayapy.plugin as plugin
 from piper.mayapy.pipe.store import store
+
+
+# DX11 required for rendering engine
+plugin.load('dx11Shader')
 
 
 def setProject(directory):
@@ -49,12 +54,40 @@ def loadRender():
     pm.modelEditor('modelPanel4', e=True, vtn=pcfg.maya_default_tone_map)
 
 
+def hotkeys():
+    """
+    Creates hotkeys that make use of piper scripts.
+    """
+    # make a custom key set since Maya's default is locked.
+    if not pm.hotkeySet(pcfg.hotkey_set_name, exists=True):
+        pm.hotkeySet(pcfg.hotkey_set_name, source='Maya_Default')
+
+    # set the current hotkey set to be piper's hotkey set
+    pm.hotkeySet(pcfg.hotkey_set_name, current=True, edit=True)
+
+    # CLEAR EXISTING HOTKEY(s)
+    # if key is being used, clear it so we can assign a new one.
+    if pm.hotkeyCheck(key='c', alt=True):
+        pm.hotkey(k='c', alt=True, n='', rn='')
+
+    # ASSIGN NEW HOTKEY(s)
+    # create command and assign it to a hotkey
+    python_command = 'python("import piper.mayapy.util as myu; myu.cycleManipulatorSpace()")'
+    command = pm.nameCommand('cycleManipulator', command=python_command, annotation='Cycles Manipulator Space')
+    pm.hotkey(keyShortcut='c', alt=True, name=command)
+
+    pm.displayInfo('Assigned Piper Hotkeys')
+
+
 def startup():
     """
     To called when Maya starts up.
     """
     if store.get(pcfg.use_piper_units):
         loadDefaults()
+
+    if store.get(pcfg.unload_unwanted):
+        plugin.unloadUnwanted()
 
     setStartupProject()
     loadRender()

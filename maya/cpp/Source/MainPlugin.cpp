@@ -2,6 +2,7 @@
 
 #include "PiperTransforms.h"
 #include "PiperIK.h"
+#include "TensionNode.h"
 #include <maya/MFnPlugin.h>
 
 
@@ -75,6 +76,18 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper IK node.");
     }
 
+    // Tension Node
+    status = plugin_fn.registerNode(TensionNode::node_name,
+                                    TensionNode::type_ID,
+                                    TensionNode::creator,
+                                    TensionNode::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Tension node.");
+    }
+
+
     return status;
 }
 
@@ -82,6 +95,7 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
+    plugin_fn.deregisterNode(TensionNode::type_ID);
     plugin_fn.deregisterNode(PiperIK::type_ID);
     plugin_fn.deregisterNode(PiperAnimation::type_ID);
     plugin_fn.deregisterNode(PiperRig::type_ID);

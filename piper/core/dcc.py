@@ -231,6 +231,12 @@ class DCC(object):
 
         return batch_paths
 
+    def onBeforeInstalling(self):
+        """
+        Useful for injecting environment keys before running installer.
+        """
+        pass
+
     def runInstaller(self, install_script, install_directory):
         """
         Runs the given install_script with the given install_directory passed to it on all versions of the DCC.
@@ -245,6 +251,8 @@ class DCC(object):
         if not self.isInstalled():
             print(self.name + ' is not installed, skipping.')
             return
+
+        self.onBeforeInstalling()
 
         self.printInfo()
         pcu.deleteCompiledScripts(install_directory)

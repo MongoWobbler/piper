@@ -92,7 +92,7 @@ def openWithOS(path):
         path (string): Path to open.
     """
     path = os.path.normpath(path)
-    subprocess.call('explorer "{0}"'.format(path))
+    os.startfile(path)
 
 
 def writeJson(file_name, data):
@@ -155,20 +155,44 @@ def getAllFilesEndingWithWord(word, starting_directory):
     return matched
 
 
+def removePrefixes(word, prefixes):
+    """
+    Attempts to remove the given prefixes from the given word.
+
+    Args:
+        word (string): Word to remove prefixes from.
+
+        prefixes (collections.Iterable or string): Prefixes to remove from given word.
+
+    Returns:
+        (string): Word with prefixes removed.
+    """
+    if isinstance(prefixes, str):
+        return word.split(prefixes)[-1]
+
+    for prefix in prefixes:
+        word = word.split(prefix)[-1]
+
+    return word
+
+
 def removeSuffixes(word, suffixes):
     """
-    Attempts to remove th given suffixes from the given word.
+    Attempts to remove the given suffixes from the given word.
 
     Args:
         word (string): Word to remove suffixes from.
 
-        suffixes (collections.iterable): Suffixes to remove from given word.
+        suffixes (collections.Iterable or string): Suffixes to remove from given word.
 
     Returns:
         (string): Word with suffixes removed.
     """
+    if isinstance(suffixes, str):
+        return word.split(suffixes)[0]
+
     for suffix in suffixes:
-        word = word.rstrip(suffix)
+        word = word.split(suffix)[0]
 
     return word
 
@@ -311,7 +335,7 @@ def openDocumentation():
     """
     Opens the documentation for piper in the default web browser.
     """
-    webbrowser.open('https://github.com/MongoWobbler/piper', new=2)
+    webbrowser.open(pcfg.documentation_link, new=2)
 
 
 def welcome():

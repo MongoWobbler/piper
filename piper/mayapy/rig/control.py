@@ -5,11 +5,12 @@ import piper.mayapy.pipermath as pipermath
 import piper_config as pcfg
 import piper.mayapy.util as myu
 import piper.mayapy.rig.core as rig
-import piper.mayapy.rig.createshape as createshape
+import piper.mayapy.rig.curve as curve
+import piper.mayapy.attribute as attribute
 
 
 def create(transform,
-           shape=createshape.circle,
+           shape=curve.circle,
            name='control',
            axis='y',
            color='pink',
@@ -52,8 +53,7 @@ def create(transform,
     joint_radius *= scale
     control = shape(name=name + pcfg.control_suffix, *args, **kwargs)
     control.s.set((joint_radius, joint_radius, joint_radius))
-    createshape.color(control, color)
-    pm.delete(control, ch=True)  # delete history
+    curve.color(control, color)
 
     if axis == 'x':
         control.rz.set(control.rz.get() + 90)
@@ -91,5 +91,5 @@ def create(transform,
         else:
             pm.matchTransform(control, transform)
 
-    rig.nonKeyable(control.visibility)
+    attribute.nonKeyable(control.visibility)
     return control, group_offset

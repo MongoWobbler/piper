@@ -5,6 +5,7 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.rig.core as rig
+import piper.mayapy.attribute as attribute
 import piper.mayapy.pipermath as pipermath
 
 
@@ -25,7 +26,7 @@ def _connect(transform, target, space):
     transform.attr(pcfg.space_use_scale) >> target.useScale
 
 
-def getAll(transform, attribute=pcfg.spaces_name, cast=False):
+def getAll(transform, attribute_name=pcfg.spaces_name, cast=False):
     """
     Gets all the piper made spaces. Uses names stored in a string attribute to get these spaces.
     Will return empty list if no spaces attributes found.
@@ -33,7 +34,7 @@ def getAll(transform, attribute=pcfg.spaces_name, cast=False):
     Args:
         transform (pm.nodetypes.Transform): Transform to get spaces from.
 
-        attribute (string): The name of the attribute to get the spaces from.
+        attribute_name (string): The name of the attribute to get the spaces from.
 
         cast (boolean): If True, will cast each value of the attribute found into a PyNode.
 
@@ -42,12 +43,12 @@ def getAll(transform, attribute=pcfg.spaces_name, cast=False):
     """
     attributes = None
 
-    if transform.hasAttr(attribute):
-        attributes = transform.attr(attribute).get()
+    if transform.hasAttr(attribute_name):
+        attributes = transform.attr(attribute_name).get()
 
     if attributes:
         attributes = attributes.split(', ')
-        return [pm.PyNode(attribute) for attribute in attributes] if cast else attributes
+        return [pm.PyNode(attribute_name) for attribute_name in attributes] if cast else attributes
     else:
         return []
 
@@ -108,7 +109,7 @@ def create(spaces, transform):
             parent.inverseMatrix >> target.targetMatrix
 
         # create attributes on transform and add world space by default
-        rig.addSeparator(transform)
+        attribute.addSeparator(transform)
         transform.addAttr(pcfg.space_use_translate, at='bool', dv=1, k=True)
         transform.addAttr(pcfg.space_use_rotate, at='bool', dv=1, k=True)
         transform.addAttr(pcfg.space_use_scale, at='bool', dv=1, k=True)
@@ -121,7 +122,7 @@ def create(spaces, transform):
         space_name = space.nodeName()
         space_attribute = space_name + pcfg.space_suffix
         transform.addAttr(space_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
-        target = rig.getNextAvailableTarget(matrix_blend, 1)
+        target = attribute.getNextAvailableTarget(matrix_blend, 1)
 
         # make multiply matrix node and hook it up
         offset = transform.parentMatrix.get() * space.worldInverseMatrix.get()

@@ -8,7 +8,8 @@ import piper_config as pcfg
 def skeleton(parent_fail=pm.error,
              no_children_fail=pm.warning,
              type_fail=pm.error,
-             joint_orient_fail=pm.warning):
+             joint_orient_fail=pm.warning,
+             segment_scale_fail=pm.warning):
     """
     Performs a health check on the skeleton to catch anything that might cause trouble further down pipe.
 
@@ -21,12 +22,15 @@ def skeleton(parent_fail=pm.error,
 
         joint_orient_fail (method): How to display message of non-zero joint orient values found in joint.
 
+        segment_scale_fail (method): How to display message when joint has segment scale compensate turned off.
+
     Returns:
         (dictionary): Error causing nodes.
     """
     actionable_default = {'parent': None,
                           'type': [],
                           'joint_orient': [],
+                          'segment_scale': [],
                           'children': None}
     actionable = copy.deepcopy(actionable_default)
 
@@ -61,12 +65,13 @@ def skeleton(parent_fail=pm.error,
         joint_orient = joint.jointOrient.get()
         zero_vector = pm.dt.Vector(0, 0, 0)
         if joint_orient != zero_vector:
-
-            if 'joint_orient' not in actionable:
-                actionable['joint_orient'] = []
-
             actionable['joint_orient'].append(joint)
             joint_orient_fail(joint_name + ' has non-zero joint orient values.')
+
+        #  check if joint has segment scale compensate set to True or False (should be True)
+        if not joint.segmentScaleCompensate.get():
+            actionable['segment_scale'].append(joint)
+            segment_scale_fail(joint_name + ' segment scale compensate is turned off!')
 
     errors = {} if actionable == actionable_default else actionable
     pm.warning('Errors found in skeleton! Open Script Editor') if errors else pm.displayInfo('Skeleton is happy')

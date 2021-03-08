@@ -7,6 +7,7 @@ import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
 from piper.mayapy.pipe.store import store
 
+
 # shader FX needed for materials
 plugin.load('shaderFXPlugin')
 
@@ -35,7 +36,7 @@ class PiperShader(object):
         art_directory = store.get(pcfg.art_directory)
 
         # attempt to make path relative to art directory
-        hdr_image_path = hdr_image_path.lstrip(art_directory + '/')
+        hdr_image_path = hdr_image_path.split(art_directory + '/')[-1]
 
         return hdr_image_path
 

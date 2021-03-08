@@ -1,7 +1,11 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
-# Thanks to Jennifer Conley for figuring out all the coordinates to create these shapes.
+#  Thanks to Jennifer Conley for figuring out all the coordinates to create most of these shapes.
 
+import os
 import pymel.core as pm
+import piper.core.util as pcu
+import piper.mayapy.util as myu
+import piper.mayapy.plugin as plugin
 import piper.mayapy.convert as convert
 
 
@@ -516,3 +520,121 @@ def text(word, font='Times New Roman', *args, **kwargs):
     pm.xform(cp=True)
     pm.xform(ws=True, t=[0, 0, 0])
     return control
+
+
+@plugin.loadHoudiniEngine
+def crossSection(meshes=None):
+    """
+    Gets the cross section of a mesh as a curve.
+
+    Args:
+        meshes (pm.nodetypes.Mesh): Shape of transform that will get cross section from as a curve.
+
+    Returns:
+        (pm.nodetypes.houdiniAsset): Asset that generates the curve(s)
+    """
+    meshes = myu.validateSelect(meshes, find='mesh', parent=True)
+
+    piper_directory = pcu.getPiperDirectory()
+    cross_section_path = os.path.join(piper_directory, 'houdini', 'otls', 'curveFromCrossSection.hdalc')
+    asset = pm.houdiniAsset(loadAsset=[cross_section_path, 'Sop/curveFromCrossSection'])
+
+    input_geometries = [mesh.getShape().nodeName() for mesh in meshes]
+    geometries = '{{ {} }}'.format(', '.join(['"{}"'.format(shape) for shape in input_geometries]))
+
+    pm.mel.eval('source houdiniEngineAssetInput')
+    pm.mel.eval('houdiniEngine_setAssetInput {} {}'.format(asset + '.input[0].inputNodeId', geometries))
+    return asset
+
+
+def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_up=True):
+    """
+    Creates a curve at the origin that is a cross section of the given mesh(es).
+
+    Args:
+        meshes (list): pm.nodetypes.Transform with mesh shapes as children to create curves from.
+
+        side (string): Optional: Side(s) to make curves in. Useful to specify curve in quadrant.
+
+        name (string): Name to give curve(s)
+
+        tolerance (float): Value that will be divided from height to get curve from in case mesh doesnt actually touch
+        the origin.
+
+        clean_up (boolean): If True, will delete meshes made to generate cross section. Useful for turn off for debug.
+
+    Returns:
+        (list): Curve(s) generated.
+    """
+    curves = []
+
+    # get all meshes
+    if not meshes:
+        meshes = {mesh.getParent() for mesh in pm.ls(type='mesh')}
+
+    # get meshes that are pretty close to y=0. iterate through all the meshes vertices, use bounding box Y tolerance
+    for mesh in meshes:
+        bounding_box = pm.exactWorldBoundingBox(mesh)
+        min_height = bounding_box[1]
+        height = bounding_box[4]  # height is measured from y = 0 to y = infinity
+        step = height / tolerance
+
+        # checking if there are verts close to origin. If not, continue iterating
+        if min_height > step:
+            continue
+
+        # for all the meshes that are close to 0, create poly plane that will be used to create edge cross section
+        plane, _ = pm.polyPlane(axis=[0, 1, 0], sw=1, sh=1, sx=1, sy=1, w=2, h=2)
+        plane.ty.set(step)
+
+        # move poly plane to desired side
+        if 'left' in side:
+            plane.rotatePivotX.set(-1)
+            plane.scalePivotX.set(-1)
+            plane.tx.set(1)
+        elif 'right' in side:
+            plane.rotatePivotX.set(1)
+            plane.scalePivotX.set(1)
+            plane.tx.set(-1)
+
+        if 'front' in side:
+            plane.rotatePivotZ.set(-1)
+            plane.scalePivotZ.set(-1)
+            plane.tz.set(1)
+        elif 'back' in side:
+            plane.rotatePivotZ.set(1)
+            plane.scalePivotZ.set(1)
+            plane.tz.set(-1)
+
+        # make it bigger than the mesh in x and z axis.
+        plane.sx.set(abs(max(bounding_box[0], bounding_box[3])) * 2)
+        plane.sz.set(abs(max(bounding_box[2], bounding_box[5])) * 2)
+        myu.freezeTransformations(plane)
+
+        # create duplicate of mesh and use a boolean difference with the plane to make edges cross section
+        duplicate_mesh = pm.duplicate(mesh)[0]
+        pm.select(duplicate_mesh, plane)
+        new_mesh, _ = pm.polyCBoolOp(*pm.selected(), op=2, classification=2)
+        myu.freezeTransformations(new_mesh)
+        mesh_name = new_mesh.nodeName()
+
+        # select verts, convert selection to edges, make curve from edges, delete duplicate mesh
+        vertices = myu.getVerticesAtHeight(mesh_name, step)
+        pm.select(vertices)
+        pm.mel.eval('ConvertSelectionToContainedEdges')
+
+        if not name:
+            name = mesh.nodeName() + '_crossSection'
+
+        # form = 1 kwarg makes the curve periodic, a.k.a closed.
+        curve, _ = pm.polyToCurve(form=1, degree=1, usm=True, name=name)
+        curve = pm.PyNode(curve)
+        curves.append(curve)
+        curve.ty.set(step * -1)
+        pm.xform(curve, centerPivots=True)
+        myu.freezeTransformations(curve)
+
+        if clean_up:
+            [pm.delete(node) for node in [new_mesh, plane, duplicate_mesh] if pm.objExists(node)]
+
+    return curves
