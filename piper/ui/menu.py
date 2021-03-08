@@ -13,6 +13,12 @@ class PiperMenu(QtWidgets.QMenu):
         self.icon = QtGui.QIcon(os.path.join(pcu.getPiperDirectory(), 'icons', 'piper.png'))
         self.actions = []  # stores QWidgets so that they are not garbage collected
 
+    def onBeforePressed(self):
+        pass
+
+    def onAfterPressed(self):
+        pass
+
     def add(self, name, on_pressed):
         """
         Convenience method for adding a new item to the menu.
@@ -25,8 +31,13 @@ class PiperMenu(QtWidgets.QMenu):
         Returns:
             (QtWidgets.QAction): Action item added.
         """
+        def wrapper():
+            self.onBeforePressed()
+            on_pressed()
+            self.onAfterPressed()
+
         action = QtWidgets.QAction(name.decode('utf-8'), self)
-        action.triggered.connect(on_pressed)
+        action.triggered.connect(wrapper)
         self.addAction(action)
         self.actions.append(action)
         return action

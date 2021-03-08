@@ -22,6 +22,17 @@ from piper.mayapy.pipe.store import store
 from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperExportMenu, getPiperMainMenu
 
 
+class MayaPiperMenu(PiperMenu):
+    """
+    Implements undo chunks so that a whole piper function call is undone instead of only parts of it at a time.
+    """
+    def onBeforePressed(self):
+        pm.undoInfo(openChunk=True)
+
+    def onAfterPressed(self):
+        pm.undoInfo(closeChunk=True)
+
+
 class MayaSceneMenu(PiperSceneMenu):
 
     def openSceneInOS(self):
@@ -100,7 +111,7 @@ class MayaExportMenu(PiperExportMenu):
         store.set(pcfg.game_directory, directory)
 
 
-class MayaNodesMenu(PiperMenu):
+class MayaNodesMenu(MayaPiperMenu):
 
     def __init__(self, title='Nodes', parent=None):
         super(MayaNodesMenu, self).__init__(title, parent=parent)
@@ -111,7 +122,7 @@ class MayaNodesMenu(PiperMenu):
         self.add('Create Skinned Mesh', pipernode.createSkinnedMesh)
 
 
-class MayaBonesMenu(PiperMenu):
+class MayaBonesMenu(MayaPiperMenu):
 
     def __init__(self, title='Bones', parent=None):
         super(MayaBonesMenu, self).__init__(title, parent=parent)
@@ -132,7 +143,7 @@ class MayaBonesMenu(PiperMenu):
         self.add('Health Check', health.skeleton)
 
 
-class MayaGraphicsMenu(PiperMenu):
+class MayaGraphicsMenu(MayaPiperMenu):
 
     def __init__(self, title='Graphics', parent=None):
         super(MayaGraphicsMenu, self).__init__(title, parent=parent)
@@ -143,7 +154,7 @@ class MayaGraphicsMenu(PiperMenu):
         self.add('Update Materials', graphics.updateMaterials)
 
 
-class MayaOtherMenu(PiperMenu):
+class MayaOtherMenu(MayaPiperMenu):
 
     def __init__(self, title='Other', parent=None):
         super(MayaOtherMenu, self).__init__(title, parent=parent)
@@ -153,7 +164,7 @@ class MayaOtherMenu(PiperMenu):
         self.add('Create Curve(s) From Cross Section', curve.crossSection)
 
 
-class MayaSettingsMenu(PiperMenu):
+class MayaSettingsMenu(MayaPiperMenu):
 
     def __init__(self, title='Settings', parent=None):
         super(MayaSettingsMenu, self).__init__(title, parent=parent)
