@@ -5,6 +5,27 @@ import piper_config as pcfg
 import piper.mayapy.util as myu
 
 
+def exists(node, attributes, error=False):
+    """
+    Gets whether the given node has the given attributes.
+
+    Args:
+        node (PyNode): Node to check whether it has given attributes or not.
+
+        attributes (list): Strings of attributes to check whether they are in node or not.
+
+        error (boolean): If True and an attribute is NOT found, will raise error.
+
+    Returns:
+        (boolean): True if given node has ALL the given attributes, False if node is one attribute.
+    """
+    for attribute in attributes:
+        if not node.hasAttr(attribute):
+            return pm.error(node + ' is missing the ' + attribute + ' attribute!') if error else False
+
+    return True
+
+
 def lockAndHide(attribute):
     """
     Locks and hides the given attribute.

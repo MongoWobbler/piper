@@ -48,6 +48,19 @@ AXES = {'x': (1, 0, 0),
         'ny': (0, -1, 0),
         'nz': (0, 0, -1)}
 
+TRIAXES = {'x': ['x', 'y', 'z'],
+           'y': ['y', 'x', 'z'],
+           'z': ['z', 'x', 'y'],
+           'nx': ['x', 'y', 'z'],
+           'ny': ['y', 'x', 'z'],
+           'nz': ['z', 'x', 'y'],
+           (1, 0, 0): ['x', 'y', 'z'],
+           (0, 1, 0): ['y', 'x', 'z'],
+           (0, 0, 1): ['z', 'x', 'y'],
+           (-1, 0, 0): ['x', 'y', 'z'],
+           (0, -1, 0): ['y', 'x', 'z'],
+           (0, 0, -1): ['z', 'x', 'y']}
+
 JOINT_LABELS = {None: 0,
                 'root': 1,
                 'thigh': 2,
@@ -180,6 +193,19 @@ def axisToVector(axis, absolute=False):
     """
     axis = axis.lstrip('n') if absolute else axis
     return AXES[axis]
+
+
+def axisToTriAxis(axis):
+    """
+    Converts given axis to a tri axis string list ('x', 'y', 'z').
+
+    Args:
+        axis (string or tuple): Axis to convert to tri axis.
+
+    Returns:
+        (list): Three strings of 'x', 'y', and 'z' in order depending on given axis.
+    """
+    return TRIAXES[axis]
 
 
 def toVector(transform, invalid_zero=False, error=False):

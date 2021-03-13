@@ -71,6 +71,6 @@ if __name__ == '__main__':
         installHoudini()
     except BaseException:
         print(sys.exc_info()[0])
-        print(traceback.format_exc())
+        traceback.print_exc()
     finally:
         finish()

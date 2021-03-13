@@ -5,10 +5,10 @@ import pymel.core as pm
 
 import piper_config as pcfg
 import piper.core.util as pcu
-import piper.mayapy.rig.core as rig
+import piper.mayapy.rig.bone as bone
 import piper.mayapy.rig.skin as skin
+import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.curve as curve
-import piper.mayapy.health as health
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.util as myui
@@ -130,17 +130,17 @@ class MayaBonesMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.add('Create Joint at Pivot', rig.createJointAtPivot)
-        self.add('Parent Joints', rig.parentTransforms)
-        self.add('Mirror Translate', rig.mirrorTranslate)
-        self.add('Mirror Rotate', rig.mirrorRotate)
-        self.add('Assign Labels', rig.assignLabels)
+        self.add('Create at Pivot', bone.createAtPivot)
+        self.add('Parent', xform.parent)
+        self.add('Mirror Translate', xform.mirrorTranslate)
+        self.add('Mirror Rotate', xform.mirrorRotate)
+        self.add('Assign Labels', bone.assignLabels)
         self.add('Add Delete Attribute', attribute.addDelete)
         self.addSeparator()
         self.add('Unbind', self.binder.unbind)
         self.add('Rebind', self.binder.rebind)
         self.addSeparator()
-        self.add('Health Check', health.skeleton)
+        self.add('Health Check', bone.health)
 
 
 class MayaGraphicsMenu(MayaPiperMenu):
@@ -154,14 +154,19 @@ class MayaGraphicsMenu(MayaPiperMenu):
         self.add('Update Materials', graphics.updateMaterials)
 
 
-class MayaOtherMenu(MayaPiperMenu):
+class MayaCurvesMenu(MayaPiperMenu):
 
-    def __init__(self, title='Other', parent=None):
-        super(MayaOtherMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Curves', parent=None):
+        super(MayaCurvesMenu, self).__init__(title, parent=parent)
         self.build()
 
     def build(self):
+        [self.add(pcu.toSentenceCase(curve_method.__name__), curve_method) for curve_method in curve.methods]
+        self.addSeparator()
         self.add('Create Curve(s) From Cross Section', curve.crossSection)
+        self.add('Create Cross Section Curve at Origin', curve.originCrossSection)
+        self.addSeparator()
+        self.add('Layout All Curves', curve.layoutAll)
 
 
 class MayaSettingsMenu(MayaPiperMenu):
@@ -216,9 +221,9 @@ def create():
     piper_menu.scene_menu = MayaSceneMenu()
     piper_menu.nodes_menu = MayaNodesMenu()
     piper_menu.export_menu = MayaExportMenu()
+    piper_menu.curves_menu = MayaCurvesMenu()
     piper_menu.bones_menu = MayaBonesMenu()
     piper_menu.graphics_menu = MayaGraphicsMenu()
-    piper_menu.other_menu = MayaOtherMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()
 

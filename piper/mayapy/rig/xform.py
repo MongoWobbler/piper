@@ -9,7 +9,7 @@ import piper.mayapy.pipermath as pipermath
 import piper.mayapy.attribute as attribute
 
 
-def transformToOffsetMatrix(transform):
+def toOffsetMatrix(transform):
     """
     Convenience method for moving the matrix of a transform to the offset matrix and zeroing out the values.
     Similar to makeIdentity or Freeze Transforms, except values end up in offsetParentMatrix.
@@ -71,7 +71,7 @@ def duplicateChain(chain, prefix='new_', color='default'):
     return new_chain
 
 
-def parentTransforms(*transforms):
+def parent(*transforms):
     """
     Parents transforms to the last given transform and gets rid of joint orient values if transform is a joint.
 
@@ -181,7 +181,7 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
 
         if mirrored_joint.getParent():
             pm.parent(mirrored_joint, w=True)
-            parentTransforms(mirrored_joint, parent)
+            parent(mirrored_joint, parent)
 
     return mirrored_transforms
 
@@ -206,6 +206,9 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
 
         joint_orient (boolean): If True, AND given target transform has non-zero joint orient values,
         will create extra nodes to account for such values. Else will set joint orient values to zero.
+
+    Returns:
+        (pm.nodetypes.DependNode): Decompose Matrix that drives target.
     """
     if not driver or not target:
         selected = pm.selected()
@@ -277,6 +280,8 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
     if s:
         decompose_matrix.outputScale >> target.scale
 
+    return decompose_matrix
+
 
 def poleVectorMatrixConstraint(ik_handle, control):
     """
@@ -329,7 +334,7 @@ def poleVectorMatrixConstraint(ik_handle, control):
     return [blend_colors, pole_matrix, multiplication_matrix, inverse_matrix, compose_matrix, world_point]
 
 
-def calculatePoleVectorTransform(start_transform, mid_transform, end_transform, scale=0.5):
+def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, forward=[0, 0, 1]):
     """
     Props to Greg Hendrix for walking through the math: https://vimeo.com/240328348
 
@@ -342,69 +347,56 @@ def calculatePoleVectorTransform(start_transform, mid_transform, end_transform, 
 
         scale (float): How far away should the pole vector position be compared to the chain length.
 
+        forward (Any): Node or list to convert to vector direction to move pole vector if chain is in straight line.
+
     Returns:
         (list): Transform of pole vector control. Translation as first index, rotation as second, scale as third.
     """
-
+    is_in_straight_line = False
     zero_vector = pm.dt.Vector(0, 0, 0)
+
+    # if transform has rotations or joint orient, then its not in a straight line and we can figure out pole vector
     if mid_transform.r.get() == zero_vector:
         if mid_transform.hasAttr('orientJoint'):
             if mid_transform.orientJoint.get() == zero_vector:
-                return pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
+                is_in_straight_line = True
         else:
-            return pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
+            is_in_straight_line = True
 
-    start = pm.dt.Vector(pm.xform(start_transform, q=True, ws=True, rp=True))
-    mid = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
-    end = pm.dt.Vector(pm.xform(end_transform, q=True, ws=True, rp=True))
+    # if transform is in a straight line use the location of the mid transform to place the pole vector
+    if is_in_straight_line:
+        translation = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
+        rotation = pm.xform(mid_transform, q=True, ws=True, ro=True)
 
-    start_to_end = end - start
-    start_to_mid = mid - start
+        if forward:
+            forward = convert.toVector(forward)
+            distance = pipermath.getDistance(start_transform, end_transform)
+            forward = forward * (distance * scale)
+            translation = translation + forward
 
-    start_to_end_length = start_to_end.length()
-    mid_scale = start_to_end.dot(start_to_mid) / (start_to_end_length * start_to_end_length)
-    mid_chain_point = start + start_to_end * mid_scale
+    else:
+        start = pm.dt.Vector(pm.xform(start_transform, q=True, ws=True, rp=True))
+        mid = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
+        end = pm.dt.Vector(pm.xform(end_transform, q=True, ws=True, rp=True))
 
-    chain_length = (mid - start).length() + (end - mid).length()
-    translation = (mid - mid_chain_point).normal() * chain_length * scale + mid
-    rotation = pipermath.getAimRotation(mid_chain_point, translation)
-    single_scale = mid.radius.get() if isinstance(mid, pm.nodetypes.Transform) and mid.hasAttr('radius') else 1
+        start_to_end = end - start
+        start_to_mid = mid - start
+
+        start_to_end_length = start_to_end.length()
+        mid_scale = start_to_end.dot(start_to_mid) / (start_to_end_length * start_to_end_length)
+        mid_chain_point = start + start_to_end * mid_scale
+
+        chain_length = (mid - start).length() + (end - mid).length()
+        translation = (mid - mid_chain_point).normal() * chain_length * scale + mid
+        rotation = pipermath.getAimRotation(mid_chain_point, translation)
+
+    single_scale = mid_transform.radius.get() if mid_transform.hasAttr('radius') else 1
     scale = [single_scale, single_scale, single_scale]
 
     return [translation, rotation, scale]
 
 
-def getOrientAxis(start, target):
-    """
-    Gets the closest axis object is using to pointing to target.
-    Thanks to Charles Wardlaw for helping script it.
-
-    Args:
-        start (PyNode): transform object to find axis of.
-
-        target (string or PyNode): transform object that axis is pointing to.
-
-    Returns:
-        (tuple): Closest axis
-    """
-    closest_axis = None
-    closest_dot_result = 0.0
-
-    aim_direction = pipermath.getDirection(start, target)
-    world_matrix = start.worldMatrix.get()
-
-    for axis in pcfg.axes:
-        axis_vector = pm.dt.Vector(axis)  # the world axis
-        axis_vector = axis_vector * world_matrix  # turning the world axis to local start object axis
-        dot = axis_vector.dot(aim_direction)  # dot product tells us how aligned the axis is with the aim direction
-        if dot > closest_dot_result:
-            closest_dot_result = dot
-            closest_axis = axis
-
-    return closest_axis
-
-
-def orientTransforms(start, end, aim=None, up=None, world_up=None):
+def orient(start, end, aim=None, up=None, world_up=None):
     """
     Orients the chain starting from given start and ending at given end to aim at the child joint with the
     given aim axis.
@@ -445,7 +437,7 @@ def orientTransforms(start, end, aim=None, up=None, world_up=None):
         pm.delete(constraint)
 
 
-def orientTransformsWithUpObjects(transform_start=None, up_start=None, aim=None, up_axis=None):
+def orientWithUpObjects(transform_start=None, up_start=None, aim=None, up_axis=None):
     """
     Orients the given transforms by aiming the given axis to their child and the up to the respective up transform.
 
@@ -492,57 +484,3 @@ def orientTransformsWithUpObjects(transform_start=None, up_start=None, aim=None,
 
         constraint = pm.aimConstraint(transforms[i + 1], transform, aim=aim, u=up_axis, wuo=up, mo=False, wut='object')
         pm.delete(constraint)
-
-
-def createJointAtPivot():
-    """
-    Creates a joint at the current manipulator pivot point.
-    """
-    shift_held = myu.isShiftHeld()
-    ctrl_held = myu.isCtrlHeld()
-    alt_held = myu.isAltHeld()
-
-    selection = pm.selected()
-    if shift_held:
-        for transform in selection:
-            pm.select(cl=True)
-            name = transform.nodeName() if alt_held else ''
-            joint = pm.joint(p=myu.getManipulatorPosition(transform), n=name)
-            if ctrl_held:
-                constraint = pm.orientConstraint(transform, joint, mo=False)
-                pm.delete(constraint)
-    else:
-        name = selection[-1].nodeName() if alt_held else ''
-        pm.joint(p=myu.getManipulatorPosition(selection), n=name)
-
-
-def assignLabels(joints=None):
-    """
-    Assigns labels and sides to the given joints based on their names.
-
-    Args:
-        joints (list): Joints to assign labels to.
-    """
-    joints = myu.validateSelect(joints, find='joint')
-
-    for joint in joints:
-        has_side = False
-        joint_name = joint.nodeName()
-
-        if joint_name.endswith(pcfg.left_suffix):
-            has_side = True
-            joint.side.set(1)
-            joint_name = pcu.removeSuffixes(joint_name, pcfg.left_suffix)
-        elif joint_name.endswith(pcfg.right_suffix):
-            has_side = True
-            joint.side.set(2)
-            joint_name = pcu.removeSuffixes(joint_name, pcfg.right_suffix)
-
-        # have to do string "type" because type is a built-in python function
-        if has_side:
-            label = convert.jointNameToLabel('other')
-            joint.attr('type').set(label)
-            joint.otherType.set(joint_name)
-        else:
-            label = convert.jointNameToLabel(joint_name)
-            joint.attr('type').set(label)

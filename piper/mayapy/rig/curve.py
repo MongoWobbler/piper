@@ -1,8 +1,9 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
-#  Thanks to Jennifer Conley for figuring out all the coordinates to create most of these shapes.
+#  Thanks to Jennifer Conley for figuring out all the coordinates to create most of these curve shapes.
 
 import os
 import pymel.core as pm
+
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.plugin as plugin
@@ -45,7 +46,7 @@ def triangle(*args, **kwargs):
     Returns:
         (pm.nodetypes.Transform): Transform of triangle shape created.
     """
-    return pm.curve(d=1, p=[(-1, 0, 1), (1, 0, 1), (0, 0, -1), (-1, 0, 1)], k=[0, 1, 2, 3, ], *args, **kwargs)
+    return pm.curve(d=1, p=[(-1, 0, 1), (1, 0, 1), (0, 0, -1), (-1, 0, 1)], k=[0, 1, 2, 3], *args, **kwargs)
 
 
 def square(*args, **kwargs):
@@ -59,6 +60,38 @@ def square(*args, **kwargs):
                     k=[0, 1, 2, 3, 4], *args, **kwargs)
 
 
+def fourArrows(*args, **kwargs):
+    """
+    Creates four arrows in a diamond shape.
+
+    Returns:
+        (pm.nodetypes.Transform): Transform of diamond arrows shape created.
+    """
+    control = pm.curve(d=1, p=[(1.75625, 0, 0.115973), (1.75625, 0, -0.170979), (2.114939, 0, -0.170979),
+                               (2.114939, 0, -0.314454), (2.473628, 0, -0.0275029), (2.114939, 0, 0.259448),
+                               (2.114939, 0, 0.115973), (1.75625, 0, 0.115973)], k=[0, 1, 2, 3, 4, 5, 6, 7],
+                       *args, **kwargs)
+
+    arrows = [pm.curve(d=1, p=[(0.143476, 0, -1.783753), (0.143476, 0, -2.142442), (0.286951, 0, -2.142442),
+                               (0, 0, -2.501131), (-0.286951, 0, -2.142442), (-0.143476, 0, -2.142442),
+                               (-0.143476, 0, -1.783753), (0.143476, 0, -1.783753)],
+                       k=[0, 1, 2, 3, 4, 5, 6, 7]),
+              pm.curve(d=1, p=[(-1.75625, 0, -0.170979), (-2.114939, 0, -0.170979), (-2.114939, 0, -0.314454),
+                               (-2.473628, 0, -0.0275029), (-2.114939, 0, 0.259448), (-2.114939, 0, 0.115973),
+                               (-1.75625, 0, 0.115973), (-1.75625, 0, -0.170979)], k=[0, 1, 2, 3, 4, 5, 6, 7]),
+              pm.curve(d=1, p=[(-0.143476, 0, 1.728747), (-0.143476, 0, 2.087436), (-0.286951, 0, 2.087436),
+                               (0, 0, 2.446125), (0.286951, 0, 2.087436), (0.143476, 0, 2.087436),
+                               (0.143476, 0, 1.728747), (-0.143476, 0, 1.728747)], k=[0, 1, 2, 3, 4, 5, 6, 7])]
+
+    pm.select(arrows)
+    pm.pickWalk(d='Down')
+    pm.select(control, tgl=True)
+    pm.parent(r=True, s=True)
+    pm.delete(arrows)
+    pm.xform(control, cp=True)
+    return control
+
+
 def moveAll(*args, **kwargs):
     """
     Creates a circle with arrows at each end.
@@ -66,27 +99,14 @@ def moveAll(*args, **kwargs):
     Returns:
         (pm.nodetypes.Transform): Transform of the move all shape created.
     """
-    control = pm.circle(nr=[0, 1, 0], *args, **kwargs)[0]
+    control = fourArrows(*args, **kwargs)
 
-    arrow_list = [pm.curve(d=1, p=[(1.75625, 0, 0.115973), (1.75625, 0, -0.170979), (2.114939, 0, -0.170979),
-                                   (2.114939, 0, -0.314454), (2.473628, 0, -0.0275029), (2.114939, 0, 0.259448),
-                                   (2.114939, 0, 0.115973), (1.75625, 0, 0.115973)], k=[0, 1, 2, 3, 4, 5, 6, 7]),
-                  pm.curve(d=1, p=[(0.143476, 0, -1.783753), (0.143476, 0, -2.142442), (0.286951, 0, -2.142442),
-                                   (0, 0, -2.501131), (-0.286951, 0, -2.142442), (-0.143476, 0, -2.142442),
-                                   (-0.143476, 0, -1.783753), (0.143476, 0, -1.783753)],
-                           k=[0, 1, 2, 3, 4, 5, 6, 7]),
-                  pm.curve(d=1, p=[(-1.75625, 0, -0.170979), (-2.114939, 0, -0.170979), (-2.114939, 0, -0.314454),
-                                   (-2.473628, 0, -0.0275029), (-2.114939, 0, 0.259448), (-2.114939, 0, 0.115973),
-                                   (-1.75625, 0, 0.115973), (-1.75625, 0, -0.170979)], k=[0, 1, 2, 3, 4, 5, 6, 7]),
-                  pm.curve(d=1, p=[(-0.143476, 0, 1.728747), (-0.143476, 0, 2.087436), (-0.286951, 0, 2.087436),
-                                   (0, 0, 2.446125), (0.286951, 0, 2.087436), (0.143476, 0, 2.087436),
-                                   (0.143476, 0, 1.728747), (-0.143476, 0, 1.728747)], k=[0, 1, 2, 3, 4, 5, 6, 7])]
-
-    pm.select(arrow_list)
+    circle_curve = pm.circle(nr=[0, 1, 0])[0]
+    pm.select(circle_curve)
     pm.pickWalk(d='Down')
     pm.select(control, tgl=True)
     pm.parent(r=True, s=True)
-    pm.delete(arrow_list)
+    pm.delete(circle_curve)
     pm.xform(control, cp=True)
     return control
 
@@ -121,7 +141,7 @@ def pick(*args, **kwargs):
     pm.move(control + '.cv[6]', (-0.783612, 0, -0.783612), r=True)
     pm.move(control + '.cv[0]', (-0.783612, 0, 0.783612), r=True)
     pm.move(control + '.cv[7]', (-1.108194, 0, 0), r=True)
-    return pick
+    return control
 
 
 def frame(*args, **kwargs):
@@ -137,18 +157,28 @@ def frame(*args, **kwargs):
                     *args, **kwargs)
 
 
-def plus(*args, **kwargs):
+def plus(inner=.25, outer=1, *args, **kwargs):
     """
     Creates plus sign (MEDIC!) shape.
 
     Returns:
         (pm.nodetypes.Transform): Transform of plus shape created.
     """
-    control = pm.curve(d=1,
-                       p=[(-1, 0, -3), (1, 0, -3), (1, 0, -1), (3, 0, -1), (3, 0, 1), (1, 0, 1), (1, 0, 3), (-1, 0, 3),
-                          (-1, 0, 1), (-3, 0, 1), (-3, 0, -1), (-1, 0, -1), (-1, 0, -3)],
-                       k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], *args, **kwargs)
-    pm.scale(control, .33, .33, .33)
+    positions = [(-inner, 0.0, -inner),
+                 (-inner, 0.0, -outer),
+                 (inner, 0.0, -outer),
+                 (inner, 0.0, -inner),
+                 (outer, 0.0, -inner),
+                 (outer, 0.0, inner),
+                 (inner, 0.0, inner),
+                 (inner, 0.0, outer),
+                 (-inner, 0.0, outer),
+                 (-inner, 0.0, inner),
+                 (-outer, 0.0, inner),
+                 (-outer, 0.0, -inner)]
+
+    control = pm.curve(d=1, p=positions, k=range(len(positions)), *args, **kwargs)
+    control = pm.closeCurve(control, replaceOriginal=True)[0]
     pm.makeIdentity(control, apply=True, t=True, r=True, s=True)
     return control
 
@@ -522,6 +552,32 @@ def text(word, font='Times New Roman', *args, **kwargs):
     return control
 
 
+def layoutAll(spacing=4, axis=None):
+    """
+    Creates all the curves and lays them out in a line for the given axis.
+
+    Args:
+        spacing (float): How far apart each curve should be from each other.
+
+        axis (Any): Vector in which direction curves should be laid out in. If None given wil use X axis.
+
+    Returns:
+        (list): Curves made.
+    """
+    curves = []
+
+    if not axis:
+        axis = pm.dt.Vector((1, 0, 0))
+
+    for i, curve_method in enumerate(methods):
+        curve = curve_method(name=curve_method.__name__)
+        translate = axis * spacing * i
+        curve.t.set(translate)
+        curves.append(curve)
+
+    return curves
+
+
 @plugin.loadHoudiniEngine
 def crossSection(meshes=None):
     """
@@ -552,7 +608,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
     Creates a curve at the origin that is a cross section of the given mesh(es).
 
     Args:
-        meshes (list): pm.nodetypes.Transform with mesh shapes as children to create curves from.
+        meshes (collections.Iterable): pm.nodetypes.Transform with mesh shapes as children to create curves from.
 
         side (string): Optional: Side(s) to make curves in. Useful to specify curve in quadrant.
 
@@ -568,9 +624,8 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
     """
     curves = []
 
-    # get all meshes
-    if not meshes:
-        meshes = {mesh.getParent() for mesh in pm.ls(type='mesh')}
+    # get all/selected meshes
+    meshes = myu.validateSelect(meshes, find='mesh', parent=True)
 
     # get meshes that are pretty close to y=0. iterate through all the meshes vertices, use bounding box Y tolerance
     for mesh in meshes:
@@ -585,6 +640,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
 
         # for all the meshes that are close to 0, create poly plane that will be used to create edge cross section
         plane, _ = pm.polyPlane(axis=[0, 1, 0], sw=1, sh=1, sx=1, sy=1, w=2, h=2)
+        plane_name = plane.nodeName()
         plane.ty.set(step)
 
         # move poly plane to desired side
@@ -635,6 +691,32 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
         myu.freezeTransformations(curve)
 
         if clean_up:
-            [pm.delete(node) for node in [new_mesh, plane, duplicate_mesh] if pm.objExists(node)]
+            [pm.delete(node) for node in [mesh_name, plane_name, duplicate_mesh] if pm.objExists(node)]
 
     return curves
+
+
+methods = [circle,
+           triangle,
+           square,
+           fourArrows,
+           moveAll,
+           sun,
+           pick,
+           frame,
+           plus,
+           swirl,
+           arrowSingleStraight,
+           arrowSingleCurved,
+           arrowDoubleStraight,
+           arrowDoubleCurved,
+           arrowTriple,
+           arrowQuad,
+           cube,
+           diamond,
+           ring,
+           cone,
+           orb,
+           lever,
+           jack,
+           pointer]

@@ -88,7 +88,12 @@ space_use_scale = 'useScale'
 space_blend_matrix_suffix = '_Spaces_BlendMatrix'
 
 # FKIK
+banker_attribute = 'banker'
+fk_prefix = 'fk_'
+ik_prefix = 'ik_'
 fk_ik_attribute = 'fk_ik'
+proxy_fk_ik = 'FK_IK'
+switcher_attribute = 'switcher'
 switcher_suffix = '_switcher'
 switcher_fk = 'fkControls'
 switcher_ik = 'ikControls'

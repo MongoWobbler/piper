@@ -27,7 +27,11 @@ def unload(plugin):
     """
     if pm.pluginInfo(plugin, q=True, loaded=True):
         pm.pluginInfo(plugin, e=True, autoload=False)
-        pm.unloadPlugin(plugin)
+
+        try:
+            pm.unloadPlugin(plugin)
+        except RuntimeError:
+            pm.warning(plugin + ' could not be unloaded!')
 
 
 def unloadUnwanted():

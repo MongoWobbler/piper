@@ -2,6 +2,7 @@
 
 import math
 import pymel.core as pm
+import piper_config as pcfg
 import piper.mayapy.convert as convert
 
 
@@ -116,3 +117,33 @@ def getAimRotation(start, end):
 
     rotation = [math.degrees(angle) for angle in (euler_rotation.x, euler_rotation.y, euler_rotation.z)]
     return rotation
+
+
+def getOrientAxis(start, target):
+    """
+    Gets the closest axis object is using to pointing to target.
+    Thanks to Charles Wardlaw for helping script it.
+
+    Args:
+        start (PyNode): transform object to find axis of.
+
+        target (string or PyNode): transform object that axis is pointing to.
+
+    Returns:
+        (tuple): Closest axis
+    """
+    closest_axis = None
+    closest_dot_result = 0.0
+
+    aim_direction = getDirection(start, target)
+    world_matrix = start.worldMatrix.get()
+
+    for axis in pcfg.axes:
+        axis_vector = pm.dt.Vector(axis)  # the world axis
+        axis_vector = axis_vector * world_matrix  # turning the world axis to local start object axis
+        dot = axis_vector.dot(aim_direction)  # dot product tells us how aligned the axis is with the aim direction
+        if dot > closest_dot_result:
+            closest_dot_result = dot
+            closest_axis = axis
+
+    return closest_axis

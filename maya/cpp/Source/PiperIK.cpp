@@ -110,7 +110,7 @@ MStatus PiperIK::initialize()
 	numeric_fn.setMax(1);
 	addAttribute(slide);
 
-	stretch = numeric_fn.create("stretch", "stc", MFnNumericData::kDouble, 1);
+	stretch = numeric_fn.create("stretch", "stc", MFnNumericData::kDouble, 0);
 	numeric_fn.setStorable(true);
 	numeric_fn.setKeyable(true);
 	numeric_fn.setMin(0);

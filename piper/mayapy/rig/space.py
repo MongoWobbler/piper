@@ -3,10 +3,11 @@
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
-import piper.mayapy.util as myu
-import piper.mayapy.rig.core as rig
 import piper.mayapy.attribute as attribute
 import piper.mayapy.pipermath as pipermath
+
+import xform as xform
+import control as control
 
 
 def _connect(transform, target, space):
@@ -53,23 +54,24 @@ def getAll(transform, attribute_name=pcfg.spaces_name, cast=False):
         return []
 
 
-def getFkIkAttributes(switcher):
+def getFkIkAttributes(transform):
     """
     Check whether given node has all needed attributes to perform a switch, raise error if it does not.
 
     Args:
-        switcher (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
+        transform (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
 
     Returns:
         (list): Transforms, FK controls, IK controls, and fk_ik attribute value. Transforms and controls are in order.
     """
-    myu.hasAttributes(switcher, pcfg.switcher_attributes, error=True)
+    switcher = control.getSwitcher(transform)
+    attribute.exists(switcher, pcfg.switcher_attributes, error=True)
     transforms = getAll(switcher, pcfg.switcher_transforms, cast=True)
     fk_controls = getAll(switcher, pcfg.switcher_fk, cast=True)
     ik_controls = getAll(switcher, pcfg.switcher_ik, cast=True)
     fk_ik_value = switcher.attr(pcfg.fk_ik_attribute).get()
 
-    return transforms, fk_controls, ik_controls, fk_ik_value
+    return switcher, transforms, fk_controls, ik_controls, fk_ik_value
 
 
 def create(spaces, transform):
@@ -186,7 +188,7 @@ def switchFKIK(switcher, key=True, match_only=False):
         match_only (boolean): If True, will match the FK/IK space, but will not switch the FK_IK attribute.
     """
     # check whether given node has all needed attributes to perform a switch, raise error if it does not.
-    transforms, fk_controls, ik_controls, fk_ik_value = getFkIkAttributes(switcher)
+    switcher, transforms, fk_controls, ik_controls, fk_ik_value = getFkIkAttributes(switcher)
     current_frame = pm.currentTime(q=True)
 
     if not (fk_ik_value == 1 or fk_ik_value == 0):
@@ -196,9 +198,16 @@ def switchFKIK(switcher, key=True, match_only=False):
     if fk_ik_value <= 0.5:
         new_fk_ik_value = 1
         mid = pcu.getMedian(transforms)
+        to_key = ik_controls + [switcher]
+
+        # if foot has banker attribute, set to banker's rotations to 0 and add it to key list
+        if ik_controls[-1].hasAttr(pcfg.banker_attribute):
+            banker_control = pm.PyNode(ik_controls[-1].attr(pcfg.banker_attribute).get())
+            [banker_control.attr(r).set(0) for r in ['rx', 'ry', 'rz'] if not banker_control.attr(r).isLocked()]
+            to_key.append(banker_control)
 
         if key:
-            pm.setKeyframe(ik_controls + [switcher], time=current_frame - 1)
+            pm.setKeyframe(to_key, time=current_frame - 1)
 
         for transform, ik_control in zip(transforms, ik_controls[2:]):
 
@@ -211,7 +220,7 @@ def switchFKIK(switcher, key=True, match_only=False):
 
             # middle transform
             elif transform == mid:
-                translate, _, _ = rig.calculatePoleVectorTransform(transforms[0], mid, transforms[-1])
+                translate, _, _ = xform.calculatePoleVector(transforms[0], mid, transforms[-1], scale=2)
                 pm.xform(ik_control, ws=True, t=translate)
 
             else:

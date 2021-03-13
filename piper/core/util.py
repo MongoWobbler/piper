@@ -197,6 +197,19 @@ def removeSuffixes(word, suffixes):
     return word
 
 
+def toSentenceCase(text):
+    """
+    Converts the given text to sentence case.
+
+    Args:
+        text (string): Text to convert to sentence case.
+
+    Returns:
+        (string): Sentence case version of given text.
+    """
+    return re.sub(r"(?<=\w)([A-Z])", r" \1", text).title()
+
+
 def swapText(text, first=pcfg.left_suffix, second=pcfg.right_suffix):
     """
     Swaps the given first and seconds strings with each other in the given text.
