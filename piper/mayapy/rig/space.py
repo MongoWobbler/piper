@@ -108,7 +108,7 @@ def create(spaces, transform):
 
         # counter drive parent to create a world space
         if parent:
-            parent.inverseMatrix >> target.targetMatrix
+            parent.worldInverseMatrix >> target.targetMatrix
 
         # create attributes on transform and add world space by default
         attribute.addSeparator(transform)
@@ -234,7 +234,14 @@ def switchFKIK(switcher, key=True, match_only=False):
         if key:
             pm.setKeyframe(fk_controls + [switcher], time=current_frame - 1)
 
-        for transform, fk_control in zip(transforms, fk_controls):
+        # set the inner controls to their local space
+        inner_start_index = len(fk_controls)/2
+        for inner_ctrl in fk_controls[inner_start_index:]:
+            switch(inner_ctrl)
+            pipermath.zeroOut(inner_ctrl)
+
+        # only match the real controls, not the inner ones
+        for transform, fk_control in zip(transforms, fk_controls[:inner_start_index]):
             matrix = transform.worldMatrix.get()
             pm.xform(fk_control, ws=True, m=matrix)
 

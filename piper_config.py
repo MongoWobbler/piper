@@ -40,6 +40,7 @@ maya_unwanted_plugins = ['xgenToolkit',
                          'svgFileTranslator',
                          'VectorRender',
                          'Type',
+                         'mtoa',
                          'MASH']
 
 # Maya units

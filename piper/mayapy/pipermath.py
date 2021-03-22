@@ -13,9 +13,7 @@ def zeroOut(transform):
     Args:
         transform (pm.nodetypes.Transform): Transform to zero out.
     """
-    transform.t.set((0, 0, 0))
-    transform.r.set((0, 0, 0))
-    transform.s.set((1, 1, 1))
+    pm.xform(transform, absolute=True, t=[0, 0, 0], ro=[0, 0, 0], s=[1, 1, 1])
 
 
 def getDistance(start, end):

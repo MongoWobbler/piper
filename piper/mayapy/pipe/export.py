@@ -99,6 +99,7 @@ class Export(object):
 
         for texture in textures:
             export_path = paths.getGameTextureExport(texture)
+            pcu.validateDirectory(os.path.dirname(export_path))
             shutil.copyfile(texture, export_path)
             print('Copying ' + texture + ' to ' + export_path)
 

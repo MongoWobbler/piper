@@ -16,7 +16,7 @@ import curve
 import control
 
 
-def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None):
+def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, connect=True):
     """
     Creates FK controls for the transform chain deduced by the start and end transforms.
 
@@ -33,26 +33,45 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None):
 
         sizes (list): Sizes to use for each control.
 
+        connect (bool): If True, connects the duplicate FK chain to the given start/end transforms to be driven.
+
     Returns:
         (list): Controls created in order from start to end.
     """
     controls = []
+    in_controls = []
     transforms = xform.getChain(start, end)
+    duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
 
-    for i, transform in enumerate(transforms):
-        if transform != transforms[-1]:
-            next_transform = transforms[i + 1]
+    for i, transform in enumerate(duplicates):
+        if transform != duplicates[-1]:
+            next_transform = duplicates[i + 1]
             axis_vector = pipermath.getOrientAxis(transform, next_transform)
             axis = convert.axisToString(axis_vector)
 
         name = transform.nodeName()
-        size = sizes[i] if sizes else None
-        control_parent = parent if transform == transforms[0] else controls[i - 1]
-        ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
-        xform.parentMatrixConstraint(ctrl, transform)
+        size = sizes[i] if sizes else control.calculateSize(transforms[i])
+        ctrl_parent = parent if transform == duplicates[0] else controls[i - 1]
+        ctrl, _ = control.create(transform, name=name, axis=axis, parent=ctrl_parent, shape=shape, size=size, scale=1.2)
         controls.append(ctrl)
 
-    return controls
+        xform.offsetConstraint(ctrl, transform)
+        in_ctrl, _ = control.create(transform, name=name + '_inner', axis=axis, shape=curve.plus, size=size,
+                                    parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
+        xform.parentMatrixConstraint(in_ctrl, transform)
+        in_controls.append(in_ctrl)
+
+        transform_parent = transforms[i].getParent()
+        spaces = [transform_parent, ctrl_parent]
+        spaces = filter(None, spaces)
+
+        if spaces:
+            space.create(spaces, in_ctrl)
+
+        if connect:
+            xform.parentMatrixConstraint(transform, transforms[i])
+
+    return duplicates, controls + in_controls
 
 
 def IK(start, end, parent=None, shape=curve.ring, sizes=None):
@@ -173,7 +192,6 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
     Creates a FK and IK controls that drive the chain from start to end.
 
     Args:
-        Args:
         start (pm.nodetypes.Transform): Start of the chain to be driven by FK controls.
 
         end (pm.nodetypes.Transform): End of the chain to be driven by FK controls. If none given, will only drive start
@@ -186,15 +204,16 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
 
         ik_shape (method): Used to create curve or visual representation for the IK controls.
 
+        proxy (boolean): If True, adds a proxy FK_IK attribute to all controls.
+
     Returns:
         (list): Two lists, FK and IK controls created in order from start to end respectively.
     """
     # create joint chains that is the same as the given start and end chain for FK and IK then create controls on those
     transforms = xform.getChain(start, end)
     sizes = [control.calculateSize(transform) for transform in transforms]
-    fk_transforms = xform.duplicateChain(transforms, pcfg.fk_prefix, color='green')
-    ik_transforms = xform.duplicateChain(transforms, pcfg.ik_prefix, color='purple')
-    fk_controls = FK(fk_transforms[0], fk_transforms[-1], parent=parent, axis=axis, shape=fk_shape, sizes=sizes)
+    ik_transforms = xform.duplicateChain(transforms, pcfg.ik_prefix, color='purple', scale=0.5)
+    fk_transforms, fk_controls = FK(start, end, parent=parent, axis=axis, shape=fk_shape, sizes=sizes, connect=False)
     ik_controls = IK(ik_transforms[0], ik_transforms[-1], parent=parent, shape=ik_shape, sizes=sizes)
     controls = fk_controls + ik_controls
 
@@ -234,11 +253,6 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
         world_space, fk_space, ik_space = space.create([fk_transform, ik_transform], original_transform)
         original_transform.attr(fk_space).set(1)
         switcher_attribute >> original_transform.attr(ik_space)
-
-        # make joints smaller so that they are easier to visualize
-        if original_transform.hasAttr('radius'):
-            fk_transform.radius.set(fk_transform.radius.get() * .5)
-            ik_transform.radius.set(ik_transform.radius.get() * .5)
 
     if not proxy:
         return controls

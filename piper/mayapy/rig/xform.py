@@ -48,7 +48,7 @@ def getChain(start, end=None):
     return chain
 
 
-def duplicateChain(chain, prefix='new_', color='default'):
+def duplicateChain(chain, prefix='new_', color='default', scale=1.0):
     """
     Duplicates the given chain, renames it, and parents it to the world.
 
@@ -59,15 +59,24 @@ def duplicateChain(chain, prefix='new_', color='default'):
 
         color (string): Color to set the duplicate chain.
 
+        scale (float): Scale to multiply radius attribute by.
+
     Returns:
         (list): Duplicated transforms with new name.
     """
     new_chain = pm.duplicate(chain, parentOnly=True, renameChildren=True)
-    [new_chain[i].rename(prefix + chain[i].nodeName()) for i in range(len(chain))]
+
     start = new_chain[0]
     pm.parent(start, w=True)
     start.overrideEnabled.set(True)
     start.overrideColor.set(convert.colorToInt(color))
+
+    for original, duplicate in zip(chain, new_chain):
+        duplicate.rename(prefix + original.nodeName())
+
+        if duplicate.hasAttr('radius'):
+            duplicate.radius.set(duplicate.radius.get() * scale)
+
     return new_chain
 
 
@@ -177,11 +186,11 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
         mirrored_joint = pm.mirrorJoint(transform, **options)[0]
         mirrored_joint = pm.PyNode(mirrored_joint)
         mirrored_transforms.append(mirrored_joint)
-        parent = mirrored_joint.getParent()
+        joint_parent = mirrored_joint.getParent()
 
         if mirrored_joint.getParent():
             pm.parent(mirrored_joint, w=True)
-            parent(mirrored_joint, parent)
+            joint_parent(mirrored_joint, joint_parent)
 
     return mirrored_transforms
 
@@ -242,12 +251,12 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
             if joint_orient:
                 compose_matrix = pm.createNode('composeMatrix', n=name + pcfg.parent_matrix_rot_comp_suffix)
                 compose_matrix.inputRotate.set(target.jointOrient.get())
-                parent = target.getParent()
+                target_parent = target.getParent()
 
-                if parent:
+                if target_parent:
                     mult_rot_matrix = pm.createNode('multMatrix', n=name + pcfg.parent_matrix_rot_mult_suffix)
                     compose_matrix.outputMatrix >> mult_rot_matrix.matrixIn[0]
-                    parent.worldMatrix >> mult_rot_matrix.matrixIn[1]
+                    target_parent.worldMatrix >> mult_rot_matrix.matrixIn[1]
                     joint_orient_matrix_output = mult_rot_matrix.matrixSum
                 else:
                     joint_orient_matrix_output = compose_matrix.outputMatrix
@@ -281,6 +290,28 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
         decompose_matrix.outputScale >> target.scale
 
     return decompose_matrix
+
+
+def offsetConstraint(driver, target):
+    """
+    Parents constraint the given target by driving it through the offset Parent Matrix plug with the given driver.
+
+    Args:
+        driver (pm.nodetypes.Transform): Transform that will drive the given target through the constraint.
+
+        target (pm.nodetypes.Transform): Tranform that will be driven by the given driver through the constraint.
+    """
+    target_parent = target.getParent()
+
+    if target_parent:
+        matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_parentMatrixMult')
+        driver.worldMatrix >> matrix_mult.matrixIn[0]
+        target_parent.worldInverseMatrix >> matrix_mult.matrixIn[1]
+        matrix_mult.matrixSum >> target.offsetParentMatrix
+    else:
+        driver.worldMatrix >> target.offsetParentMatrix
+
+    pipermath.zeroOut(target)
 
 
 def poleVectorMatrixConstraint(ik_handle, control):
