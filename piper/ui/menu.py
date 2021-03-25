@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import sys
 from PySide2 import QtWidgets, QtGui
 import piper.core.util as pcu
 
@@ -36,14 +37,16 @@ class PiperMenu(QtWidgets.QMenu):
             on_pressed()
             self.onAfterPressed()
 
-        action = QtWidgets.QAction(name.decode('utf-8'), self)
+        name = name.decode('utf-8') if sys.version.startswith('2') else name
+        action = QtWidgets.QAction(name, self)
         action.triggered.connect(wrapper)
         self.addAction(action)
         self.actions.append(action)
         return action
 
     def addCheckbox(self, name, state, on_pressed):
-        action = QtWidgets.QAction(name.decode('utf-8'), self)
+        name = name.decode('utf-8') if sys.version.startswith('2') else name
+        action = QtWidgets.QAction(name, self)
         action.setCheckable(True)
         action.setChecked(state)
         action.triggered.connect(on_pressed)
@@ -66,6 +69,7 @@ class PiperSceneMenu(PiperMenu):
         self.add('Open Art Directory in OS', self.openArtDirectoryInOS)
         self.add('Open Game Directory in OS', self.openGameDirectoryInOS)
         self.add('Open Piper Directory in OS', self.openPiperDirectoryInOS)
+        self.add('Open Selected Reference File', self.openSelectedReference)
         self.addSeparator()
 
         self.add('Copy Current Scene to Clipboard', self.copyCurrentSceneToClipboard)
@@ -81,6 +85,9 @@ class PiperSceneMenu(PiperMenu):
         pass
 
     def openGameDirectoryInOS(self):
+        pass
+
+    def openSelectedReference(self):
         pass
 
     @staticmethod

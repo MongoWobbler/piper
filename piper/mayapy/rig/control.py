@@ -6,8 +6,8 @@ import piper.mayapy.util as myu
 import piper.mayapy.pipermath as pipermath
 import piper.mayapy.attribute as attribute
 
-import xform as xform
-import curve as curve
+from . import xform
+from . import curve
 
 
 def calculateSize(joint, scale=1):

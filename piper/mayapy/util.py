@@ -107,6 +107,7 @@ def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, di
 def getRootParent(node):
     """
     Gets the top most parent of the given node. Note, it could be self.
+    NOTE: This could be done with PyNode.getAllParents()[-1]
 
     Args:
         node (PyNode): Node to get the top most parent of.
@@ -254,7 +255,7 @@ def getVerticesAtHeight(mesh_name, height):
         if vertex_i.position(om.MSpace.kWorld).y == height:
             vertices.append(mesh_name + '.vtx[' + str(vertex_i.index()) + ']')
 
-        vertex_i.next()
+        next(vertex_i)
 
     return vertices
 

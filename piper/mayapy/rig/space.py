@@ -6,8 +6,8 @@ import piper.core.util as pcu
 import piper.mayapy.attribute as attribute
 import piper.mayapy.pipermath as pipermath
 
-import xform as xform
-import control as control
+from . import xform
+from . import control
 
 
 def _connect(transform, target, space):
@@ -74,7 +74,7 @@ def getFkIkAttributes(transform):
     return switcher, transforms, fk_controls, ik_controls, fk_ik_value
 
 
-def create(spaces, transform):
+def create(spaces, transform, direct=False):
     """
     Creates the given spaces on the given transform.
 
@@ -82,6 +82,8 @@ def create(spaces, transform):
         spaces (list): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
 
         transform (pm.nodetypes.Transform): Transform to have ability to switch between given spaces.
+
+        direct (boolean): If False, will plug output matrix into offsetParentMatrix, else direct connection.
 
     Returns:
           (list): Name of space attribute(s) made.
@@ -104,7 +106,19 @@ def create(spaces, transform):
         target = matrix_blend.attr('target[0]')
         offset_matrix = transform.offsetParentMatrix.get()
         matrix_blend.inputMatrix.set(offset_matrix)
-        matrix_blend.outputMatrix >> transform.offsetParentMatrix
+
+        if direct:
+            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset')
+            multiply.matrixIn[0].set(transform.matrix.get())
+            matrix_blend.outputMatrix >> multiply.matrixIn[1]
+
+            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blendDecompose')
+            multiply.matrixSum >> decompose.inputMatrix
+            decompose.outputTranslate >> transform.translate
+            decompose.outputRotate >> transform.rotate
+            decompose.outputScale >> transform.scale
+        else:
+            matrix_blend.outputMatrix >> transform.offsetParentMatrix
 
         # counter drive parent to create a world space
         if parent:

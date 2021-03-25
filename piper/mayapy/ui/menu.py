@@ -77,6 +77,30 @@ class MayaSceneMenu(PiperSceneMenu):
 
         pm.openFile(scene_path, force=True)
 
+    def openSelectedReference(self, node=None):
+        """
+        Opens the last selected object's reference file.
+
+        Args:
+            node (PyNode): Node to get reference file of.
+        """
+        if not node:
+            node = pm.selected()[-1]
+
+        if not node:
+            pm.warning('Nothing Selected!')
+            return
+
+        if not node.isFromReferencedFile():
+            pm.warning(node.nodeName() + ' is not from a referenced file!')
+            return
+
+        if not mywindow.save():
+            return
+
+        path = node.referenceFile().path
+        pm.openFile(path, force=True)
+
 
 class MayaExportMenu(PiperExportMenu):
 

@@ -10,10 +10,10 @@ import piper.mayapy.pipermath as pipermath
 import piper.mayapy.attribute as attribute
 import piper.mayapy.convert as convert
 
-import xform
-import space
-import curve
-import control
+from . import xform
+from . import space
+from . import curve
+from . import control
 
 
 def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, connect=True):
@@ -250,7 +250,7 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
 
     # use spaces to drive original chain with fk and ik transforms and hook up switcher attributes
     for original_transform, fk_transform, ik_transform in zip(transforms, fk_transforms, ik_transforms):
-        world_space, fk_space, ik_space = space.create([fk_transform, ik_transform], original_transform)
+        world_space, fk_space, ik_space = space.create([fk_transform, ik_transform], original_transform, direct=True)
         original_transform.attr(fk_space).set(1)
         switcher_attribute >> original_transform.attr(ik_space)
 

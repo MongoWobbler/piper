@@ -6,7 +6,6 @@ import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
 from piper.mayapy.pipe.store import store
 
-
 # DX11 required for rendering engine
 plugin.load('dx11Shader')
 
@@ -50,6 +49,11 @@ def loadRender():
     Sets the viewport's render engine to DirectX11 and the tone map to use Stingray
     """
     pm.mel.eval('setRenderingEngineInModelPanel "{}";'.format(pcfg.maya_default_rendering_api))
+    tone_maps = pm.colorManagementPrefs(q=True, vts=True)
+
+    if pcfg.maya_default_tone_map not in tone_maps:
+        return
+
     pm.colorManagementPrefs(e=True, vtn=pcfg.maya_default_tone_map)
     pm.modelEditor('modelPanel4', e=True, vtn=pcfg.maya_default_tone_map)
 

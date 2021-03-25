@@ -4,7 +4,7 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-import rig.curve as curve
+from .rig import curve
 
 
 def get(node_type, ignore=None):

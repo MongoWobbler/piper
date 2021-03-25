@@ -188,9 +188,9 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
         mirrored_transforms.append(mirrored_joint)
         joint_parent = mirrored_joint.getParent()
 
-        if mirrored_joint.getParent():
+        if joint_parent:
             pm.parent(mirrored_joint, w=True)
-            joint_parent(mirrored_joint, joint_parent)
+            parent(mirrored_joint, joint_parent)
 
     return mirrored_transforms
 
@@ -444,6 +444,7 @@ def orient(start, end, aim=None, up=None, world_up=None):
         world_up (list): Axis up will try to aim at.
     """
     transforms = getChain(start, end)
+    first_parent = transforms[0].getParent()
 
     if aim is None:
         aim = [1, 0, 0]
@@ -454,8 +455,13 @@ def orient(start, end, aim=None, up=None, world_up=None):
     if world_up is None:
         world_up = [1, 0, 0]
 
+    pm.parent(transforms, w=True)
     for i, transform in enumerate(transforms):
-        if i != 0:
+
+        if i == 0:
+            if first_parent:
+                pm.parent(transform, first_parent)
+        else:
             pm.parent(transform, transforms[i - 1])
 
         if transform.hasAttr('jointOrient'):

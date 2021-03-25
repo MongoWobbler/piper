@@ -88,7 +88,6 @@ class Binder(object):
         """
         self.info = {}
         self.directory = os.path.join(pcu.getPiperDirectory(), 'temp').replace('\\', '/')
-        pcu.validateDirectory(self.directory)
 
     def unbind(self, meshes=None, bind_pose=True):
         """
@@ -108,6 +107,7 @@ class Binder(object):
         scene_path = pm.sceneName()
         scene_name = os.path.splitext(scene_path.name)[0] + '_' if scene_path else ''
         meshes = myu.validateSelect(meshes, find='mesh', parent=True)
+        pcu.validateDirectory(self.directory)
 
         for mesh in meshes:
             # get the skin of the mesh, if it doesnt exist then we don't need to store skin weights
@@ -175,3 +175,6 @@ class Binder(object):
 
         # select meshes to end it all
         pm.select(self.info.keys())
+
+        if not os.listdir(self.directory):
+            os.remove(self.directory)

@@ -18,6 +18,6 @@ data = {
         "path": environment_directory + '/houdini'
         }
 
-print('Writing environment to: {}'.format(piper_package))
+print('\nWriting environment to: {}'.format(piper_package))
 with open(piper_package, 'w') as open_file:
     json.dump(data, open_file, indent=4)

@@ -32,7 +32,7 @@ lines = ['+ {0} 1.0 {1}/maya'.format(MODULE_NAME, environment_directory),
 lines += ENVIRONMENT
 lines = [line + '\n' for line in lines]
 modules_path = os.path.join(modules_directory, MODULE_NAME.lower() + '.mod')
-print('Writing environment to: {}'.format(modules_path))
+print('\nWriting environment to: {}'.format(modules_path))
 
 with open(modules_path, 'w') as module_file:
     module_file.writelines(lines)

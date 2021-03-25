@@ -255,7 +255,7 @@ def getMedian(laundry):
     if length == 0:
         return None
 
-    median_index = (length - 1) / 2
+    median_index = int((length - 1) / 2)
     return laundry[median_index]
 
 
@@ -355,5 +355,5 @@ def welcome():
     """
     Convenience method for welcoming user to piper.
     """
-    print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp()),
+    print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp())
     print('\n')

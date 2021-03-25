@@ -1,10 +1,11 @@
 # REQUIRES:
 #       CMAKE
-#       Visual Studio 2017
+#       Visual Studio 2017 or Visual Studio 2019 depending on version
 #
 # To build visual studio project:
 #       cd piper/maya/cpp
 #       cmake -G "Visual Studio 15 2017 Win64" -DMAYA_VERSION=2020 ./Source
+#       cmake -G "Visual Studio 16 2019" -A x64 -DMAYA_VERSION=2022 ./Source
 #
 # Once that is done, you can build the .mll by running the following:
 #       cd piper/maya/cpp
