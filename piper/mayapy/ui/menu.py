@@ -11,7 +11,7 @@ import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.curve as curve
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
-import piper.mayapy.ui.util as myui
+import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipernode as pipernode
@@ -201,6 +201,7 @@ class MayaSettingsMenu(MayaPiperMenu):
 
     def build(self):
         self.addCheckbox('Use Piper Units', store.get(pcfg.use_piper_units), self.onUseUnitsPressed)
+        self.addCheckbox('Use Tone-map', store.get(pcfg.use_tone_map), self.onUseToneMapPressed)
         self.addCheckbox('Export In Ascii', store.get(pcfg.export_ascii), self.onExportInAsciiPressed)
         self.addCheckbox('Unload Unwanted Plug-ins', store.get(pcfg.unload_unwanted), self.onUnloadUnwantedPressed)
         self.add('Set HDR Image', self.onSetHdrImagePressed)
@@ -213,6 +214,10 @@ class MayaSettingsMenu(MayaPiperMenu):
     @staticmethod
     def onUseUnitsPressed(state):
         store.set(pcfg.use_piper_units, state)
+
+    @staticmethod
+    def onUseToneMapPressed(state):
+        store.set(pcfg.use_tone_map, state)
 
     @staticmethod
     def onExportInAsciiPressed(state):
@@ -251,5 +256,5 @@ def create():
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()
 
-    main_menu = myui.getMainMenuBar()
+    main_menu = mywidget.getMainMenuBar()
     main_menu.addMenu(piper_menu)

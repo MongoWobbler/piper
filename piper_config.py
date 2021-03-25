@@ -18,9 +18,11 @@ use_piper_units = 'use_piper_units'
 export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
 unload_unwanted = 'unload_unwanted_plugins'
+use_tone_map = 'use_tone_map'
 store_defaults = {art_directory: None,
                   game_directory: None,
                   use_piper_units: True,
+                  use_tone_map: True,
                   unload_unwanted: True,
                   export_ascii: 0,
                   hdr_image_path: ''}
@@ -50,7 +52,7 @@ maya_default_length = 'cm'
 
 # Maya graphics
 maya_default_rendering_api = 'DirectX11'
-maya_default_tone_map = 'Stingray tone-map'
+maya_default_tone_map = 'Unity neutral tone-map'
 maya_default_initial_material = 'lambert'
 
 # Geometry

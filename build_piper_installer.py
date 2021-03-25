@@ -60,7 +60,7 @@ def finish():
     """
     Convenience method for asking user for input. Also good for pausing console execution and reviewing log.
     """
-    print("\nPress Enter to continue ...")
+    print("\nFinished installing piper. Press Enter to close ...")
     input()
 
 

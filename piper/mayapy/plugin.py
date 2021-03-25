@@ -41,18 +41,14 @@ def unloadUnwanted():
     [unload(plugin) for plugin in pcfg.maya_unwanted_plugins]
 
 
-def loadAll(version=True):
+def loadAll():
     """
     Loads all the plug-ins in the plug-ins directory inside Piper.
-
-    Args:
-        version (boolean): If True, will only load plugins with version number extension at the end of file name.
     """
     piper_directory = pcu.getPiperDirectory()
-    plugins_directory = os.path.join(piper_directory, 'maya', 'plug-ins')
-    extension = str(pm.about(version=True)) if version else ''
-    extension = (extension + '.mll', extension + '.py')
-    plugins = pcu.getAllFilesEndingWithWord(extension, plugins_directory)
+    plugins_directory = os.path.join(piper_directory, 'maya', 'plug-ins', str(pm.about(version=True)))
+    extensions = ('.mll', '.py')
+    plugins = pcu.getAllFilesEndingWithWord(extensions, plugins_directory)
     [load(os.path.basename(plugin)) for plugin in plugins]
 
 

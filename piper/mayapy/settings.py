@@ -6,6 +6,7 @@ import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
 from piper.mayapy.pipe.store import store
 
+
 # DX11 required for rendering engine
 plugin.load('dx11Shader')
 
@@ -51,7 +52,7 @@ def loadRender():
     pm.mel.eval('setRenderingEngineInModelPanel "{}";'.format(pcfg.maya_default_rendering_api))
     tone_maps = pm.colorManagementPrefs(q=True, vts=True)
 
-    if pcfg.maya_default_tone_map not in tone_maps:
+    if pcfg.maya_default_tone_map not in tone_maps or not store.get(pcfg.use_tone_map):
         return
 
     pm.colorManagementPrefs(e=True, vtn=pcfg.maya_default_tone_map)

@@ -19,7 +19,8 @@ if len(sys.argv) < 2:
 
 # using maya's environment to figure out where to save modules to
 environment_directory = sys.argv[1]
-modules_directory = os.path.join(os.environ['MAYA_APP_DIR'], mc.about(version=True), 'modules')
+version = mc.about(version=True)
+modules_directory = os.path.join(os.environ['MAYA_APP_DIR'], version, 'modules')
 
 if not os.path.exists(modules_directory):
     os.makedirs(modules_directory)
@@ -27,7 +28,8 @@ if not os.path.exists(modules_directory):
 # formatting lines for modules file.
 lines = ['+ {0} 1.0 {1}/maya'.format(MODULE_NAME, environment_directory),
          '{0}={1}'.format(ENVIRONMENT_KEY, environment_directory),
-         'MAYA_CONTENT_PATH+={0}/maya/scenes'.format(environment_directory)]
+         'MAYA_CONTENT_PATH+={0}/maya/scenes'.format(environment_directory),
+         'MAYA_PLUG_IN_PATH+={0}/maya/plug-ins/{1}'.format(environment_directory, version)]
 
 lines += ENVIRONMENT
 lines = [line + '\n' for line in lines]
