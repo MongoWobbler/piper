@@ -195,7 +195,31 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
     return mirrored_transforms
 
 
-def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, offset=False, joint_orient=False):
+def interceptConnect(source, target, name='', operation=1):
+    """
+    Intercepts the gi
+
+    Args:
+        source:
+        target:
+        name:
+        operation:
+
+    Returns:
+
+    """
+    if operation and target.connections(scn=True, plugs=True, destination=False):
+        connection = target.connections(scn=True, plugs=True, destination=False)[0]
+        plus = pm.createNode('plusMinusAverage', n=name)
+        plus.operation.set(operation)
+        connection >> plus.input3D[0]
+        source >> plus.input3D[1]
+        plus.output3D >> target
+    else:
+        source >> target
+
+
+def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, offset=False, jo=False, intercept=None):
     """
     Creates a parent matrix constraint between given driver and target. Could use selected objects too.
     Shout-out to Jarred Love for his tutorials.
@@ -213,8 +237,10 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
 
         offset (boolean): If True, will maintain current transform relation between given driver and target.
 
-        joint_orient (boolean): If True, AND given target transform has non-zero joint orient values,
+        jo (boolean): If True, AND given target transform has non-zero joint orient values,
         will create extra nodes to account for such values. Else will set joint orient values to zero.
+
+        intercept (int): If not zero and target plugs already have connections. Will add or subtract depending on int.
 
     Returns:
         (pm.nodetypes.DependNode): Decompose Matrix that drives target.
@@ -228,9 +254,10 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
         driver = selected[-2]
         target = selected[-1]
 
-    name = target.nodeName()
+    name = target.name()
+    driver_name = driver.name()
     matrix_multiplication = pm.createNode('multMatrix', n=name + pcfg.parent_matrix_mult_suffix)
-    decompose_matrix = pm.createNode('decomposeMatrix', n=name + pcfg.parent_matrix_decomp_suffix)
+    decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + name + pcfg.parent_matrix_decomp_suffix)
 
     if offset:
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
@@ -241,14 +268,15 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
         driver.worldMatrix[0] >> matrix_multiplication.matrixIn[0]
         target.parentInverseMatrix[0] >> matrix_multiplication.matrixIn[1]
 
-    matrix_multiplication.matrixSum >> decompose_matrix.inputMatrix
+    matrix_multiplication.matrixSum >> decomp_matrix.inputMatrix
 
     if t:
-        decompose_matrix.outputTranslate >> target.translate
+        plus_name = driver.name() + '_plusTranslate_' + name
+        interceptConnect(decomp_matrix.outputTranslate, target.translate, plus_name, intercept)
 
     if r:
         if target.hasAttr('jointOrient') and target.jointOrient.get() != pm.dt.Vector(0, 0, 0):
-            if joint_orient:
+            if jo:
                 compose_matrix = pm.createNode('composeMatrix', n=name + pcfg.parent_matrix_rot_comp_suffix)
                 compose_matrix.inputRotate.set(target.jointOrient.get())
                 target_parent = target.getParent()
@@ -277,41 +305,89 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
 
                 rotate_decompose = pm.createNode('decomposeMatrix', n=name + pcfg.parent_matrix_rot_decomp_suffix)
                 mult_rot_matrix.matrixSum >> rotate_decompose.inputMatrix
-                rotate_decompose.outputRotate >> target.rotate
+                output_rotate = rotate_decompose.outputRotate
 
             else:
                 target.jointOrient.set((0, 0, 0))
-                decompose_matrix.outputRotate >> target.rotate
+                output_rotate = decomp_matrix.outputRotate
 
         else:
-            decompose_matrix.outputRotate >> target.rotate
+            output_rotate = decomp_matrix.outputRotate
+
+        plus_name = driver.name() + '_plusRotate_' + name
+        interceptConnect(output_rotate, target.rotate, plus_name, intercept)
 
     if s:
-        decompose_matrix.outputScale >> target.scale
+        plus_name = driver.name() + '_plusScale_' + name
+        interceptConnect(decomp_matrix.outputScale, target.scale, plus_name, intercept)
 
-    return decompose_matrix
+    return decomp_matrix
 
 
-def offsetConstraint(driver, target):
+def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=True):
     """
     Parents constraint the given target by driving it through the offset Parent Matrix plug with the given driver.
 
     Args:
         driver (pm.nodetypes.Transform): Transform that will drive the given target through the constraint.
 
-        target (pm.nodetypes.Transform): Tranform that will be driven by the given driver through the constraint.
+        target (pm.nodetypes.Transform): Transform that will be driven by the given driver through the constraint.
+
+        t (boolean): If True, translate channels will be driven.
+
+        r (boolean): If True, translate channels will be driven.
+
+        s (boolean): If True, translate channels will be driven.
+
+        offset (boolean): If True, will maintain offset when creating constraint.
+
+        plug (boolean): If True, will plug output into target's offset parent matrix attribute.
     """
     target_parent = target.getParent()
 
-    if target_parent:
+    if target_parent and offset:
+        matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_parentOffsetMatrixMult')
+        offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
+        matrix_mult.matrixIn[0].set(offset)
+        driver.worldMatrix >> matrix_mult.matrixIn[1]
+        target_parent.worldInverseMatrix >> matrix_mult.matrixIn[2]
+        output = matrix_mult.matrixSum
+    elif target_parent:
         matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_parentMatrixMult')
         driver.worldMatrix >> matrix_mult.matrixIn[0]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[1]
-        matrix_mult.matrixSum >> target.offsetParentMatrix
+        output = matrix_mult.matrixSum
+    elif offset:
+        matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_offsetMatrixMult')
+        offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
+        matrix_mult.matrixIn[0].set(offset)
+        driver.worldMatrix >> matrix_mult.matrixIn[1]
+        output = matrix_mult.matrixSum
     else:
-        driver.worldMatrix >> target.offsetParentMatrix
+        output = driver.worldMatrix
 
-    pipermath.zeroOut(target)
+    # if all attribute are True OR all attributes are False, don't decompose, plug output into offset parent matrix.
+    if all([t, r, s]) or not any([t, r, s]):
+        pass
+    else:
+        decomp_matrix = pm.createNode('decomposeMatrix', n=driver.name() + '_to_' + target.name() + 'offsetParent_DM')
+        comp_matrix = pm.createNode('composeMatrix', n=driver.name() + '_to_' + target.name() + 'offsetParent_CM')
+        output >> decomp_matrix.inputMatrix
+
+        if t:
+            decomp_matrix.outputTranslate >> comp_matrix.inputTranslate
+        if r:
+            decomp_matrix.outputRotate >> comp_matrix.inputRotate
+        if s:
+            decomp_matrix.outputScale >> comp_matrix.inputScale
+
+        output = comp_matrix.outputMatrix
+
+    if plug:
+        output >> target.offsetParentMatrix
+        pipermath.zeroOut(target)
+
+    return output
 
 
 def poleVectorMatrixConstraint(ik_handle, control):

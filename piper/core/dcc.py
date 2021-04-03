@@ -258,6 +258,7 @@ class DCC(object):
         pcu.deleteCompiledScripts(install_directory)
 
         for python in self.getPythonPaths():
+            print('-' * 50)
             print('Starting ' + self.name + '\'s ' + python)
             subprocess.run([python, install_script, install_directory], shell=True)
 
@@ -283,7 +284,7 @@ class DCC(object):
         python_paths = self.getPythonPaths()
         batch_paths = self.getBatchPaths()
 
-        print('\n' + ('=' * 20))
+        print('\n' + ('=' * 50))
         print('DCC: ' + self.name)
 
         if self.isInstalled():

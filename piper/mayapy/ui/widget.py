@@ -43,5 +43,5 @@ def getMainMenuBar():
     if main_menu_bar:
         return main_menu_bar
 
-    main_menu_bar = getMainWindow().findChild(QtWidgets.QMenuBar, '')
+    main_menu_bar = getMainWindow().findChild(QtWidgets.QMenuBar)
     return main_menu_bar

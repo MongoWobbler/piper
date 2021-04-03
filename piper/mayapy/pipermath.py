@@ -1,6 +1,5 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
-import math
 import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.convert as convert
@@ -113,8 +112,7 @@ def getAimRotation(start, end):
     if isinstance(start, pm.nodetypes.Transform) and start.hasAttr('rotateOrder'):
         euler_rotation = euler_rotation.reorderIt(start.rotateOrder.get())
 
-    rotation = [math.degrees(angle) for angle in (euler_rotation.x, euler_rotation.y, euler_rotation.z)]
-    return rotation
+    return convert.toDegrees(euler_rotation)
 
 
 def getOrientAxis(start, target):

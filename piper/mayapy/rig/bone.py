@@ -19,26 +19,23 @@ def assignLabels(joints=None):
     joints = myu.validateSelect(joints, find='joint')
 
     for joint in joints:
-        has_side = False
         joint_name = joint.nodeName()
 
         if joint_name.endswith(pcfg.left_suffix):
-            has_side = True
             joint.side.set(1)
             joint_name = pcu.removeSuffixes(joint_name, pcfg.left_suffix)
         elif joint_name.endswith(pcfg.right_suffix):
-            has_side = True
             joint.side.set(2)
             joint_name = pcu.removeSuffixes(joint_name, pcfg.right_suffix)
 
         # have to do string "type" because type is a built-in python function
-        if has_side:
+        if joint_name in convert.JOINT_LABELS:
+            label = convert.jointNameToLabel(joint_name)
+            joint.attr('type').set(label)
+        else:
             label = convert.jointNameToLabel('other')
             joint.attr('type').set(label)
             joint.otherType.set(joint_name)
-        else:
-            label = convert.jointNameToLabel(joint_name)
-            joint.attr('type').set(label)
 
 
 def createAtPivot():

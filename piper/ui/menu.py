@@ -3,13 +3,14 @@
 import os
 import sys
 from PySide2 import QtWidgets, QtGui
+from piper.ui.widget import manager
 import piper.core.util as pcu
 
 
 class PiperMenu(QtWidgets.QMenu):
 
-    def __init__(self, title, parent=None):
-        super(PiperMenu, self).__init__(title, parent=parent)
+    def __init__(self, *args, **kwargs):
+        super(PiperMenu, self).__init__(*args, **kwargs)
         self.setTearOffEnabled(True)
         self.icon = QtGui.QIcon(os.path.join(pcu.getPiperDirectory(), 'icons', 'piper.png'))
         self.actions = []  # stores QWidgets so that they are not garbage collected
@@ -60,8 +61,8 @@ class PiperMenu(QtWidgets.QMenu):
 
 class PiperSceneMenu(PiperMenu):
 
-    def __init__(self, title='Scene', parent=None):
-        super(PiperSceneMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Scene', *args, **kwargs):
+        super(PiperSceneMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
@@ -108,8 +109,8 @@ class PiperSceneMenu(PiperMenu):
 
 class PiperExportMenu(PiperMenu):
 
-    def __init__(self, title='Export', parent=None):
-        super(PiperExportMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Export', *args, **kwargs):
+        super(PiperExportMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
@@ -142,15 +143,16 @@ class _PiperMainMenu(PiperMenu):
     # used to keep track of piper main menu in order to make it a singleton.
     instance = None
 
-    def __init__(self, title='Piper', parent=None):
+    def __init__(self, title='Piper', *args, **kwargs):
         # NOTE: PiperMainMenu needs its submenus defined in the DCC and its build() called by the DCC.
-        super(_PiperMainMenu, self).__init__(title=title, parent=parent)
+        super(_PiperMainMenu, self).__init__(title, *args, **kwargs)
         self.scene_menu = None
         self.nodes_menu = None
         self.export_menu = None
         self.curves_menu = None
         self.bones_menu = None
         self.graphics_menu = None
+        self.animation_menu = None
         self.settings_menu = None
 
     def build(self):
@@ -160,12 +162,14 @@ class _PiperMainMenu(PiperMenu):
         self.addMenuP(self.curves_menu)
         self.addMenuP(self.bones_menu)
         self.addMenuP(self.graphics_menu)
+        self.addMenuP(self.animation_menu)
         self.addMenuP(self.settings_menu)
         self.addSeparator()
 
         self.add('Reload Piper', self.reloadPiper)
 
     def reloadPiper(self):
+        manager.closeAll()
         pcu.removeModules(path=pcu.getPiperDirectory())
         self.deleteLater()
 

@@ -16,6 +16,48 @@ from . import curve
 from . import control
 
 
+def dynamicPivot(transform, target=None, shape=curve.square, axis=None, color='burnt orange', scale=1, size=None):
+    """
+    Creates a dynamic pivot at the given transform driving the given target.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to create dynamic pivot at.
+
+        target (pm.nodetypes.Transform): Transform to drive with dynamic pivot.
+
+        shape (method): Used to create curve or visual representation of FK control.
+
+        axis (string): Orientation for control made.
+
+        color (string): Color for control.
+
+        scale (float): Multiplied times size.
+
+        size (list): X, Y, Z sizes of control.
+
+    Returns:
+        (pm.nodetypes.Transform): Control created.
+    """
+    if not target:
+        target = transform
+
+    pivot_ctrl, _ = control.create(transform,
+                                   shape=shape,
+                                   name=target.name() + pcfg.dynamic_pivot_suffix,
+                                   axis=axis,
+                                   color=color,
+                                   scale=scale,
+                                   parent=target,
+                                   matrix_offset=False,
+                                   size=size)
+
+    pivot_ctrl.translate >> target.rotatePivot
+    attribute.nonKeyableCompound(pivot_ctrl, ['r', 's'])
+    pivot_ctrl.addAttr(pcfg.dynamic_pivot_rest, dt='string', k=False, h=True, s=True)
+    pivot_ctrl.attr(pcfg.dynamic_pivot_rest).set(transform.name())
+    return pivot_ctrl
+
+
 def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, connect=True):
     """
     Creates FK controls for the transform chain deduced by the start and end transforms.
@@ -43,22 +85,26 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
     transforms = xform.getChain(start, end)
     duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
 
-    for i, transform in enumerate(duplicates):
-        if transform != duplicates[-1]:
-            next_transform = duplicates[i + 1]
-            axis_vector = pipermath.getOrientAxis(transform, next_transform)
+    # attempt to deduce axis if transform only has one child and axis is not given
+    if not axis and len(transforms) == 1 and transforms[0].getChildren() and len(transforms[0].getChildren()) == 1:
+        axis_vector = pipermath.getOrientAxis(transforms[0], transforms[0].getChildren()[0])
+        axis = convert.axisToString(axis_vector)
+
+    for i, duplicate in enumerate(duplicates):
+        if duplicate != duplicates[-1]:
+            axis_vector = pipermath.getOrientAxis(duplicate, duplicates[i + 1])
             axis = convert.axisToString(axis_vector)
 
-        name = transform.nodeName()
+        name = duplicate.name()
         size = sizes[i] if sizes else control.calculateSize(transforms[i])
-        ctrl_parent = parent if transform == duplicates[0] else controls[i - 1]
-        ctrl, _ = control.create(transform, name=name, axis=axis, parent=ctrl_parent, shape=shape, size=size, scale=1.2)
+        ctrl_parent = parent if duplicate == duplicates[0] else controls[i - 1]
+        ctrl, _ = control.create(duplicate, name=name, axis=axis, parent=ctrl_parent, shape=shape, size=size, scale=1.2)
         controls.append(ctrl)
 
-        xform.offsetConstraint(ctrl, transform)
-        in_ctrl, _ = control.create(transform, name=name + '_inner', axis=axis, shape=curve.plus, size=size,
+        xform.offsetConstraint(ctrl, duplicate)
+        in_ctrl, _ = control.create(duplicate, name=name + '_inner', axis=axis, shape=curve.plus, size=size,
                                     parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
-        xform.parentMatrixConstraint(in_ctrl, transform)
+        xform.parentMatrixConstraint(in_ctrl, duplicate)
         in_controls.append(in_ctrl)
 
         transform_parent = transforms[i].getParent()
@@ -69,7 +115,7 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
             space.create(spaces, in_ctrl)
 
         if connect:
-            xform.parentMatrixConstraint(transform, transforms[i])
+            xform.parentMatrixConstraint(duplicate, transforms[i])
 
     return duplicates, controls + in_controls
 
@@ -99,13 +145,13 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
     controls = []
 
     if mid == start or mid == end:
-        pm.error('Not enough joints given! {} is the mid joint?'.format(mid.nodeName()))
+        pm.error('Not enough joints given! {} is the mid joint?'.format(mid.name()))
 
     start_initial_length = pipermath.getDistance(start, mid)
     end_initial_length = pipermath.getDistance(mid, end)
 
     for i, transform in enumerate(transforms):
-        name = transform.nodeName()
+        name = transform.name()
         size = sizes[i] if sizes else None
         control_parent = parent if transform == transforms[0] else None
 
@@ -126,13 +172,7 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
             attribute.lockAndHideCompound(scale_ctrl, ['t', 'r'])
             scale_ctrl.s >> transform.s
             controls.append(scale_ctrl)
-
-            # dynamic pivot
-            pivot_ctrl, _ = control.create(start, shape=curve.fourArrows, name=name + '_pivot', scale=0.6, axis=axis,
-                                           parent=ctrl, matrix_offset=False, size=size)
-
-            pivot_ctrl.translate >> ctrl.rotatePivot
-            attribute.nonKeyableCompound(pivot_ctrl, ['r', 's'])
+            pivot_ctrl = dynamicPivot(start, ctrl, curve.fourArrows, axis, 'burnt orange', 0.6, size)
             controls.append(pivot_ctrl)
 
         # mid
@@ -164,7 +204,7 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
     # connect controls to joints, and make ik handle
     xform.parentMatrixConstraint(start_control, start, t=True, r=False, s=False)
     xform.parentMatrixConstraint(piper_ik, end, t=False)
-    ik_handle, effector = pm.ikHandle(sj=start, ee=end, sol='ikRPsolver', n=end.nodeName() + '_handle', pw=1, w=1)
+    ik_handle, effector = pm.ikHandle(sj=start, ee=end, sol='ikRPsolver', n=end.name() + '_handle', pw=1, w=1)
     xform.parentMatrixConstraint(piper_ik, ik_handle, r=False, s=False)
     xform.poleVectorMatrixConstraint(ik_handle, mid_control)
 
@@ -219,7 +259,7 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
 
     # create the switcher control that holds the fk to ik attribute and make the end transform drive it
     switcher_control, _ = control.create(end,
-                                         name=end.nodeName() + pcfg.switcher_suffix,
+                                         name=end.name() + pcfg.switcher_suffix,
                                          axis=axis,
                                          shape=curve.cube,
                                          scale=0.5)
@@ -232,16 +272,16 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
     switcher_control.addAttr(pcfg.switcher_transforms, dt='string', k=False, h=True, s=True)
     switcher_control.addAttr(pcfg.switcher_fk, dt='string', k=False, h=True, s=True)
     switcher_control.addAttr(pcfg.switcher_ik, dt='string', k=False, h=True, s=True)
-    switcher_control.attr(pcfg.switcher_transforms).set(', '.join([node.nodeName() for node in transforms]))
-    switcher_control.attr(pcfg.switcher_fk).set(', '.join([fk.nodeName() for fk in fk_controls]))
-    switcher_control.attr(pcfg.switcher_ik).set(', '.join([ik.nodeName() for ik in ik_controls]))
+    switcher_control.attr(pcfg.switcher_transforms).set(', '.join([node.name() for node in transforms]))
+    switcher_control.attr(pcfg.switcher_fk).set(', '.join([fk.name() for fk in fk_controls]))
+    switcher_control.attr(pcfg.switcher_ik).set(', '.join([ik.name() for ik in ik_controls]))
 
     # one minus the output of the fk ik attribute in order to drive visibility of ik/fk controls
-    negative_one = pm.createNode('multDoubleLinear', n=switcher_control.nodeName() + '_negativeOne')
+    negative_one = pm.createNode('multDoubleLinear', n=switcher_control.name() + '_negativeOne')
     switcher_attribute >> negative_one.input1
     negative_one.input2.set(-1)
 
-    plus_one = pm.createNode('plusMinusAverage', n=switcher_control.nodeName() + '_plusOne')
+    plus_one = pm.createNode('plusMinusAverage', n=switcher_control.name() + '_plusOne')
     negative_one.output >> plus_one.input1D[0]
     plus_one.input1D[1].set(1)
 
@@ -263,7 +303,7 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
         attribute.addSeparator(ctrl)
         ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
-    return controls
+    return fk_transforms, ik_transforms, controls
 
 
 def banker(joint, ik_control, pivot_track=None, side=''):
@@ -283,7 +323,7 @@ def banker(joint, ik_control, pivot_track=None, side=''):
     Returns:
         (pm.nodetypes.Transform): Control that moves the reverse foot pivot.
     """
-    joint_name = joint.nodeName()
+    joint_name = joint.name()
     prefix = joint_name + '_'
     axis = pipermath.getOrientAxis(joint.getParent(), joint)
     is_negative = convert.axisToString(axis).startswith('n')
@@ -426,7 +466,7 @@ def banker(joint, ik_control, pivot_track=None, side=''):
     normalized_track.visibility.set(False)
 
     ik_control.addAttr(pcfg.banker_attribute, dt='string', k=False, h=True, s=True)
-    ik_control.attr(pcfg.banker_attribute).set(ctrl.nodeName())
+    ik_control.attr(pcfg.banker_attribute).set(ctrl.name())
 
     # hook up pivot control with fk_ik attribute if ik has an fk-ik proxy
     if ik_control.hasAttr(pcfg.proxy_fk_ik):

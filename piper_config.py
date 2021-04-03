@@ -68,18 +68,20 @@ delete_node_attribute = 'delete'
 # Rig
 rig_suffix = '_Rig'
 root_joint_name = 'root'
+dynamic_pivot_suffix = '_dPivot'
+dynamic_pivot_rest = 'pivotRest'
 
 # Controls
 offset_suffix = '_offset'
 control_suffix = '_ctrl'
 
 # Parent Matrix
-parent_matrix_mult_suffix = '_ParentMatrix_Mult'
-parent_matrix_decomp_suffix = '_ParentMatrix_Decomp'
-parent_matrix_rot_comp_suffix = '_ParentMatrix_Rot_Comp'
-parent_matrix_rot_mult_suffix = '_ParentMatrix_Rot_Mult_01'
+parent_matrix_mult_suffix = '_ParentMatrix_MM'
+parent_matrix_decomp_suffix = '_ParentMatrix_DM'
+parent_matrix_rot_comp_suffix = '_ParentMatrix_Rot_CM'
+parent_matrix_rot_mult_suffix = '_ParentMatrix_Rot_MM_01'
 parent_matrix_rot_inv_suffix = '_ParentMatrix_Rot_Inv'
-parent_matrix_rot_decomp_suffix = '_ParentMatrix_Rot_Decomp'
+parent_matrix_rot_decomp_suffix = '_ParentMatrix_Rot_DM'
 
 # Spaces
 spaces_name = 'spaces'

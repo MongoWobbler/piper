@@ -578,6 +578,35 @@ def layoutAll(spacing=4, axis=None):
     return curves
 
 
+def layoutColors(spacing=4, axis=None, shape=circle):
+    """
+    Creates the given shape in all colors with the given spaces in the given axis.
+
+    Args:
+        spacing (float): How far apart each curve should be from each other.
+
+        axis (Any): Vector in which direction curves should be laid out in. If None given wil use X axis.
+
+        shape (method): Creates the curve shape.
+
+    Returns:
+        (list): Curves made.
+    """
+    curves = []
+
+    if not axis:
+        axis = pm.dt.Vector((1, 0, 0))
+
+    for i, color_name in convert.COLORS_INDEX.items():
+        curve = shape(name=color_name + str(i))
+        translate = axis * spacing * i
+        curve.t.set(translate)
+        color(curve, color_name)
+        curves.append(curve)
+
+    return curves
+
+
 @plugin.loadHoudiniEngine
 def crossSection(meshes=None):
     """

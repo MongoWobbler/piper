@@ -1,5 +1,6 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+import os
 import subprocess
 from piper.core.dcc import DCC
 
@@ -23,3 +24,7 @@ class Maya(DCC):
     def runPythonBatches(self, command):
         for version in self.getVersions():
             self.runPythonBatch(version, command)
+
+    def onBeforeInstalling(self):
+        os.environ['MAYA_SKIP_USERSETUP_PY'] = '1'
+        os.environ['PYMEL_SKIP_MEL_INIT'] = '1'

@@ -177,4 +177,4 @@ class Binder(object):
         pm.select(self.info.keys())
 
         if not os.listdir(self.directory):
-            os.remove(self.directory)
+            os.rmdir(self.directory)

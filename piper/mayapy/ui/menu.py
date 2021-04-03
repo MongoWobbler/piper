@@ -11,6 +11,7 @@ import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.curve as curve
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
+import piper.mayapy.ui.switcher as myswitcher
 import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
@@ -135,10 +136,26 @@ class MayaExportMenu(PiperExportMenu):
         store.set(pcfg.game_directory, directory)
 
 
+class MayaCurvesMenu(MayaPiperMenu):
+
+    def __init__(self, title='Curves', *args, **kwargs):
+        super(MayaCurvesMenu, self).__init__(title, *args, **kwargs)
+        self.build()
+
+    def build(self):
+        [self.add(pcu.toSentenceCase(curve_method.__name__), curve_method) for curve_method in curve.methods]
+        self.addSeparator()
+        self.add('Create Curve(s) From Cross Section', curve.crossSection)
+        self.add('Create Cross Section Curve at Origin', curve.originCrossSection)
+        self.addSeparator()
+        self.add('Layout All Curves', curve.layoutAll)
+        self.add('Layout All Colors', curve.layoutColors)
+
+
 class MayaNodesMenu(MayaPiperMenu):
 
-    def __init__(self, title='Nodes', parent=None):
-        super(MayaNodesMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Nodes', *args, **kwargs):
+        super(MayaNodesMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
@@ -148,8 +165,8 @@ class MayaNodesMenu(MayaPiperMenu):
 
 class MayaBonesMenu(MayaPiperMenu):
 
-    def __init__(self, title='Bones', parent=None):
-        super(MayaBonesMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Bones', *args, **kwargs):
+        super(MayaBonesMenu, self).__init__(title, *args, **kwargs)
         self.binder = skin.Binder()
         self.build()
 
@@ -169,8 +186,8 @@ class MayaBonesMenu(MayaPiperMenu):
 
 class MayaGraphicsMenu(MayaPiperMenu):
 
-    def __init__(self, title='Graphics', parent=None):
-        super(MayaGraphicsMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Graphics', *args, **kwargs):
+        super(MayaGraphicsMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
@@ -178,25 +195,20 @@ class MayaGraphicsMenu(MayaPiperMenu):
         self.add('Update Materials', graphics.updateMaterials)
 
 
-class MayaCurvesMenu(MayaPiperMenu):
+class MayaAnimationMenu(MayaPiperMenu):
 
-    def __init__(self, title='Curves', parent=None):
-        super(MayaCurvesMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Animation', *args, **kwargs):
+        super(MayaAnimationMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
-        [self.add(pcu.toSentenceCase(curve_method.__name__), curve_method) for curve_method in curve.methods]
-        self.addSeparator()
-        self.add('Create Curve(s) From Cross Section', curve.crossSection)
-        self.add('Create Cross Section Curve at Origin', curve.originCrossSection)
-        self.addSeparator()
-        self.add('Layout All Curves', curve.layoutAll)
+        self.add('Space Switcher', myswitcher.show)
 
 
 class MayaSettingsMenu(MayaPiperMenu):
 
-    def __init__(self, title='Settings', parent=None):
-        super(MayaSettingsMenu, self).__init__(title, parent=parent)
+    def __init__(self, title='Settings', *args, **kwargs):
+        super(MayaSettingsMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
@@ -253,6 +265,7 @@ def create():
     piper_menu.curves_menu = MayaCurvesMenu()
     piper_menu.bones_menu = MayaBonesMenu()
     piper_menu.graphics_menu = MayaGraphicsMenu()
+    piper_menu.animation_menu = MayaAnimationMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()
 

@@ -161,7 +161,7 @@ def create(spaces, transform, direct=False):
     return space_attributes
 
 
-def switch(transform, new_space=None, t=True, r=True, s=True):
+def switch(transform, new_space=None, t=True, r=True, s=True, key=False):
     """
     Switches the given transform to the given new_space while maintaining the world transform of the given transform.
     Choose to switch driving translate, rotate, or scale attributes on or off too.
@@ -169,14 +169,20 @@ def switch(transform, new_space=None, t=True, r=True, s=True):
     Args:
         transform (pm.nodetypes.Transform):
 
-        new_space (string): Name of space attribute to switch to.
+        new_space (string or None): Name of space attribute to switch to.
 
         t (boolean): If True, space will affect translate values.
 
         r (boolean): If True, space will affect rotate values.
 
         s (boolean): If True, space will affect scale values.
+
+        key (boolean): If True, will set a key at the previous frame on the transform.
     """
+    if key:
+        current_frame = pm.currentTime(q=True)
+        pm.setKeyframe(transform, time=current_frame - 1)
+
     position = transform.worldMatrix.get()
     transform.useTranslate.set(t)
     transform.useRotate.set(r)
@@ -249,7 +255,7 @@ def switchFKIK(switcher, key=True, match_only=False):
             pm.setKeyframe(fk_controls + [switcher], time=current_frame - 1)
 
         # set the inner controls to their local space
-        inner_start_index = len(fk_controls)/2
+        inner_start_index = int(len(fk_controls)/2)
         for inner_ctrl in fk_controls[inner_start_index:]:
             switch(inner_ctrl)
             pipermath.zeroOut(inner_ctrl)
@@ -263,7 +269,7 @@ def switchFKIK(switcher, key=True, match_only=False):
         switcher.attr(pcfg.fk_ik_attribute).set(new_fk_ik_value)
 
 
-def resetDynamicPivot(pivot_control, key=True):
+def resetDynamicPivot(pivot_control, key=True, rest=False):
     """
     Resets the position of the dynamic pivot. Maintains world position of control driven by pivot.
 
@@ -271,15 +277,18 @@ def resetDynamicPivot(pivot_control, key=True):
         pivot_control (pm.nodetypes.Transform): Pivot control that needs to be reset to zero position.
 
         key (boolean): If True, will key the pivot and parent control on the previous frame.
+
+        rest (boolean): If True, will move pivot to the rest position.
     """
     parent = pivot_control.getParent()
     matrix = parent.worldMatrix.get()
+    rest_matrix = pm.PyNode(pivot_control.attr(pcfg.dynamic_pivot_rest).get()).worldMatrix.get()
 
     if key:
         current_frame = pm.currentTime(q=True)
         pm.setKeyframe(pivot_control, time=current_frame - 1)
         pm.setKeyframe(parent, time=current_frame - 1)
 
-    pipermath.zeroOut(pivot_control)
+    pm.xform(pivot_control, ws=True, m=rest_matrix) if rest else pipermath.zeroOut(pivot_control)
     pm.xform(parent, ws=True, m=matrix)
-    parent.r.set(0, 0, 0)
+    pm.xform(parent, ws=True, m=matrix)  # called twice because Maya is stupid

@@ -1,5 +1,6 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+import math
 import pymel.core as pm
 
 COLORS_INDEX = {0: 'default',
@@ -238,3 +239,25 @@ def toVector(transform, invalid_zero=False, error=False):
             location = transform
 
     return location
+
+
+def toDegrees(transform):
+    """
+    Converts given transform to a rotation in degrees.
+
+    Args:
+        transform (pm.dt.Matrix, pm.dt.Quaternion, pm.dt.EulerRotation): Transform to convert to degrees.
+
+    Returns:
+        (list): Angle values of given transform.
+    """
+    if isinstance(transform, pm.dt.Matrix):
+        rotation = transform.rotate.asEulerRotation()
+    elif isinstance(transform, pm.dt.Quaternion):
+        rotation = transform.asEulerRotation()
+    elif isinstance(transform, pm.dt.EulerRotation):
+        rotation = transform
+    else:
+        raise TypeError(str(type(transform)) + ' is not a valid type to convert to EulerRotation!')
+
+    return [math.degrees(angle) for angle in rotation]
