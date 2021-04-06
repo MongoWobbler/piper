@@ -84,10 +84,10 @@ def createIK(name=None, control_shape=curve.circle):
         (PyNode): Piper IK node created.
     """
     piper_ik = create('piperIK', name=name)
-    control = control_shape()
-    curves = control.getChildren(type='nurbsCurve')
+    ctrl = control_shape()
+    curves = ctrl.getChildren(type='nurbsCurve')
     pm.parent(curves, piper_ik, shape=True, add=True)
-    pm.delete(control)
+    pm.delete(ctrl)
 
     return piper_ik
 

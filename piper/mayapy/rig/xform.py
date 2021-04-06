@@ -197,16 +197,16 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
 
 def interceptConnect(source, target, name='', operation=1):
     """
-    Intercepts the gi
+    Intercepts the given target and adds, subtracts or averages it with give source.
 
     Args:
-        source:
-        target:
-        name:
-        operation:
+        source (pm.general.Attribute): Source attribute to connect into interception.
 
-    Returns:
+        target (pm.general.Attribute): Target attribute to intercept and get plug connection from.
 
+        name (string): Name of intercept node.
+
+        operation (int): 1 is add, 2 is subtract, 3 is average.
     """
     if operation and target.connections(scn=True, plugs=True, destination=False):
         connection = target.connections(scn=True, plugs=True, destination=False)[0]
@@ -219,7 +219,9 @@ def interceptConnect(source, target, name='', operation=1):
         source >> target
 
 
-def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, offset=False, jo=False, intercept=None):
+def parentMatrixConstraint(driver=None, target=None,
+                           t=True, r=True, s=True,
+                           offset=False, jo=False, intercept=None, message=False):
     """
     Creates a parent matrix constraint between given driver and target. Could use selected objects too.
     Shout-out to Jarred Love for his tutorials.
@@ -242,6 +244,8 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
 
         intercept (int): If not zero and target plugs already have connections. Will add or subtract depending on int.
 
+        message (boolean) If True, will add message attribute that states connection between driver and target.
+
     Returns:
         (pm.nodetypes.DependNode): Decompose Matrix that drives target.
     """
@@ -255,8 +259,21 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
         target = selected[-1]
 
     name = target.name()
+    if all(['t', 'r', 's']):
+        mult_name = '_'.join([name, pcfg.parent_matrix_mult_suffix])
+    else:
+        middle = ''
+        if t:
+            middle += 'T'
+        if r:
+            middle += 'R'
+        if s:
+            middle += 'S'
+
+        mult_name = '_'.join([name, middle, pcfg.parent_matrix_mult_suffix])
+
     driver_name = driver.name()
-    matrix_multiplication = pm.createNode('multMatrix', n=name + pcfg.parent_matrix_mult_suffix)
+    matrix_multiplication = pm.createNode('multMatrix', n=mult_name)
     decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + name + pcfg.parent_matrix_decomp_suffix)
 
     if offset:
@@ -321,10 +338,13 @@ def parentMatrixConstraint(driver=None, target=None, t=True, r=True, s=True, off
         plus_name = driver.name() + '_plusScale_' + name
         interceptConnect(decomp_matrix.outputScale, target.scale, plus_name, intercept)
 
+    if message:
+        attribute.addDrivenMessage(driver, target)
+
     return decomp_matrix
 
 
-def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=True):
+def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=True, message=False):
     """
     Parents constraint the given target by driving it through the offset Parent Matrix plug with the given driver.
 
@@ -342,6 +362,8 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
         offset (boolean): If True, will maintain offset when creating constraint.
 
         plug (boolean): If True, will plug output into target's offset parent matrix attribute.
+
+        message (boolean) If True, will add message attribute that states connection between driver and target.
     """
     target_parent = target.getParent()
 
@@ -386,6 +408,9 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
     if plug:
         output >> target.offsetParentMatrix
         pipermath.zeroOut(target)
+
+    if message:
+        attribute.addDrivenMessage(driver, target)
 
     return output
 
@@ -463,9 +488,9 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
     zero_vector = pm.dt.Vector(0, 0, 0)
 
     # if transform has rotations or joint orient, then its not in a straight line and we can figure out pole vector
-    if mid_transform.r.get() == zero_vector:
+    if mid_transform.r.get().isEquivalent(zero_vector, tol=0.5):
         if mid_transform.hasAttr('orientJoint'):
-            if mid_transform.orientJoint.get() == zero_vector:
+            if mid_transform.orientJoint.get().isEquivalent(zero_vector, tol=0.5):
                 is_in_straight_line = True
         else:
             is_in_straight_line = True
@@ -500,7 +525,7 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
     single_scale = mid_transform.radius.get() if mid_transform.hasAttr('radius') else 1
     scale = [single_scale, single_scale, single_scale]
 
-    return [translation, rotation, scale]
+    return translation, rotation, scale, is_in_straight_line
 
 
 def orient(start, end, aim=None, up=None, world_up=None):

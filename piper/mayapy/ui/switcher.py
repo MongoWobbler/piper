@@ -8,14 +8,15 @@ import piper_config as pcfg
 import piper.core.util as pcu
 from piper.ui.widget import manager
 from piper.ui.switcher import Switcher
-import piper.mayapy.rig.control as control
+from piper.mayapy.pipe.store import store
 import piper.mayapy.rig.space as space
+import piper.mayapy.rig.switcher as switcher
 
 
 class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
-    def __init__(self, *args, **kwargs):
-        super(MayaSwitcher, self).__init__(*args, **kwargs)
+    def __init__(self, maya_store=None, *args, **kwargs):
+        super(MayaSwitcher, self).__init__(dcc_store=maya_store, *args, **kwargs)
         manager.register(self)
         self.callback = om.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
         self.onSelectionChanged()  # called to load/update switcher on startup
@@ -54,7 +55,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
             spaces.update(node_spaces)
 
             # get fk/ik switcher controls
-            fk_ik_switcher = control.getSwitcher(node, error=False, name=True)
+            fk_ik_switcher = switcher.get(node, error=False, name=True)
             if fk_ik_switcher:
                 switchers.add(fk_ik_switcher)
 
@@ -134,6 +135,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         pm.undoInfo(closeChunk=True)
 
     def dockCloseEventTriggered(self):
+        self.onClosedPressed()
         manager.unregister(self)
         om.MMessage.removeCallback(self.callback)
         super(MayaSwitcher, self).dockCloseEventTriggered()
@@ -146,6 +148,6 @@ def show():
     Returns:
         (MayaSwitcher): QtWidget being shown.
     """
-    gui = MayaSwitcher()
+    gui = MayaSwitcher(maya_store=store)
     gui.show(dockable=True)
     return gui

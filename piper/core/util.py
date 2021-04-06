@@ -48,6 +48,24 @@ def validateDirectory(directory):
         os.makedirs(directory)
 
 
+def getSide(name):
+    """
+    Gets the full name of the side associated with the given name suffix.
+
+    Args:
+        name (string): Name to get side of from suffix.
+
+    Returns:
+        (string): Full name of side.
+    """
+    if name.endswith(pcfg.left_suffix):
+        return 'left'
+    elif name.endswith(pcfg.right_suffix):
+        return 'right'
+    else:
+        return ''
+
+
 def getApp():
     """
     Gets the application that is running the current python script.

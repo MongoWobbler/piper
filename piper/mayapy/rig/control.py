@@ -139,33 +139,4 @@ def create(transform,
     return control, group_offset
 
 
-def getSwitcher(transform, error=True, name=False):
-    """
-    Gets the switcher if the given transform has an fk_ik attribute.
 
-    Args:
-        transform (pm.nodetypes.Transform): Transform to get switcher control of.
-
-        error (boolean): If True, will raise error if given transform is not connected to a switcher.
-
-        name (boolean): If True, will return name of switcher.
-
-    Returns:
-        (pm.nodetypes.Transform or String): Switcher control that holds real fk_ik attribute.
-    """
-    if transform.hasAttr(pcfg.proxy_fk_ik):
-        real_switcher = transform.attr(pcfg.proxy_fk_ik).connections()
-
-        if not real_switcher:
-            pm.error(transform.nodeName() + ' has proxy attribute but is not connected!')
-
-        return real_switcher[0].name() if name else real_switcher[0]
-
-    elif transform.hasAttr(pcfg.fk_ik_attribute):
-        return transform.name() if name else transform
-
-    elif error:
-        pm.error(transform.nodeName() + ' is not connected to a switcher!')
-
-    else:
-        return None

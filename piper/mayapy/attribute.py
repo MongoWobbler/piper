@@ -137,6 +137,78 @@ def addDelete(transforms=None):
         nonKeyable(transform.delete)
 
 
+def addMessage(source, target, source_message, target_message):
+    """
+    Connects the given source to the given target with the given message attributes.
+
+    Args:
+        source (pm.nodetypes.DependNode): Node that will have the source attribute added to it.
+
+        target (pm.nodetypes.DependNode): Node that will have the target attribute added to it.
+
+        source_message (string): Name of source message attribute to add.
+
+        target_message (string): Name of target message attribute to add.
+    """
+    if not source.hasAttr(pcfg.message_source):
+        source.addAttr(source_message, at='message')
+
+    if not target.hasAttr(pcfg.message_target):
+        target.addAttr(target_message, at='message')
+
+    source.attr(source_message) >> target.attr(target_message)
+
+
+def addDrivenMessage(source, target):
+    """
+    Connects the given source to the given target with a message attribute to store driven connection.
+
+    Args:
+        source (pm.nodetypes.DependNode): Node that will have the source attribute added to it.
+
+        target (pm.nodetypes.DependNode): Node that will have the target attribute added to it.
+    """
+    addMessage(source, target, pcfg.message_source, pcfg.message_target)
+
+
+def addReverseMessage(source, target):
+    """
+    Connects the given source to the given target with a message attribute to store reverse driven connection.
+
+    Args:
+        source (pm.nodetypes.DependNode): Node that will have the source attribute added to it.
+
+        target (pm.nodetypes.DependNode): Node that will have the target attribute added to it.
+    """
+    addMessage(source, target, pcfg.message_reverse_driver, pcfg.message_reverse_target)
+
+
+def getMessagedReverseTarget(reverse_driver):
+    """
+    Gets the target node associated with the given reverse driver.
+
+    Args:
+        reverse_driver (pm.nodetypes.DependNode): Node that is driving the reverse target.
+
+    Returns:
+        (pm.nodetypes.DependNode): Node being driven by reverse driver.
+    """
+    return reverse_driver.attr(pcfg.message_reverse_driver).connections(scn=True, source=False)[0]
+
+
+def getMessagedTarget(driver):
+    """
+    Gets the target node associated with the given driver.
+
+    Args:
+        driver (pm.nodetypes.DependNode): Node that is driving the target.
+
+    Returns:
+        (pm.nodetypes.DependNode): Node being driven by driver.
+    """
+    return driver.attr(pcfg.message_source).connections(scn=True, source=False)[0]
+
+
 def getNextAvailableIndexFromTargetMatrix(node, start_index=0):
     """
     Gets the first available index in which the target matrix is open and equal to the identity matrix.

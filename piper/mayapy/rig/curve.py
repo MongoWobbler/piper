@@ -15,7 +15,7 @@ def color(control, color_name):
     Sets color of all the shapes that a given control has. See piper/mayapy/convert for all available colors.
 
     Args:
-        control (pm.nodetypes.Transform): Transform that holds shapes as children.
+        control (pm.nodetypes.Transform or DependNode): Transform that holds shapes as children.
 
         color_name (string): Name of color to change given control to.
     """

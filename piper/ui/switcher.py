@@ -6,10 +6,11 @@ from piper.ui.widget import separator
 
 class Switcher(QtWidgets.QDialog):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, dcc_store=None, *args, **kwargs):
         super(Switcher, self).__init__(*args, **kwargs)
 
         self.setWindowTitle('Switcher')
+        self.store = dcc_store
         self.self_update = None
         self.keyframe_box = None
         self.match_only = None
@@ -21,6 +22,15 @@ class Switcher(QtWidgets.QDialog):
         self.pivots_list = None
         self.rest_list = None
         self.build()
+
+        self.store_data = {self.self_update: 'switcher_update_box',
+                           self.keyframe_box: 'switcher_key_box',
+                           self.match_only: 'switcher_match_box',
+                           self.translate: 'switcher_translate_box',
+                           self.rotate: 'switcher_rotate_box',
+                           self.scale: 'switcher_scale_box'}
+
+        self.restorePrevious()
 
     def build(self):
         main_layout = QtWidgets.QGridLayout(self)
@@ -77,8 +87,16 @@ class Switcher(QtWidgets.QDialog):
         self.rest_list.itemClicked.connect(self.onPivotRestPressed)
         self.rest_list.setFocusPolicy(QtCore.Qt.NoFocus)
         main_layout.addWidget(self.rest_list, 5, 2)
-
         main_layout.setRowStretch(6, 1)
+
+    def restorePrevious(self):
+        """
+        Restores the previous settings the window had when it was closed.
+        """
+        if not self.store:
+            return
+
+        {box.setChecked(self.store.get(name)) for box, name in self.store_data.items()}
 
     @staticmethod
     def updateList(widget, spaces, minimum=0):
@@ -112,6 +130,15 @@ class Switcher(QtWidgets.QDialog):
         """
         if state:
             self.onSelectionChanged()
+
+    def onClosedPressed(self):
+        """
+        This method should be called when window closes. Stores window's settings.
+        """
+        if not self.store:
+            return
+
+        {self.store.set(name, box.isChecked()) for box, name in self.store_data.items()}
 
     def onSelectionChanged(self, *args):
         """

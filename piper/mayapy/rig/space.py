@@ -7,7 +7,7 @@ import piper.mayapy.attribute as attribute
 import piper.mayapy.pipermath as pipermath
 
 from . import xform
-from . import control
+from . import switcher
 
 
 def _connect(transform, target, space):
@@ -27,7 +27,7 @@ def _connect(transform, target, space):
     transform.attr(pcfg.space_use_scale) >> target.useScale
 
 
-def getAll(transform, attribute_name=pcfg.spaces_name, cast=False):
+def getAll(transform, cast=False):
     """
     Gets all the piper made spaces. Uses names stored in a string attribute to get these spaces.
     Will return empty list if no spaces attributes found.
@@ -35,43 +35,21 @@ def getAll(transform, attribute_name=pcfg.spaces_name, cast=False):
     Args:
         transform (pm.nodetypes.Transform): Transform to get spaces from.
 
-        attribute_name (string): The name of the attribute to get the spaces from.
-
         cast (boolean): If True, will cast each value of the attribute found into a PyNode.
 
     Returns:
         (list): All space attributes given transform has, if any.
     """
-    attributes = None
+    spaces = None
 
-    if transform.hasAttr(attribute_name):
-        attributes = transform.attr(attribute_name).get()
+    if transform.hasAttr(pcfg.spaces_name):
+        spaces = transform.attr(pcfg.spaces_name).get()
 
-    if attributes:
-        attributes = attributes.split(', ')
-        return [pm.PyNode(attribute_name) for attribute_name in attributes] if cast else attributes
+    if spaces:
+        spaces = spaces.split(', ')
+        return [pm.PyNode(space_name) for space_name in spaces] if cast else spaces
     else:
         return []
-
-
-def getFkIkAttributes(transform):
-    """
-    Check whether given node has all needed attributes to perform a switch, raise error if it does not.
-
-    Args:
-        transform (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
-
-    Returns:
-        (list): Transforms, FK controls, IK controls, and fk_ik attribute value. Transforms and controls are in order.
-    """
-    switcher = control.getSwitcher(transform)
-    attribute.exists(switcher, pcfg.switcher_attributes, error=True)
-    transforms = getAll(switcher, pcfg.switcher_transforms, cast=True)
-    fk_controls = getAll(switcher, pcfg.switcher_fk, cast=True)
-    ik_controls = getAll(switcher, pcfg.switcher_ik, cast=True)
-    fk_ik_value = switcher.attr(pcfg.fk_ik_attribute).get()
-
-    return switcher, transforms, fk_controls, ik_controls, fk_ik_value
 
 
 def create(spaces, transform, direct=False):
@@ -196,20 +174,21 @@ def switch(transform, new_space=None, t=True, r=True, s=True, key=False):
     pm.xform(transform, ws=True, m=position)
 
 
-def switchFKIK(switcher, key=True, match_only=False):
+def switchFKIK(switcher_ctrl, key=True, match_only=False):
     """
     Moves the FK or IK controls to the transform of the other based on the FK_IK attribute on the switcher control.
 
     Args:
-        switcher (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
+        switcher_ctrl (pm.nodetypes.Transform): Switcher control with attributes that hold all the FK IK information.
 
         key (boolean): If True, will set a key at the previous frame.
 
         match_only (boolean): If True, will match the FK/IK space, but will not switch the FK_IK attribute.
     """
     # check whether given node has all needed attributes to perform a switch, raise error if it does not.
-    switcher, transforms, fk_controls, ik_controls, fk_ik_value = getFkIkAttributes(switcher)
+    switcher_ctrl, transforms, fk_controls, ik_controls, reverses, fk_ik_value = switcher.getAllData(switcher_ctrl)
     current_frame = pm.currentTime(q=True)
+    reverse_control_transforms = {}
 
     if not (fk_ik_value == 1 or fk_ik_value == 0):
         pm.warning('FK IK attribute = {}, which is not a whole number, matching might be off!'.format(str(fk_ik_value)))
@@ -218,7 +197,8 @@ def switchFKIK(switcher, key=True, match_only=False):
     if fk_ik_value <= 0.5:
         new_fk_ik_value = 1
         mid = pcu.getMedian(transforms)
-        to_key = ik_controls + [switcher]
+
+        to_key = ik_controls + [switcher_ctrl] + reverses
 
         # if foot has banker attribute, set to banker's rotations to 0 and add it to key list
         if ik_controls[-1].hasAttr(pcfg.banker_attribute):
@@ -229,7 +209,10 @@ def switchFKIK(switcher, key=True, match_only=False):
         if key:
             pm.setKeyframe(to_key, time=current_frame - 1)
 
-        for transform, ik_control in zip(transforms, ik_controls[2:]):
+        [reverse.r.set(0, 0, 0) for reverse in reverses]
+        mid_index = int(len(ik_controls) / 2)
+        iks = [ik_controls[1], ik_controls[mid_index], ik_controls[-1]]
+        for transform, ik_control in reversed(list(zip(transforms, iks))):
 
             # start of chain
             if transform == transforms[0]:
@@ -240,9 +223,10 @@ def switchFKIK(switcher, key=True, match_only=False):
 
             # middle transform
             elif transform == mid:
-                translate, _, _ = xform.calculatePoleVector(transforms[0], mid, transforms[-1], scale=2)
-                pm.xform(ik_control, ws=True, t=translate)
+                translate, _, _, straight = xform.calculatePoleVector(transforms[0], mid, transforms[-1], scale=2)
+                ik_control.t.set(0, 0, 0) if straight else pm.xform(ik_control, ws=True, t=translate)
 
+            # end
             else:
                 matrix = transform.worldMatrix.get()
                 pm.xform(ik_control, ws=True, m=matrix)
@@ -251,8 +235,14 @@ def switchFKIK(switcher, key=True, match_only=False):
     else:
         new_fk_ik_value = 0
 
+        # storing reverse control transforms that will need to be set after matching IK chain
+        for reverse in reverses:
+            negated_ctrl = attribute.getMessagedReverseTarget(reverse)
+            driven = attribute.getMessagedTarget(negated_ctrl)
+            reverse_control_transforms[negated_ctrl] = driven.worldMatrix.get()
+
         if key:
-            pm.setKeyframe(fk_controls + [switcher], time=current_frame - 1)
+            pm.setKeyframe(fk_controls + [switcher_ctrl] + list(reverse_control_transforms), time=current_frame - 1)
 
         # set the inner controls to their local space
         inner_start_index = int(len(fk_controls)/2)
@@ -266,7 +256,10 @@ def switchFKIK(switcher, key=True, match_only=False):
             pm.xform(fk_control, ws=True, m=matrix)
 
     if not match_only:
-        switcher.attr(pcfg.fk_ik_attribute).set(new_fk_ik_value)
+        switcher_ctrl.attr(pcfg.fk_ik_attribute).set(new_fk_ik_value)
+
+        if reverse_control_transforms:
+            {pm.xform(transform, ws=True, m=matrix) for transform, matrix in reverse_control_transforms.items()}
 
 
 def resetDynamicPivot(pivot_control, key=True, rest=False):

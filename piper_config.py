@@ -71,12 +71,18 @@ root_joint_name = 'root'
 dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
 
+# messages
+message_source = 'msgSource'
+message_target = 'msgTarget'
+message_reverse_driver = 'msgReverseDriver'
+message_reverse_target = 'msgReverseTarget'
+
 # Controls
 offset_suffix = '_offset'
 control_suffix = '_ctrl'
 
 # Parent Matrix
-parent_matrix_mult_suffix = '_ParentMatrix_MM'
+parent_matrix_mult_suffix = 'ParentMatrix_MM'
 parent_matrix_decomp_suffix = '_ParentMatrix_DM'
 parent_matrix_rot_comp_suffix = '_ParentMatrix_Rot_CM'
 parent_matrix_rot_mult_suffix = '_ParentMatrix_Rot_MM_01'
@@ -100,10 +106,11 @@ fk_ik_attribute = 'fk_ik'
 proxy_fk_ik = 'FK_IK'
 switcher_attribute = 'switcher'
 switcher_suffix = '_switcher'
+switcher_transforms = 'transforms'
 switcher_fk = 'fkControls'
 switcher_ik = 'ikControls'
-switcher_transforms = 'transforms'
-switcher_attributes = [fk_ik_attribute, switcher_fk, switcher_ik, switcher_transforms]
+switcher_reverses = 'reverses'
+switcher_attributes = [switcher_transforms, switcher_fk, switcher_ik, switcher_reverses, fk_ik_attribute]
 
 # Textures
 art_textures_directory_name = '/Textures'
