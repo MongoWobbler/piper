@@ -27,10 +27,15 @@ set(SOURCE_FILES
         "PiperTransforms.h"
         "PiperIK.cpp"
         "PiperIK.h"
+        "PiperFK.cpp"
+        "PiperFK.h"
         "util.h"
         "TensionNode.cpp"
         "TensionNode.h"
-        )
+        "PiperFK.h"
+        "PiperFK.cpp"
+        "PiperMath.cpp"
+        "PiperMath.h")
 
 find_package(Maya REQUIRED)
 

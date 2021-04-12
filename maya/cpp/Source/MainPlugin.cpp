@@ -2,6 +2,8 @@
 
 #include "PiperTransforms.h"
 #include "PiperIK.h"
+#include "PiperFK.h"
+#include "PiperMath.h"
 #include "TensionNode.h"
 #include <maya/MFnPlugin.h>
 
@@ -63,6 +65,19 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Animation node.");
     }
 
+    // Piper FK
+    status = plugin_fn.registerTransform(PiperFK::node_name,
+                                         PiperFK::type_ID,
+                                         PiperFK::creator,
+                                         PiperFK::initialize,
+                                         MPxTransformationMatrix::creator,
+                                         MPxTransformationMatrix::baseTransformationMatrixId);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper FK node.");
+    }
+
     // Piper IK
     status = plugin_fn.registerTransform(PiperIK::node_name,
                                          PiperIK::type_ID,
@@ -76,6 +91,17 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper IK node.");
     }
 
+    // Multiply Node
+    status = plugin_fn.registerNode(PiperMultiply::node_name,
+                                    PiperMultiply::type_ID,
+                                    PiperMultiply::creator,
+                                    PiperMultiply::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper Multiply node.");
+    }
+
     // Tension Node
     status = plugin_fn.registerNode(TensionNode::node_name,
                                     TensionNode::type_ID,
@@ -87,7 +113,6 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Tension node.");
     }
 
-
     return status;
 }
 
@@ -96,7 +121,9 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
     plugin_fn.deregisterNode(TensionNode::type_ID);
+    plugin_fn.deregisterNode(PiperMultiply::type_ID);
     plugin_fn.deregisterNode(PiperIK::type_ID);
+    plugin_fn.deregisterNode(PiperFK::type_ID);
     plugin_fn.deregisterNode(PiperAnimation::type_ID);
     plugin_fn.deregisterNode(PiperRig::type_ID);
     plugin_fn.deregisterNode(PiperSkinnedMesh::type_ID);

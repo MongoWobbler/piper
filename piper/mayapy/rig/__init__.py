@@ -59,7 +59,7 @@ def dynamicPivot(transform, target=None, shape=curve.square, axis=None, color='b
     return pivot_ctrl
 
 
-def _getAxis(i, transforms, duplicates=None):
+def _getAxis(i, transforms, last_axis, duplicates=None):
     """
     Attempts to figure out the axis for the given iteration of the given transforms and/or duplicates.
 
@@ -73,7 +73,7 @@ def _getAxis(i, transforms, duplicates=None):
     Returns:
         (string): Axis calculated from orientation of current iteration and next iteration.
     """
-    axis = None
+    axis = last_axis
 
     if not duplicates:
         duplicates = transforms
@@ -87,7 +87,8 @@ def _getAxis(i, transforms, duplicates=None):
         axis_vector = pipermath.getOrientAxis(transforms[0], transforms[0].getChildren()[0])
         axis = convert.axisToString(axis_vector)
 
-    return axis
+    last_axis = axis
+    return axis, last_axis
 
 
 def simpleFK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None):
@@ -111,15 +112,61 @@ def simpleFK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=
         (list): Controls created in order from start to end.
     """
     controls = []
+    decomposes = []
+    last_axis = axis
     transforms = xform.getChain(start, end)
 
     for i, transform in enumerate(transforms):
         size = sizes[i] if sizes else None
-        calc_axis = axis if axis else _getAxis(i, transforms)
+        calc_axis, last_axis = axis if axis else _getAxis(i, transforms, last_axis)
         control_parent = parent if transform == transforms[0] else controls[i - 1]
-        ctrl, _ = control.create(transform, shape, transform.name(), calc_axis, parent=control_parent, size=size)
-        xform.parentMatrixConstraint(ctrl, transform, message=True)
+        ctrl = control.create(transform, pipernode.createFK, transform.name(), calc_axis, parent=None,
+                              control_shape=shape, size=size)
+
+        # if control_parent:
+        #     xform.offsetConstraint(control_parent, ctrl, offset=True)
+
+        decompose = xform.parentMatrixConstraint(ctrl, transform, message=True)
+        decomposes.append(decompose)
         controls.append(ctrl)
+        ctrl._.lock()
+        #######################################################################################
+        # start scale stuff
+        attribute.uniformScale(ctrl, calc_axis)
+
+        ctrl.worldMatrix >> ctrl.scaleDriverMatrix
+        transform_parent = transform.getParent()
+
+        if transform_parent:
+            # length = pipermath.getDistance(transform_parent, ctrl)
+            # ctrl.initialLength.set(length)
+            transform.attr(pcfg.length_attribute) >> ctrl.initialLength
+
+            transform_parent.parentMatrix >> ctrl.scaleParentMatrix
+            transform_parent.translate >> ctrl.scaleTranslate
+
+        if i != 0:
+            calc_axis = calc_axis.lstrip('n')
+            mult = pm.createNode('piperMultiply', n=transform_parent.name() + '_scaleMultiply')
+            decomposes[-2].attr('outputScale' + calc_axis.upper()) >> mult.input[0]
+            control_parent.attr('s' + calc_axis) >> mult.input[1]
+            ctrl.outputInverseScale >> mult.input[3]
+            mult.output >> transform_parent.scale
+
+        # end scale stuff
+        #######################################################################################
+        # start bind matrix stuff
+        mult_matrix = pm.createNode('multMatrix', n=transform.name() + ' bindMatrix_MM')
+        transform.atrr(pcfg.matrix_attribute) >> mult_matrix.matrixIn[0]
+
+        if control_parent:
+            transform.getParent().attr(pcfg.matrix_inverse_attribute) >> mult_matrix.matrixIn[1]
+
+            # control_parent.bindInverseMatrix >> mult_matrix.matrixIn[1]
+            control_parent.worldMatrix >> mult_matrix.matrixIn[2]
+
+        mult_matrix.matrixSum >> ctrl.offsetParentMatrix
+        # end bind matrix stuff
 
     return controls
 
@@ -148,24 +195,21 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
     """
     controls = []
     in_controls = []
+    last_axis = axis
     transforms = xform.getChain(start, end)
     duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
 
     for i, duplicate in enumerate(duplicates):
-
-        if not axis:
-            axis = _getAxis(i, transforms, duplicates)
-
         name = duplicate.name()
-        calc_axis = axis if axis else _getAxis(i, transforms)
+        calc_axis, last_axis = axis, axis if axis else _getAxis(i, transforms, last_axis, duplicates)
         size = sizes[i] if sizes else control.calculateSize(transforms[i])
         ctrl_parent = parent if duplicate == duplicates[0] else controls[i - 1]
-        ctrl, _ = control.create(duplicate, shape, name, calc_axis, parent=ctrl_parent, size=size, scale=1.2)
+        ctrl = control.create(duplicate, shape, name, calc_axis, parent=ctrl_parent, size=size, scale=1.2)
         controls.append(ctrl)
 
         xform.offsetConstraint(ctrl, duplicate, message=True)
-        in_ctrl, _ = control.create(duplicate, name=name + '_inner', axis=axis, shape=curve.plus, size=size,
-                                    parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
+        in_ctrl = control.create(duplicate, name=name + '_inner', axis=calc_axis, shape=curve.plus, size=size,
+                                 parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
         xform.parentMatrixConstraint(in_ctrl, duplicate)
         in_controls.append(in_ctrl)
 
@@ -226,11 +270,11 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
 
         # start
         if transform == transforms[0]:
-            ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
+            ctrl = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
             start_ctrl = ctrl
             attribute.lockAndHide(ctrl.scale)
-            scale_ctrl, _ = control.create(transform, name=name + '_scale', axis=axis, scale=0.75, parent=ctrl,
-                                           shape=curve.plus, matrix_offset=False, size=size)
+            scale_ctrl = control.create(transform, name=name + '_scale', axis=axis, scale=0.75, parent=ctrl,
+                                        shape=curve.plus, matrix_offset=False, size=size)
 
             xform.parentMatrixConstraint(transform, scale_ctrl, t=False, r=True, s=False)
             attribute.lockAndHideCompound(scale_ctrl, ['t', 'r'])
@@ -239,22 +283,22 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
 
         # mid
         elif transform == mid:
-            ctrl, _ = control.create(transform, curve.orb, name, axis, scale=0.01, matrix_offset=False, size=size)
+            ctrl = control.create(transform, curve.orb, name, axis, scale=0.01, matrix_offset=False, size=size)
             translation, rotate, scale, _ = xform.calculatePoleVector(start, mid, end)
             pm.xform(ctrl, t=translation, ro=rotate, s=scale)
             mid_ctrl = ctrl
 
         # end
         elif transform == transforms[-1]:
-            ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=pipernode.createIK,
-                                     control_shape=shape, size=size)
-            inner_ctrl, _ = control.create(transform, curve.plus, 'inner_' + name, axis, color='burnt orange',
-                                           parent=ctrl, size=size, matrix_offset=True, inner=.125)
+            ctrl = control.create(transform, name=name, axis=axis, parent=control_parent, shape=pipernode.createIK,
+                                  control_shape=shape, size=size)
+            inner_ctrl = control.create(transform, curve.plus, 'inner_' + name, axis, color='burnt orange',
+                                        parent=ctrl, size=size, matrix_offset=True, inner=.125)
 
             attribute.lockAndHideCompound(inner_ctrl, ['r', 's'])
             controls.append(inner_ctrl)
         else:
-            ctrl, _ = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
+            ctrl = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
 
         controls.append(ctrl)
 
@@ -447,8 +491,8 @@ def banker(joint, ik_control, pivot_track=None, side='', use_track_shape=True):
         ctrl = pm.duplicate(pivot_track, n=prefix + 'bank')[0]
         curve.color(ctrl, 'burnt orange')
     else:
-        ctrl, _ = control.create(joint, shape=curve.plus, name=prefix + 'bank', axis=axes[0], color='burnt orange',
-                                 matrix_offset=True, size=size, inner=.125, outer=1.25)
+        ctrl = control.create(joint, shape=curve.plus, name=prefix + 'bank', axis=axes[0], color='burnt orange',
+                              matrix_offset=True, size=size, inner=.125, outer=1.25)
 
     attribute.lockAndHide(ctrl.attr('r' + axes[0]))
     attribute.lockAndHideCompound(ctrl, ['t', 's'])
@@ -576,7 +620,7 @@ def reverse(driver, target, driven_negate=None, transform=None, switcher_ctrl=No
     # create control
     name = transform.name() + '_reverse'
     driver_parent = driver.getParent()
-    ctrl, _ = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
+    ctrl = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
 
     name = ctrl.name()
     pm.parent(driver, ctrl)

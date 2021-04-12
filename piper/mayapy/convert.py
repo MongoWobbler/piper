@@ -196,16 +196,21 @@ def axisToVector(axis, absolute=False):
     return AXES[axis]
 
 
-def axisToTriAxis(axis):
+def axisToTriAxis(axis, absolute=False):
     """
     Converts given axis to a tri axis string list ('x', 'y', 'z').
 
     Args:
         axis (string or tuple): Axis to convert to tri axis.
 
+        absolute (boolean): If True, will return positive axis only.
+
     Returns:
         (list): Three strings of 'x', 'y', and 'z' in order depending on given axis.
     """
+    if absolute:
+        axis = axis.lstrip('n')
+
     return TRIAXES[axis]
 
 

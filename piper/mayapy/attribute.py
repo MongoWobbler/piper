@@ -3,6 +3,7 @@
 import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
+import piper.mayapy.convert as convert
 
 
 def exists(node, attributes, error=False):
@@ -10,7 +11,7 @@ def exists(node, attributes, error=False):
     Gets whether the given node has the given attributes.
 
     Args:
-        node (PyNode): Node to check whether it has given attributes or not.
+        node (pm.nodetypes.DependNode): Node to check whether it has given attributes or not.
 
         attributes (list): Strings of attributes to check whether they are in node or not.
 
@@ -51,7 +52,7 @@ def attributeCompound(transform, action, attributes=None, axes=None):
     Locks and hides several compound attributes with several axis.
 
     Args:
-        transform (PyNode): Transform with attribute(s) to hide all of its the given axis.
+        transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all of its the given axis.
 
         action (method): action that will be performed on given transform attributes.
 
@@ -73,7 +74,7 @@ def lockAndHideCompound(transform, attributes=None, axes=None):
     Locks and hides several compound attributes with several axis.
 
     Args:
-        transform (PyNode): Transform with attribute(s) to hide all of its the given axis.
+        transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all of its the given axis.
 
         attributes (list): Compound attributes to hide. If None given, will hide t, r, and s.
 
@@ -87,7 +88,7 @@ def nonKeyableCompound(transform, attributes=None, axes=None):
     Makes given transform's given attributes with given axis non keyable
 
     Args:
-        transform (PyNode): Transform with attribute(s) to make non keyable for given attributes and axis.
+        transform (pm.nodetypes.DependNode): Transform with attribute(s) to make non keyable for given attributes.
 
         attributes (list): Compound attributes to make non keyable. If None given, will use t, r, and s.
 
@@ -96,12 +97,31 @@ def nonKeyableCompound(transform, attributes=None, axes=None):
     attributeCompound(transform, nonKeyable, attributes=attributes, axes=axes)
 
 
+def uniformScale(transform, axis=None):
+    """
+    Connects the given axis to drive the other scale axis. Locks and hides the other scale axis.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to lock and hide other axis to make uniform scale.
+
+        axis (string): Name of axis that will drive uniform scale.
+    """
+    if not axis:
+        axis = 'y'
+
+    tri_axis = convert.axisToTriAxis(axis, absolute=True)
+    for lock_axis in tri_axis[1:]:
+        attribute_to_lock = transform.attr('s' + lock_axis)
+        transform.attr('s' + tri_axis[0]) >> attribute_to_lock
+        lockAndHide(attribute_to_lock)
+
+
 def addSeparator(transform):
     """
     Adds a '_' attribute to help visually separate attributes in channel box to specified transform.
 
     Args:
-        transform (string or PyNode): transform node to add a '_' attribute to.
+        transform (string or pm.nodetypes.DependNode): transform node to add a '_' attribute to.
     """
     transform = pm.PyNode(transform)
     underscore_count = []
@@ -215,7 +235,7 @@ def getNextAvailableIndexFromTargetMatrix(node, start_index=0):
     Usually used in matrix blend nodes.
 
     Args:
-        node (PyNode): Node to get target[i].targetMatrix of.
+        node (pm.nodetypes.DependNode): Node to get target[i].targetMatrix of.
 
         start_index (integer): index to start searching for the available target matrix.
 
@@ -242,7 +262,7 @@ def getNextAvailableTarget(node, start_index=0):
     Usually used in matrix blend nodes.
 
     Args:
-        node (PyNode): Node to get target[i].targetMatrix of.
+        node (pm.nodetypes.DependNode): Node to get target[i].targetMatrix of.
 
         start_index (integer): index to start searching for the available target matrix.
 

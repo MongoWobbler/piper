@@ -71,6 +71,44 @@ def create(node_type, color=None, name=None, parent=None):
     return piper_node
 
 
+def createShaped(node_type, name=None, control_shape=curve.circle):
+    """
+    Creates piper IK transform with given control shape curve
+
+    Args:
+        node_type (string): Name for the type of node to create.
+
+        name (string): Name to give the transform node.
+
+        control_shape (method): Method that generates nurbs curve the transform will use.
+
+    Returns:
+        (PyNode): Transform node created with control shape curves as child(ren).
+    """
+    transform = create(node_type, name=name)
+    ctrl = control_shape()
+    curves = ctrl.getChildren(type='nurbsCurve')
+    pm.parent(curves, transform, shape=True, add=True)
+    pm.delete(ctrl)
+
+    return transform
+
+
+def createFK(name=None, control_shape=curve.circle):
+    """
+    Creates piper FK transform with given control shape curve
+
+    Args:
+        name (string): Name for the piper IK nodes.
+
+        control_shape (method): Method that generates nurbs curve that Piper FK transform will use.
+
+    Returns:
+        (PyNode): Piper FK node created.
+    """
+    return createShaped('piperFK', name, control_shape)
+
+
 def createIK(name=None, control_shape=curve.circle):
     """
     Creates piper IK transform with given control shape curve
@@ -83,13 +121,7 @@ def createIK(name=None, control_shape=curve.circle):
     Returns:
         (PyNode): Piper IK node created.
     """
-    piper_ik = create('piperIK', name=name)
-    ctrl = control_shape()
-    curves = ctrl.getChildren(type='nurbsCurve')
-    pm.parent(curves, piper_ik, shape=True, add=True)
-    pm.delete(ctrl)
-
-    return piper_ik
+    return createShaped('piperIK', name, control_shape)
 
 
 def createMesh():

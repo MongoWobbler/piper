@@ -15,7 +15,7 @@ const MString origAttrName( "origShape" );
 const MString deformedAttrName( "deformedShape" );
 
 MString TensionNode::node_name("tensionNode");
-MTypeId TensionNode::type_ID(0x00137144);
+MTypeId TensionNode::type_ID(0x00137147);
 MObject TensionNode::aOrigShape;
 MObject TensionNode::aDeformedShape;
 MObject TensionNode::aOutShape;

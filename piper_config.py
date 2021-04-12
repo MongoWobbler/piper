@@ -59,17 +59,23 @@ maya_default_initial_material = 'lambert'
 low_poly_suffix = '_low'
 high_poly_suffix = '_high'
 
-# Export
-mesh_prefix = 'SM_'
-skinned_mesh_prefix = 'SKM_'
-animation_prefix = 'A_'
-delete_node_attribute = 'delete'
+# Skeleton
+skeleton_namespace = 'SKL'
+matrix_attribute = 'bindMatrix'
+matrix_inverse_attribute = 'bindInverseMatrix'
+length_attribute = 'bindLength'
 
 # Rig
 rig_suffix = '_Rig'
 root_joint_name = 'root'
 dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
+
+# Export
+mesh_prefix = 'SM_'
+skinned_mesh_prefix = 'SKM_'
+animation_prefix = 'A_'
+delete_node_attribute = 'delete'
 
 # messages
 message_source = 'msgSource'

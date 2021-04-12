@@ -54,7 +54,6 @@ def create(transform,
            color='pink',
            scale=1.0,
            matrix_offset=True,
-           group_offset=False,
            parent=None,
            size=None,
            *args,
@@ -77,9 +76,7 @@ def create(transform,
 
         matrix_offset (boolean): If True, will zero out transform and place it in parent Offset Matrix attribute.
 
-        group_offset (boolean): If True, will create an empty group that will hold offset values.
-
-        parent (pm.nodetypes.Transform): If given, will parent control or group under given parent.
+        parent (pm.nodetypes.Transform or None): If given, will parent control or group under given parent.
 
         size (list): If given, will use this as the size to set the scale of the control
 
@@ -88,7 +85,7 @@ def create(transform,
         **kwargs (Any): Used in shape method.
 
     Returns:
-        (list): control made as first index and group made as second index if group was made, else False.
+        (pm.nodetypes.Transform): Control made.
     """
     control = shape(name=name + pcfg.control_suffix, *args, **kwargs)
     curve.color(control, color)
@@ -115,28 +112,14 @@ def create(transform,
             pm.matchTransform(control, transform)
             pm.parent(control, parent)
             xform.toOffsetMatrix(control)
-        elif group_offset:
-            group_offset = pm.group(em=True, name=name + pcfg.offset_suffix)
-            pm.matchTransform(group_offset, transform)
-            pm.parent(control, group_offset)
-            pipermath.zeroOut(control)
-            xform.parentMatrixConstraint(parent, group_offset, offset=True)
         else:
             pm.matchTransform(control, transform)
             pm.parent(control, parent)
     else:
         if matrix_offset:
             control.offsetParentMatrix.set(transform.worldMatrix.get())
-        elif group_offset:
-            group_offset = pm.group(em=True, name=name + pcfg.offset_suffix)
-            pm.matchTransform(group_offset, transform)
-            pm.parent(control, group_offset)
-            pipermath.zeroOut(control)
         else:
             pm.matchTransform(control, transform)
 
     attribute.nonKeyable(control.visibility)
-    return control, group_offset
-
-
-
+    return control

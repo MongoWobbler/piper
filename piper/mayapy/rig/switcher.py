@@ -53,7 +53,7 @@ def create(driver, name=''):
         (pm.nodetypes.Transform): Switcher control created.
     """
     name = name + pcfg.switcher_suffix
-    switcher_control, _ = control.create(driver, name=name, shape=curve.cube, scale=0.5)
+    switcher_control = control.create(driver, name=name, shape=curve.cube, scale=0.5)
     attribute.addSeparator(switcher_control)
     attribute.nonKeyableCompound(switcher_control)
     switcher_control.addAttr(pcfg.fk_ik_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)

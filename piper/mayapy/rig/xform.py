@@ -258,7 +258,9 @@ def parentMatrixConstraint(driver=None, target=None,
         driver = selected[-2]
         target = selected[-1]
 
-    name = target.name()
+    name = target.name(stripNamespace=True)
+    driver_name = driver.name(stripNamespace=True)
+
     if all(['t', 'r', 's']):
         mult_name = '_'.join([name, pcfg.parent_matrix_mult_suffix])
     else:
@@ -272,7 +274,6 @@ def parentMatrixConstraint(driver=None, target=None,
 
         mult_name = '_'.join([name, middle, pcfg.parent_matrix_mult_suffix])
 
-    driver_name = driver.name()
     matrix_multiplication = pm.createNode('multMatrix', n=mult_name)
     decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + name + pcfg.parent_matrix_decomp_suffix)
 
@@ -288,7 +289,7 @@ def parentMatrixConstraint(driver=None, target=None,
     matrix_multiplication.matrixSum >> decomp_matrix.inputMatrix
 
     if t:
-        plus_name = driver.name() + '_plusTranslate_' + name
+        plus_name = driver_name + '_plusTranslate_' + name
         interceptConnect(decomp_matrix.outputTranslate, target.translate, plus_name, intercept)
 
     if r:
@@ -331,11 +332,11 @@ def parentMatrixConstraint(driver=None, target=None,
         else:
             output_rotate = decomp_matrix.outputRotate
 
-        plus_name = driver.name() + '_plusRotate_' + name
+        plus_name = driver_name + '_plusRotate_' + name
         interceptConnect(output_rotate, target.rotate, plus_name, intercept)
 
     if s:
-        plus_name = driver.name() + '_plusScale_' + name
+        plus_name = driver_name + '_plusScale_' + name
         interceptConnect(decomp_matrix.outputScale, target.scale, plus_name, intercept)
 
     if message:
@@ -366,21 +367,23 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
         message (boolean) If True, will add message attribute that states connection between driver and target.
     """
     target_parent = target.getParent()
+    target_name = target.name(stripNamespace=True)
+    driver_name = driver.name(stripNamespace=True)
 
     if target_parent and offset:
-        matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_parentOffsetMatrixMult')
+        matrix_mult = pm.createNode('multMatrix', name=target_name + '_parentOffsetMatrixMult')
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
         matrix_mult.matrixIn[0].set(offset)
         driver.worldMatrix >> matrix_mult.matrixIn[1]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[2]
         output = matrix_mult.matrixSum
     elif target_parent:
-        matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_parentMatrixMult')
+        matrix_mult = pm.createNode('multMatrix', name=target_name + '_parentMatrixMult')
         driver.worldMatrix >> matrix_mult.matrixIn[0]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[1]
         output = matrix_mult.matrixSum
     elif offset:
-        matrix_mult = pm.createNode('multMatrix', name=target.nodeName() + '_offsetMatrixMult')
+        matrix_mult = pm.createNode('multMatrix', name=target_name + '_offsetMatrixMult')
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
         matrix_mult.matrixIn[0].set(offset)
         driver.worldMatrix >> matrix_mult.matrixIn[1]
@@ -392,8 +395,8 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
     if all([t, r, s]) or not any([t, r, s]):
         pass
     else:
-        decomp_matrix = pm.createNode('decomposeMatrix', n=driver.name() + '_to_' + target.name() + 'offsetParent_DM')
-        comp_matrix = pm.createNode('composeMatrix', n=driver.name() + '_to_' + target.name() + 'offsetParent_CM')
+        decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + target_name + 'offsetParent_DM')
+        comp_matrix = pm.createNode('composeMatrix', n=driver_name + '_to_' + target_name + 'offsetParent_CM')
         output >> decomp_matrix.inputMatrix
 
         if t:

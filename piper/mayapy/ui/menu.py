@@ -176,6 +176,7 @@ class MayaBonesMenu(MayaPiperMenu):
         self.add('Mirror Translate', xform.mirrorTranslate)
         self.add('Mirror Rotate', xform.mirrorRotate)
         self.add('Assign Labels', bone.assignLabels)
+        self.add('Assign Bind Attributes', bone.assignBindAttributes)
         self.add('Add Delete Attribute', attribute.addDelete)
         self.addSeparator()
         self.add('Unbind', self.binder.unbind)

@@ -9,6 +9,12 @@ inline MVector getPosition(const MMatrix & matrix) { return MVector(matrix[3][0]
 
 inline double getDistance(const MVector &start, const MVector &end) { return (end - start).length(); }
 
+inline MMatrix matrixFromVector(const MVector &translate)
+{
+    double matrix[4][4] = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {translate.x, translate.y, translate.z, 1}};
+    return MMatrix(matrix);
+}
+
 inline MVector getDirection(const MVector &start, const MVector &end)
 {
     MVector direction = end - start;

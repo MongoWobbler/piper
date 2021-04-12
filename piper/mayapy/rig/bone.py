@@ -7,6 +7,7 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
+import piper.mayapy.pipermath as pipermath
 
 
 def assignLabels(joints=None):
@@ -38,6 +39,39 @@ def assignLabels(joints=None):
             joint.otherType.set(joint_name)
 
 
+def assignBindAttributes(joints=None):
+    """
+    Assigns the bind matrix attribute to the given joints.
+
+    Args:
+        joints (list): Joints to assign bind matrix attribute to. If None given, will use selected or all joints.
+    """
+    joints = myu.validateSelect(joints, find='joint')
+
+    for joint in joints:
+        if not joint.hasAttr(pcfg.length_attribute):
+            joint.addAttr(pcfg.length_attribute, s=True, w=True, r=True, dv=0.001, min=0.001)
+
+        if not joint.hasAttr(pcfg.matrix_attribute):
+            joint.addAttr(pcfg.matrix_attribute, at='matrix')
+
+        if not joint.hasAttr(pcfg.matrix_inverse_attribute):
+            joint.addAttr(pcfg.matrix_inverse_attribute, at='matrix')
+
+        matrix = joint.worldMatrix.get()
+        inverse_matrix = joint.worldInverseMatrix.get()
+        joint_parent = joint.getParent()
+
+        if joint_parent and isinstance(joint_parent, pm.nodetypes.Joint):
+            length = pipermath.getDistance(joint_parent, joint)
+            joint.bindLength.set(length)
+
+        joint.attr(pcfg.matrix_attribute).set(matrix)
+        joint.bindInverseMatrix.set(inverse_matrix)
+
+    pm.displayInfo('Finished assigning Piper joint attributes to ' + str(len(joints)) + ' joints.')
+
+
 def createAtPivot():
     """
     Creates a joint at the current manipulator pivot point.
@@ -64,8 +98,9 @@ def health(parent_fail=pm.error,
            no_children_fail=pm.warning,
            type_fail=pm.error,
            joint_orient_fail=pm.warning,
-           segment_scale_fail=pm.warning,
-           preferred_angle_fail=pm.warning):
+           segment_scale_fail=pm.error,
+           preferred_angle_fail=pm.warning,
+           matrix_attribute_fail=pm.warning):
     """
     Performs a health check on the skeleton to catch anything that might cause trouble further down pipe.
 
@@ -78,9 +113,11 @@ def health(parent_fail=pm.error,
 
         joint_orient_fail (method): How to display message of non-zero joint orient values found in joint.
 
-        segment_scale_fail (method): How to display message when joint has segment scale compensate turned off.
+        segment_scale_fail (method): How to display message when joint has segment scale compensate turned on.
 
         preferred_angle_fail (method): How to display message when joint does not have preferred angle set.
+
+        matrix_attribute_fail (method): How to display message when joint does not have bind matrix attribute.
 
     Returns:
         (dictionary): Error causing nodes.
@@ -90,6 +127,7 @@ def health(parent_fail=pm.error,
                           'joint_orient': [],
                           'segment_scale': [],
                           'preferred_angle': [],
+                          'matrix_attribute': [],
                           'children': None}
     actionable = copy.deepcopy(actionable_default)
 
@@ -128,14 +166,19 @@ def health(parent_fail=pm.error,
             joint_orient_fail(joint_name + ' has non-zero joint orient values.')
 
         #  check if joint has segment scale compensate set to True or False (should be True)
-        if not joint.segmentScaleCompensate.get():
+        if joint.segmentScaleCompensate.get():
             actionable['segment_scale'].append(joint)
-            segment_scale_fail(joint_name + ' segment scale compensate is turned off!')
+            segment_scale_fail(joint_name + ' segment scale compensate is turned on!')
 
         # check if joint has preferred angle ONLY if joint is not an end joint
         if joint.getChildren(type='joint') and joint.preferredAngle.get() == zero_vector:
             actionable['preferred_angle'].append(joint)
             preferred_angle_fail(joint_name + ' does not have a preferred angle set!')
+
+        # check if joint has bind matrix attribute
+        if not joint.hasAttr(pcfg.matrix_attribute):
+            actionable['matrix_attribute'].append(joint)
+            matrix_attribute_fail(joint_name + ' does not have the ' + pcfg.matrix_attribute + ' attribute!')
 
     errors = {} if actionable == actionable_default else actionable
     pm.warning('Errors found in skeleton! Open Script Editor') if errors else pm.displayInfo('Skeleton is happy')
