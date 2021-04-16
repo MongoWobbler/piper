@@ -3,14 +3,13 @@
 import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
-import piper.mayapy.pipermath as pipermath
 import piper.mayapy.attribute as attribute
 
 from . import xform
 from . import curve
 
 
-def calculateSize(joint, scale=1):
+def calculateSize(joint, scale=1, use_skins=True):
     """
     Calculates the size a control should be based on verts affected bounds or joint radius.
 
@@ -19,16 +18,25 @@ def calculateSize(joint, scale=1):
 
         scale (float): Number to scale result by.
 
+        use_skins (boolean): If True, will try to use the bounding box of influencing skins to calculate size.
+
     Returns:
         (list): X, Y, Z Scale.
     """
-    skin_clusters = set(joint.connections(type='skinCluster'))  # remove duplicates cause Maya
-    if skin_clusters:
+    skin_clusters = joint.future(type='skinCluster')
+    if use_skins and skin_clusters:
         distance_sum = 0
         pm.select(cl=True)
 
         # select the verts joint is affecting and get the bounds all those verts make
         [pm.skinCluster(skin, selectInfluenceVerts=joint, edit=True, ats=True) for skin in skin_clusters]
+        selected = pm.selected()
+        selected = list(filter(lambda x: not isinstance(x, pm.nodetypes.Mesh), selected))
+
+        # if mesh is selected, its because joint is not influencing any verts, so call itself without doing skins calc
+        if not selected:
+            return calculateSize(joint, scale, use_skins=False)
+
         bounds = pm.exactWorldBoundingBox(calculateExactly=True, ii=False)
         pm.select(cl=True)
 

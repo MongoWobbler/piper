@@ -91,86 +91,6 @@ def _getAxis(i, transforms, last_axis, duplicates=None):
     return axis, last_axis
 
 
-def simpleFK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None):
-    """
-    Creates FK controls for the transform chain deduced by the start and end transforms.
-
-    Args:
-        start (pm.nodetypes.Transform): Start of the chain to be driven by FK controls.
-
-        end (pm.nodetypes.Transform): End of the chain to be driven by FK controls. If none given, will only drive start
-
-        parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
-
-        axis (string): Only used if no end joint given for shape's axis to match rotations.
-
-        shape (method): Used to create curve or visual representation of FK control.
-
-        sizes (list): Sizes to use for each control.
-
-    Returns:
-        (list): Controls created in order from start to end.
-    """
-    controls = []
-    decomposes = []
-    last_axis = axis
-    transforms = xform.getChain(start, end)
-
-    for i, transform in enumerate(transforms):
-        size = sizes[i] if sizes else None
-        calc_axis, last_axis = axis if axis else _getAxis(i, transforms, last_axis)
-        control_parent = parent if transform == transforms[0] else controls[i - 1]
-        ctrl = control.create(transform, pipernode.createFK, transform.name(), calc_axis, parent=None,
-                              control_shape=shape, size=size)
-
-        # if control_parent:
-        #     xform.offsetConstraint(control_parent, ctrl, offset=True)
-
-        decompose = xform.parentMatrixConstraint(ctrl, transform, message=True)
-        decomposes.append(decompose)
-        controls.append(ctrl)
-        ctrl._.lock()
-        #######################################################################################
-        # start scale stuff
-        attribute.uniformScale(ctrl, calc_axis)
-
-        ctrl.worldMatrix >> ctrl.scaleDriverMatrix
-        transform_parent = transform.getParent()
-
-        if transform_parent:
-            # length = pipermath.getDistance(transform_parent, ctrl)
-            # ctrl.initialLength.set(length)
-            transform.attr(pcfg.length_attribute) >> ctrl.initialLength
-
-            transform_parent.parentMatrix >> ctrl.scaleParentMatrix
-            transform_parent.translate >> ctrl.scaleTranslate
-
-        if i != 0:
-            calc_axis = calc_axis.lstrip('n')
-            mult = pm.createNode('piperMultiply', n=transform_parent.name() + '_scaleMultiply')
-            decomposes[-2].attr('outputScale' + calc_axis.upper()) >> mult.input[0]
-            control_parent.attr('s' + calc_axis) >> mult.input[1]
-            ctrl.outputInverseScale >> mult.input[3]
-            mult.output >> transform_parent.scale
-
-        # end scale stuff
-        #######################################################################################
-        # start bind matrix stuff
-        mult_matrix = pm.createNode('multMatrix', n=transform.name() + ' bindMatrix_MM')
-        transform.atrr(pcfg.matrix_attribute) >> mult_matrix.matrixIn[0]
-
-        if control_parent:
-            transform.getParent().attr(pcfg.matrix_inverse_attribute) >> mult_matrix.matrixIn[1]
-
-            # control_parent.bindInverseMatrix >> mult_matrix.matrixIn[1]
-            control_parent.worldMatrix >> mult_matrix.matrixIn[2]
-
-        mult_matrix.matrixSum >> ctrl.offsetParentMatrix
-        # end bind matrix stuff
-
-    return controls
-
-
 def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, connect=True):
     """
     Creates FK controls for the transform chain deduced by the start and end transforms.
@@ -194,26 +114,35 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
         (list): Controls created in order from start to end.
     """
     controls = []
+    decomposes = []
+    multiplies = []
     in_controls = []
+    calc_axis = 'y'
     last_axis = axis
     transforms = xform.getChain(start, end)
     duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
 
-    for i, duplicate in enumerate(duplicates):
+    for i, (transform, duplicate) in enumerate(zip(transforms, duplicates)):
         name = duplicate.name()
-        calc_axis, last_axis = axis, axis if axis else _getAxis(i, transforms, last_axis, duplicates)
-        size = sizes[i] if sizes else control.calculateSize(transforms[i])
+        calc_axis, last_axis = axis if axis else _getAxis(i, transforms, last_axis, duplicates)
+        size = sizes[i] if sizes else control.calculateSize(transform)
         ctrl_parent = parent if duplicate == duplicates[0] else controls[i - 1]
-        ctrl = control.create(duplicate, shape, name, calc_axis, parent=ctrl_parent, size=size, scale=1.2)
+
+        ctrl = control.create(duplicate, pipernode.createFK, name, calc_axis, scale=1.2, control_shape=shape, size=size)
+        attribute.bindConnect(transform, ctrl, ctrl_parent)  # connects attributes that offset controls
         controls.append(ctrl)
+        ctrl._.lock()
 
         xform.offsetConstraint(ctrl, duplicate, message=True)
         in_ctrl = control.create(duplicate, name=name + '_inner', axis=calc_axis, shape=curve.plus, size=size,
                                  parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
-        xform.parentMatrixConstraint(in_ctrl, duplicate)
+
+        decompose = xform.parentMatrixConstraint(in_ctrl, duplicate)
+        decomposes.append(decompose)
         in_controls.append(in_ctrl)
 
-        transform_parent = transforms[i].getParent()
+        transform_parent = None if transform.name() == pcfg.root_joint_name else transform.getParent()
+        transform.attr(pcfg.length_attribute) >> ctrl.initialLength
         spaces = [transform_parent, ctrl_parent]
         spaces = filter(None, spaces)
 
@@ -221,7 +150,42 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
             space.create(spaces, in_ctrl)
 
         if connect:
-            xform.parentMatrixConstraint(duplicate, transforms[i])
+            xform.parentMatrixConstraint(duplicate, transform)
+
+        # easier to support game engines scale is uniform
+        attribute.uniformScale(ctrl, calc_axis)
+        attribute.uniformScale(in_ctrl, calc_axis)
+
+        # used for scale calculation in FK control
+        ctrl.worldMatrix >> ctrl.scaleDriverMatrix
+        duplicate_parent = duplicate.getParent()
+
+        if duplicate_parent:
+            duplicate_parent.parentMatrix >> ctrl.scaleParentMatrix
+            duplicate_parent.translate >> ctrl.scaleTranslate
+
+            # connect all the stuff needed for volumetric scaling
+            calc_axis = calc_axis.lstrip('n')
+            multiply = pm.createNode('piperMultiply', n=duplicate_parent.name() + '_scaleMultiply')
+            decomposes[-2].attr('outputScale' + calc_axis.upper()) >> multiply.mainTerm
+            ctrl_parent.attr('s' + calc_axis) >> multiply.input[0]
+            ctrl.outputScale >> multiply.input[1]
+            multiply.output >> duplicate_parent.scale
+            ctrl.volumetric >> multiply.weight
+            multiplies.append(multiply)
+
+    # edge cases for scaling
+    if parent and len(transforms) > 1:
+        multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[0])
+        parent.attr('s' + calc_axis) >> multiply_input
+
+        if len(transforms) > 2 and controls[1] != controls[-1]:
+            multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[1])
+            parent.attr('s' + calc_axis) >> multiply_input
+
+    if len(transforms) > 2:
+        multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[1])
+        controls[0].attr('s' + calc_axis) >> multiply_input
 
     return duplicates, controls + in_controls
 

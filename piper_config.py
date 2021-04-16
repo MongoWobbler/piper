@@ -64,6 +64,7 @@ skeleton_namespace = 'SKL'
 matrix_attribute = 'bindMatrix'
 matrix_inverse_attribute = 'bindInverseMatrix'
 length_attribute = 'bindLength'
+required_preferred_angle = ['calf', 'lowerarm', 'elbow', 'knee']
 
 # Rig
 rig_suffix = '_Rig'

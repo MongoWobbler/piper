@@ -5,6 +5,8 @@ import piper_config as pcfg
 import piper.mayapy.ui.window as uiwindow
 import piper.mayapy.pipernode as pipernode
 
+from . import bone
+
 
 def getMeshes():
     """
@@ -64,6 +66,7 @@ def prepare():
     if not uiwindow.save():
         pm.error('Scene not saved.')
 
+    bone.health()
     skinned_meshes = [pcfg.skeleton_namespace + ':' + node.name() for node in pipernode.get('piperSkinnedMesh')]
 
     # create new file, reference the skeleton into the new file, create rig group

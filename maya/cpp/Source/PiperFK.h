@@ -18,7 +18,6 @@ public:
     static MTypeId type_ID;
     static MString node_name;
     static MObject separator;
-    static MObject global_scale;
     static MObject initial_length;
     static MObject volumetric_scaling;
     static MObject scale_driver_matrix;
@@ -28,5 +27,4 @@ public:
     static MObject scale_translate_z;
     static MObject scale_translate;
     static MObject output_scale;
-    static MObject output_inverse_scale;
 };

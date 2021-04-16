@@ -57,7 +57,7 @@ def create(spaces, transform, direct=False):
     Creates the given spaces on the given transform.
 
     Args:
-        spaces (list): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
+        spaces (iterator): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
 
         transform (pm.nodetypes.Transform): Transform to have ability to switch between given spaces.
 
@@ -68,7 +68,7 @@ def create(spaces, transform, direct=False):
     """
     space_attributes = []
     parent = transform.getParent()
-    transform_name = transform.nodeName()
+    transform_name = transform.name(stripNamespace=True)
     matrix_blend = transform.offsetParentMatrix.listConnections()
     has_spaces = matrix_blend and transform.hasAttr(pcfg.space_world_name)
 
@@ -113,7 +113,7 @@ def create(spaces, transform, direct=False):
         space_attributes.append(pcfg.space_world_name)
 
     for space in spaces:
-        space_name = space.nodeName()
+        space_name = space.name(stripNamespace=True)
         space_attribute = space_name + pcfg.space_suffix
         transform.addAttr(space_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
         target = attribute.getNextAvailableTarget(matrix_blend, 1)

@@ -161,7 +161,7 @@ def health(parent_fail=pm.error,
         # check if joint orient values is equal to zero
         joint_orient = joint.jointOrient.get()
         zero_vector = pm.dt.Vector(0, 0, 0)
-        if joint_orient != zero_vector:
+        if not joint_orient.isEquivalent(zero_vector, tol=0.1):
             actionable['joint_orient'].append(joint)
             joint_orient_fail(joint_name + ' has non-zero joint orient values.')
 
@@ -171,7 +171,10 @@ def health(parent_fail=pm.error,
             segment_scale_fail(joint_name + ' segment scale compensate is turned on!')
 
         # check if joint has preferred angle ONLY if joint is not an end joint
-        if joint.getChildren(type='joint') and joint.preferredAngle.get() == zero_vector:
+        if joint.getChildren(type='joint') and \
+           joint.preferredAngle.get().isEquivalent(zero_vector, tol=0.1) and \
+           any([prefix in joint_name for prefix in pcfg.required_preferred_angle]):
+
             actionable['preferred_angle'].append(joint)
             preferred_angle_fail(joint_name + ' does not have a preferred angle set!')
 

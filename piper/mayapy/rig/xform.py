@@ -21,6 +21,40 @@ def toOffsetMatrix(transform):
     pipermath.zeroOut(transform)
 
 
+def parent(*transforms, world=False):
+    """
+    Parents transforms to the last given transform and gets rid of joint orient values if transform is a joint.
+
+    Args:
+        transforms (list or pm.nodetypes.DependNode): Transforms to parent. Last transform is the parent of the rest.
+        Minimum of two objects.
+
+        world (boolean): If True, will parent all the given transforms to world
+    """
+    transforms = myu.validateSelect(transforms, minimum=1)
+
+    if world:
+        for transform in transforms:
+
+            if isinstance(transform, pm.nodetypes.Joint):
+                matrix = transform.worldMatrix.get()
+                pm.parent(transform, w=True)
+                transform.jointOrient.set(0, 0, 0)
+                pm.xform(transform, ws=True, m=matrix)
+            else:
+                pm.parent(transform, w=True)
+    else:
+        for transform in transforms[:-1]:
+
+            if isinstance(transform, pm.nodetypes.Joint):
+                matrix = transform.worldMatrix.get()
+                pm.parent(transform, transforms[-1])
+                transform.jointOrient.set(0, 0, 0)
+                pm.xform(transform, ws=True, m=matrix)
+            else:
+                pm.parent(transform, transforms[-1])
+
+
 def getChain(start, end=None):
     """
     Gets all the transforms parented between the given start and end transforms, inclusive.
@@ -67,37 +101,17 @@ def duplicateChain(chain, prefix='new_', color='default', scale=1.0):
     new_chain = pm.duplicate(chain, parentOnly=True, renameChildren=True)
 
     start = new_chain[0]
-    pm.parent(start, w=True)
+    parent(start, world=True)
     start.overrideEnabled.set(True)
     start.overrideColor.set(convert.colorToInt(color))
 
     for original, duplicate in zip(chain, new_chain):
-        duplicate.rename(prefix + original.nodeName())
+        duplicate.rename(prefix + original.name(stripNamespace=True))
 
         if duplicate.hasAttr('radius'):
             duplicate.radius.set(duplicate.radius.get() * scale)
 
     return new_chain
-
-
-def parent(*transforms):
-    """
-    Parents transforms to the last given transform and gets rid of joint orient values if transform is a joint.
-
-    Args:
-        transforms (list or pm.nodetypes.Transform): Transforms to parent. Last transform is the parent of the rest.
-        Minimum of two objects.
-    """
-    transforms = myu.validateSelect(transforms, minimum=2)
-    for joint in transforms[:-1]:
-
-        if isinstance(joint, pm.nodetypes.Joint):
-            matrix = joint.worldMatrix.get()
-            pm.parent(joint, transforms[-1])
-            joint.jointOrient.set(0, 0, 0)
-            pm.xform(joint, ws=True, m=matrix)
-        else:
-            pm.parent(joint, transforms[-1])
 
 
 def mirrorTranslate(transforms=None, axis=pcfg.default_mirror_axis, swap=None, duplicate=True):

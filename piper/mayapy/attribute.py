@@ -116,6 +116,27 @@ def uniformScale(transform, axis=None):
         lockAndHide(attribute_to_lock)
 
 
+def bindConnect(transform, ctrl, ctrl_parent=None):
+    """
+    Connects the transform's bind attributes onto the given ctrl's offsetParentMatrix to offset the ctrl.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform that holds bindMatrix and bindInverseMatrix attributes.
+
+        ctrl (pm.nodetypes.Transform): Transform that will be offset by given transform's attributes.
+
+        ctrl_parent (pm.nodetypes.Transform): Transform that will drive given ctrl.
+    """
+    mult_matrix = pm.createNode('multMatrix', n=transform.name(stripNamespace=True) + ' bindMatrix_MM')
+    transform.attr(pcfg.matrix_attribute) >> mult_matrix.matrixIn[0]
+
+    if ctrl_parent:
+        transform.getParent().attr(pcfg.matrix_inverse_attribute) >> mult_matrix.matrixIn[1]
+        ctrl_parent.worldMatrix >> mult_matrix.matrixIn[2]
+
+    mult_matrix.matrixSum >> ctrl.offsetParentMatrix
+
+
 def addSeparator(transform):
     """
     Adds a '_' attribute to help visually separate attributes in channel box to specified transform.
@@ -229,31 +250,50 @@ def getMessagedTarget(driver):
     return driver.attr(pcfg.message_source).connections(scn=True, source=False)[0]
 
 
-def getNextAvailableIndexFromTargetMatrix(node, start_index=0):
+def getNextAvailableIndex(node, attribute_name, default, start_index=0):
     """
-    Gets the first available index in which the target matrix is open and equal to the identity matrix.
-    Usually used in matrix blend nodes.
+    Gets the first available index in which the given attribute is open and equal to the given default.
 
     Args:
-        node (pm.nodetypes.DependNode): Node to get target[i].targetMatrix of.
+        node (pm.nodetypes.DependNode): Node to get index of attribute.
 
-        start_index (integer): index to start searching for the available target matrix.
+        attribute_name (string): Name of attribute with "[{}]" so that index search can occur.
+
+        default (any): Default value to attribute will have to know it is available.
+
+        start_index (integer): index to start searching for the available attribute..
 
     Returns:
-        (Attribute): First available target attribute.
+        (integer): First available attribute index.
     """
     i = start_index
-    max_iterations = 1000000
+    max_iterations = 65535  # typical c++ unsigned int range
 
     while i < max_iterations:
-        attribute = node.attr('target[{}].targetMatrix'.format(str(i)))
+        attribute = node.attr(attribute_name.format(str(i)))
         plug = pm.connectionInfo(attribute, sfd=True)
-        if not plug and attribute.get() == pm.dt.Matrix():
+        if not plug and attribute.get() == default:
             return i
 
         i += 1
 
     return 0
+
+
+def getNextAvailableMultiplyInput(node, start_index=0):
+    """
+    Gets the first available input attribute from the given node.
+
+    Args:
+        node (pm.nodetypes.DependNode): Node to get next available input attribute.
+
+        start_index (int): Index in which search will start.
+
+    Returns:
+        (pm.general.Attribute): Available attribute to plug in.
+    """
+    i = getNextAvailableIndex(node, 'input[{}]', 1, start_index)
+    return node.attr('input[{}]'.format(str(i)))
 
 
 def getNextAvailableTarget(node, start_index=0):
@@ -267,7 +307,7 @@ def getNextAvailableTarget(node, start_index=0):
         start_index (integer): index to start searching for the available target matrix.
 
     Returns:
-        (Attribute): First available target attribute.
+        (pm.general.Attribute): First available target attribute.
     """
-    i = getNextAvailableIndexFromTargetMatrix(node, start_index)
+    i = getNextAvailableIndex(node, 'target[{}].targetMatrix', pm.dt.Matrix(), start_index)
     return node.attr('target[{}]'.format(str(i)))

@@ -1,6 +1,7 @@
 //  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 #include "PiperMath.h"
+#include "util.h"
 
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnCompoundAttribute.h>
@@ -11,6 +12,8 @@
 
 MTypeId PiperMultiply::type_ID(0x00137146);
 MString PiperMultiply::node_name("piperMultiply");
+MObject PiperMultiply::weight;
+MObject PiperMultiply::main_term;
 MObject PiperMultiply::input;
 MObject PiperMultiply::outputX;
 MObject PiperMultiply::outputY;
@@ -29,6 +32,18 @@ MStatus PiperMultiply::initialize()
     MFnNumericAttribute numeric_fn;
     MFnCompoundAttribute compound_fn;
 
+    weight = numeric_fn.create("weight", "wgt", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    numeric_fn.setMin(0.0);
+    numeric_fn.setMax(1.0);
+    addAttribute(weight);
+
+    main_term = numeric_fn.create("mainTerm", "mtr", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(main_term);
+
     input = numeric_fn.create("input", "inp", MFnNumericData::kDouble, 1.0);
     numeric_fn.setArray(true);
     numeric_fn.setUsesArrayDataBuilder(true);
@@ -44,7 +59,7 @@ MStatus PiperMultiply::initialize()
     numeric_fn.setWritable(false);
     addAttribute(outputX);
 
-    outputY = numeric_fn.create("outputT", "ouy", MFnNumericData::kDouble, 1.0);
+    outputY = numeric_fn.create("outputY", "ouy", MFnNumericData::kDouble, 1.0);
     numeric_fn.setStorable(false);
     numeric_fn.setKeyable(false);
     numeric_fn.setWritable(false);
@@ -65,6 +80,8 @@ MStatus PiperMultiply::initialize()
     compound_fn.setWritable(false);
     addAttribute(output);
 
+    attributeAffects(weight, output);
+    attributeAffects(main_term, output);
     attributeAffects(input, output);
 
     return MS::kSuccess;
@@ -75,21 +92,33 @@ MStatus PiperMultiply::compute(const MPlug& plug, MDataBlock& data)
 {
     if (plug == output or plug == outputX or plug == outputY or plug == outputZ)
     {
+        double weight_value = data.inputValue(weight).asDouble();
+        double main_value = data.inputValue(main_term).asDouble();
 
-        MArrayDataHandle input_data = data.inputArrayValue(input);
-        unsigned int input_length = input_data.elementCount();
-        double result = 1;
-
-        for (unsigned int i = 0; i < input_length; i++)
+        if (weight_value == 0.0)
         {
-            MDataHandle input_value = input_data.inputValue();
-            result *= input_value.asDouble();
-            input_data.next();
+            data.outputValue(output).set(main_value, main_value, main_value);
+            data.outputValue(output).setClean();
         }
+        else
+        {
 
-        data.outputValue(output).set(result, result, result);
-        data.outputValue(output).setClean();
+            MArrayDataHandle input_data = data.inputArrayValue(input);
+            unsigned int input_length = input_data.elementCount();
+            double result = main_value;
 
+            for (unsigned int i = 0; i < input_length; i++)
+            {
+                MDataHandle input_value = input_data.inputValue();
+                result *= input_value.asDouble();
+                input_data.next();
+            }
+
+            result = lerp(main_value, result, weight_value);
+            data.outputValue(output).set(result, result, result);
+            data.outputValue(output).setClean();
+
+        }
     }
 
     return MS::kSuccess;

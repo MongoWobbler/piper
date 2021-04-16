@@ -16,7 +16,6 @@
 MString PiperFK::node_name("piperFK");
 MTypeId PiperFK::type_ID(0x00137144);
 MObject PiperFK::separator;
-MObject PiperFK::global_scale;
 MObject PiperFK::initial_length;
 MObject PiperFK::volumetric_scaling;
 MObject PiperFK::scale_driver_matrix;
@@ -26,7 +25,6 @@ MObject PiperFK::scale_translate_y;
 MObject PiperFK::scale_translate_z;
 MObject PiperFK::scale_translate;
 MObject PiperFK::output_scale;
-MObject PiperFK::output_inverse_scale;
 
 MStatus PiperFK::initialize()
 {
@@ -41,13 +39,6 @@ MStatus PiperFK::initialize()
     enum_fn.setStorable(true);
     enum_fn.setKeyable(true);
     addAttribute(separator);
-
-    global_scale = numeric_fn.create("globalScale", "gbs", MFnNumericData::kDouble, 1);
-    numeric_fn.setStorable(true);
-    numeric_fn.setKeyable(true);
-    numeric_fn.setHidden(true);
-    numeric_fn.setMin(0.001);
-    addAttribute(global_scale);
 
     initial_length = numeric_fn.create("initialLength", "ile", MFnNumericData::kDouble, 0.001);
     numeric_fn.setStorable(true);
@@ -102,31 +93,17 @@ MStatus PiperFK::initialize()
 
     // OUTPUTS
 
-    output_scale = numeric_fn.create("outputScale", "ops", MFnNumericData::kDouble, 1);
-    numeric_fn.setStorable(false);
-    numeric_fn.setKeyable(false);
-    numeric_fn.setHidden(false);
-    addAttribute(output_scale);
-
-    output_inverse_scale = numeric_fn.create("outputInverseScale", "ois", MFnNumericData::kDouble, 1);
+    output_scale = numeric_fn.create("outputScale", "ous", MFnNumericData::kDouble, 1);
     numeric_fn.setStorable(false);
     numeric_fn.setKeyable(false);
     numeric_fn.setWritable(false);
-    addAttribute(output_inverse_scale);
+    addAttribute(output_scale);
 
-    attributeAffects(global_scale, output_scale);
     attributeAffects(initial_length, output_scale);
     attributeAffects(volumetric_scaling, output_scale);
     attributeAffects(scale_driver_matrix, output_scale);
     attributeAffects(scale_parent_matrix, output_scale);
     attributeAffects(scale_translate, output_scale);
-
-    attributeAffects(global_scale, output_inverse_scale);
-    attributeAffects(initial_length, output_inverse_scale);
-    attributeAffects(volumetric_scaling, output_inverse_scale);
-    attributeAffects(scale_driver_matrix, output_inverse_scale);
-    attributeAffects(scale_parent_matrix, output_inverse_scale);
-    attributeAffects(scale_translate, output_inverse_scale);
 
     return MS::kSuccess;
 }
@@ -135,12 +112,11 @@ MStatus PiperFK::initialize()
 MStatus PiperFK::compute(const MPlug &plug, MDataBlock &data)
 {
 
-    if (plug == output_scale or plug == output_inverse_scale)
+    if (plug == output_scale or plug == output_scale)
     {
         MMatrix driver_matrix_value = data.inputValue(scale_driver_matrix).asMatrix();
         MMatrix parent_matrix_value = data.inputValue(scale_parent_matrix).asMatrix();
 
-        double global_scale_value = data.inputValue(global_scale).asDouble();
         double initial_length_value = data.inputValue(initial_length).asDouble();
         double volumetric_value = data.inputValue(volumetric_scaling).asDouble();
         MVector translate_value = data.inputValue(scale_translate).asVector();
@@ -151,18 +127,15 @@ MStatus PiperFK::compute(const MPlug &plug, MDataBlock &data)
         MVector target_position = getPosition(target_matrix);
 
         double distance = getDistance(driver_position, target_position);
-        double normalized_distance = distance / (initial_length_value  * global_scale_value);
+        double normalized_distance = distance / (initial_length_value);
 
         double inverse_distance = 1.0 / normalized_distance;
 
-        normalized_distance = lerp(global_scale_value, normalized_distance, volumetric_value);
-        inverse_distance = lerp(global_scale_value, inverse_distance, volumetric_value);
+        // normalized_distance = lerp(global_scale_value, normalized_distance, volumetric_value);
+        inverse_distance = lerp(1.0, inverse_distance, volumetric_value);
 
-        data.outputValue(output_scale).set(normalized_distance);
+        data.outputValue(output_scale).set(inverse_distance);
         data.outputValue(output_scale).setClean();
-
-        data.outputValue(output_inverse_scale).set(inverse_distance);
-        data.outputValue(output_inverse_scale).setClean();
 
     }
 

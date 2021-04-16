@@ -15,6 +15,8 @@ public:
 public:
     static MTypeId type_ID;
     static MString node_name;
+    static MObject weight;
+    static MObject main_term;
     static MObject input;
     static MObject outputX;
     static MObject outputY;
