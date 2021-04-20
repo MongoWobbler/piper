@@ -82,7 +82,7 @@ MStatus PiperFK::initialize()
     numeric_fn.setHidden(true);
     addAttribute(scale_translate_z);
 
-    scale_translate = compound_fn.create("scaleTranslate", "itc");
+    scale_translate = compound_fn.create("scaleTranslate", "stl");
     compound_fn.addChild(scale_translate_x);
     compound_fn.addChild(scale_translate_y);
     compound_fn.addChild(scale_translate_z);
@@ -127,7 +127,7 @@ MStatus PiperFK::compute(const MPlug &plug, MDataBlock &data)
         MVector target_position = getPosition(target_matrix);
 
         double distance = getDistance(driver_position, target_position);
-        double normalized_distance = distance / (initial_length_value);
+        double normalized_distance = distance / initial_length_value;
 
         double inverse_distance = 1.0 / normalized_distance;
 

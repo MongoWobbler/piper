@@ -32,7 +32,7 @@ def lockAndHide(attribute):
     Locks and hides the given attribute.
 
     Args:
-        attribute (pm.nodetypes.Attribute): Attribute to lock and hide.
+        attribute (pm.general.Attribute): Attribute to lock and hide.
     """
     pm.setAttr(attribute, k=False, lock=True)
 
@@ -42,7 +42,7 @@ def nonKeyable(attribute):
     Makes the given attribute non keyable in the channel box.
 
     Args:
-        attribute (pm.nodetypes.Attribute): Attribute to make not keyable.
+        attribute (pm.general.Attribute): Attribute to make not keyable.
     """
     pm.setAttr(attribute, k=False, cb=True)
 
@@ -116,7 +116,7 @@ def uniformScale(transform, axis=None):
         lockAndHide(attribute_to_lock)
 
 
-def bindConnect(transform, ctrl, ctrl_parent=None):
+def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
     """
     Connects the transform's bind attributes onto the given ctrl's offsetParentMatrix to offset the ctrl.
 
@@ -126,12 +126,15 @@ def bindConnect(transform, ctrl, ctrl_parent=None):
         ctrl (pm.nodetypes.Transform): Transform that will be offset by given transform's attributes.
 
         ctrl_parent (pm.nodetypes.Transform): Transform that will drive given ctrl.
+
+        fail_display (method): How to display a failed connection.
     """
+    bind_transform = convert.toBind(transform, fail_display)
     mult_matrix = pm.createNode('multMatrix', n=transform.name(stripNamespace=True) + ' bindMatrix_MM')
-    transform.attr(pcfg.matrix_attribute) >> mult_matrix.matrixIn[0]
+    bind_transform.worldMatrix >> mult_matrix.matrixIn[0]
 
     if ctrl_parent:
-        transform.getParent().attr(pcfg.matrix_inverse_attribute) >> mult_matrix.matrixIn[1]
+        bind_transform.parentInverseMatrix >> mult_matrix.matrixIn[1]
         ctrl_parent.worldMatrix >> mult_matrix.matrixIn[2]
 
     mult_matrix.matrixSum >> ctrl.offsetParentMatrix

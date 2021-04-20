@@ -27,3 +27,6 @@ inline T lerp(const T &a, const T &b, const T &f) { return (a * (1.0 - f)) + (b 
 
 template <typename T, typename C>
 inline T lerp(const T &a, const T &b, const C &f) { return (a * (1.0 - f)) + (b * f); }
+
+template <typename T>
+inline int signOf(T val) { return (T(0) < val) - (val < T(0)); }

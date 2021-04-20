@@ -2,6 +2,8 @@
 
 import math
 import pymel.core as pm
+import piper_config as pcfg
+
 
 COLORS_INDEX = {0: 'default',
                 1: 'black',
@@ -266,3 +268,24 @@ def toDegrees(transform):
         raise TypeError(str(type(transform)) + ' is not a valid type to convert to EulerRotation!')
 
     return [math.degrees(angle) for angle in rotation]
+
+
+def toBind(node, fail_display=None):
+    """
+    Converts the given node to the its bind namespace equivalent.
+
+    Args:
+        node (pm.nodetypes.DependNode):
+
+        fail_display (method): How to display failure of finding bind node.
+
+    Returns:
+        node (pm.nodetypes.DependNode): Node with bind namespace.
+    """
+    bind_name = node.name().replace(pcfg.skeleton_namespace, pcfg.bind_namespace)
+
+    if not pm.objExists(bind_name) and fail_display:
+        fail_display(bind_name + ' does not exist!')
+        return
+
+    return pm.PyNode(bind_name)

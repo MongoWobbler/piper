@@ -6,6 +6,36 @@ import piper_config as pcfg
 from piper.mayapy.pipe.store import store
 
 
+def getRelativeArt(path='', name=''):
+    """
+    Gets the relative art path of given path. If path not given will use current scene path.
+
+    Args:
+        path (string): Path to get relative art directory of.
+
+        name (string): If given, will change the name of the file to the given name.
+
+    Returns:
+        (string): Path relative to art directory set through settings.
+    """
+    if not path:
+        path = pm.sceneName()
+
+    if not path:
+        pm.error('Scene is not saved! ')
+
+    art_directory = store.get(pcfg.art_directory)
+    if not path.startswith(art_directory):
+        pm.error(path + ' is not in the art directory: ' + art_directory)
+
+    if name:
+        directory = os.path.dirname(path)
+        old_name, extension = os.path.splitext(os.path.basename(path))
+        path = os.path.join(directory, name + extension)
+
+    return path.lstrip(art_directory)
+
+
 def getSelfExport(name=''):
     """
     Gets the current scene's directory if scene is saved, else uses the art directory.

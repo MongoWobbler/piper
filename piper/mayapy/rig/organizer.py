@@ -4,6 +4,7 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.ui.window as uiwindow
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.pipe.paths as paths
 
 from . import bone
 
@@ -56,23 +57,23 @@ def prepare():
     Returns:
         (pm.nodetypes.Transform): Rig transform that holds all skinned meshes referenced.
     """
-    skeleton_path = pm.sceneName()
-
-    # need scene to be saved in order to reference it
-    if not skeleton_path:
-        pm.error('Scene is not saved! Please save scene')
+    # getRelativeArt checks if scene is saved
+    skeleton_path = paths.getRelativeArt()
 
     # if scene is modified, ask user if they would like to save, not save, or cancel operation
     if not uiwindow.save():
         pm.error('Scene not saved.')
 
+    # perform a bone health check before referencing to emphasize any possible errors
     bone.health()
-    skinned_meshes = [pcfg.skeleton_namespace + ':' + node.name() for node in pipernode.get('piperSkinnedMesh')]
 
     # create new file, reference the skeleton into the new file, create rig group
     pm.newFile(force=True)
     rig_grp = pipernode.createRig()
     pm.createReference(skeleton_path, namespace=pcfg.skeleton_namespace)
+    pm.createReference(skeleton_path, namespace=pcfg.bind_namespace)
+    skinned_meshes = pipernode.get('piperSkinnedMesh')
+    [node.visibility.set(False) for node in skinned_meshes if node.name().startswith(pcfg.bind_namespace)]
     pm.parent(skinned_meshes, rig_grp)
     lockMeshes()
 

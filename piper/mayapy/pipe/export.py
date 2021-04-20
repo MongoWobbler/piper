@@ -12,6 +12,7 @@ import piper.mayapy.pipernode as pipernode
 import piper.mayapy.pipe.fbxpreset as fbxpreset
 import piper.mayapy.pipe.paths as paths
 
+
 # FBX and OBJ plugin needed to export.
 plugin.load('fbxmaya')
 plugin.load('objExport')
@@ -122,7 +123,7 @@ class Export(object):
         children = piper_node.getChildren()
         pm.parent(children, w=True)
         pm.select(children)
-        name = piper_node.nodeName()
+        name = piper_node.name(stripNamespace=True)
         export_path = self.export_method(name, settings, textures=textures)
         pm.parent(children, piper_node)
         return export_path

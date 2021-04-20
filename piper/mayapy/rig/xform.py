@@ -107,6 +107,7 @@ def duplicateChain(chain, prefix='new_', color='default', scale=1.0):
 
     for original, duplicate in zip(chain, new_chain):
         duplicate.rename(prefix + original.name(stripNamespace=True))
+        [original.attr(attr) >> duplicate.attr(attr) for attr in pcfg.bind_attributes if original.hasAttr(attr)]
 
         if duplicate.hasAttr('radius'):
             duplicate.radius.set(duplicate.radius.get() * scale)
@@ -275,7 +276,7 @@ def parentMatrixConstraint(driver=None, target=None,
     name = target.name(stripNamespace=True)
     driver_name = driver.name(stripNamespace=True)
 
-    if all(['t', 'r', 's']):
+    if all([t, r, s]):
         mult_name = '_'.join([name, pcfg.parent_matrix_mult_suffix])
     else:
         middle = ''

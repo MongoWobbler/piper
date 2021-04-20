@@ -1,5 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+import math
+
 import pymel.core as pm
 
 import piper_config as pcfg
@@ -10,6 +12,7 @@ import piper.mayapy.pipermath as pipermath
 import piper.mayapy.attribute as attribute
 import piper.mayapy.convert as convert
 
+from . import bone
 from . import xform
 from . import space
 from . import curve
@@ -166,12 +169,9 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
 
             # connect all the stuff needed for volumetric scaling
             calc_axis = calc_axis.lstrip('n')
-            multiply = pm.createNode('piperMultiply', n=duplicate_parent.name() + '_scaleMultiply')
-            decomposes[-2].attr('outputScale' + calc_axis.upper()) >> multiply.mainTerm
-            ctrl_parent.attr('s' + calc_axis) >> multiply.input[0]
-            ctrl.outputScale >> multiply.input[1]
-            multiply.output >> duplicate_parent.scale
-            ctrl.volumetric >> multiply.weight
+            main_term = decomposes[-2].attr('outputScale' + calc_axis.upper())
+            inputs = [ctrl_parent.attr('s' + calc_axis), ctrl.outputScale]
+            multiply = pipernode.multiply(duplicate_parent, main_term, ctrl.volumetric, inputs)
             multiplies.append(multiply)
 
     # edge cases for scaling
@@ -190,7 +190,7 @@ def FK(start, end=None, parent=None, axis=None, shape=curve.circle, sizes=None, 
     return duplicates, controls + in_controls
 
 
-def IK(start, end, parent=None, shape=curve.ring, sizes=None):
+def IK(start, end, parent=None, shape=curve.ring, sizes=None, connect=True):
     """
     Creates IK controls and IK RP solver and for the given start and end joints.
 
@@ -205,27 +205,28 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
 
         sizes (list): Sizes to use for each control.
 
+        connect (bool): If True, connects the duplicate FK chain to the given start/end transforms to be driven.
+
     Returns:
         (list): Controls created in order from start to end.
     """
-    transforms = xform.getChain(start, end)
-    mid = pcu.getMedian(transforms)
+
     axis = None
     mid_ctrl = None
-    inner_ctrl = None
     start_ctrl = None
     controls = []
+    transforms = xform.getChain(start, end)
+    duplicates = xform.duplicateChain(transforms, prefix=pcfg.ik_prefix, color='purple', scale=0.5)
+    mid = pcu.getMedian(transforms)
+    mid_duplicate = pcu.getMedian(duplicates)
 
     if mid == start or mid == end:
         pm.error('Not enough joints given! {} is the mid joint?'.format(mid.name()))
 
-    start_initial_length = pipermath.getDistance(start, mid)
-    end_initial_length = pipermath.getDistance(mid, end)
-
-    for i, transform in enumerate(transforms):
-        name = transform.name()
-        size = sizes[i] if sizes else None
-        control_parent = parent if transform == transforms[0] else None
+    for i, (transform, duplicate) in enumerate(zip(transforms, duplicates)):
+        name = duplicate.name(stripNamespace=True)
+        size = sizes[i] if sizes else control.calculateSize(transform)
+        ctrl_parent = parent if transform == transforms[0] else None
 
         if transform != transforms[-1]:
             next_transform = transforms[i + 1]
@@ -234,80 +235,82 @@ def IK(start, end, parent=None, shape=curve.ring, sizes=None):
 
         # start
         if transform == transforms[0]:
-            ctrl = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
+            ctrl = control.create(duplicate, name=name, axis=axis, shape=shape, size=size)
+            attribute.bindConnect(transform, ctrl, ctrl_parent)
             start_ctrl = ctrl
-            attribute.lockAndHide(ctrl.scale)
-            scale_ctrl = control.create(transform, name=name + '_scale', axis=axis, scale=0.75, parent=ctrl,
-                                        shape=curve.plus, matrix_offset=False, size=size)
-
-            xform.parentMatrixConstraint(transform, scale_ctrl, t=False, r=True, s=False)
-            attribute.lockAndHideCompound(scale_ctrl, ['t', 'r'])
-            scale_ctrl.s >> transform.s
-            controls.append(scale_ctrl)
 
         # mid
         elif transform == mid:
-            ctrl = control.create(transform, curve.orb, name, axis, scale=0.01, matrix_offset=False, size=size)
+            ctrl = control.create(duplicate, curve.orb, name, axis, scale=0.01, matrix_offset=False, size=size)
             translation, rotate, scale, _ = xform.calculatePoleVector(start, mid, end)
             pm.xform(ctrl, t=translation, ro=rotate, s=scale)
             mid_ctrl = ctrl
 
         # end
         elif transform == transforms[-1]:
-            ctrl = control.create(transform, name=name, axis=axis, parent=control_parent, shape=pipernode.createIK,
+            ctrl = control.create(duplicate, name=name, axis=axis, shape=pipernode.createIK,
                                   control_shape=shape, size=size)
-            inner_ctrl = control.create(transform, curve.plus, 'inner_' + name, axis, color='burnt orange',
-                                        parent=ctrl, size=size, matrix_offset=True, inner=.125)
+            attribute.bindConnect(transform, ctrl)
+            attribute.uniformScale(ctrl, axis)
 
-            attribute.lockAndHideCompound(inner_ctrl, ['r', 's'])
-            controls.append(inner_ctrl)
         else:
-            ctrl = control.create(transform, name=name, axis=axis, parent=control_parent, shape=shape, size=size)
+            ctrl = control.create(duplicate, name=name, axis=axis, shape=shape, size=size)
+
+        if connect:
+            xform.parentMatrixConstraint(duplicate, transform)
 
         controls.append(ctrl)
 
     piper_ik = controls[-1]
-    piper_ik.startInitialLength.set(start_initial_length)
-    piper_ik.endInitialLength.set(end_initial_length)
+    mid.attr(pcfg.length_attribute) >> piper_ik.startInitialLength
+    transforms[-1].attr(pcfg.length_attribute) >> piper_ik.endInitialLength
 
     if axis.startswith('n'):
-        piper_ik.outputScale.set(-1)
+        piper_ik.direction.set(-1)
+        axis = axis.lstrip('n')
 
     # connect controls to joints, and make ik handle
-    xform.parentMatrixConstraint(start_ctrl, start, t=True, r=False, s=False)
-    xform.parentMatrixConstraint(piper_ik, end, t=False)
-    ik_handle, effector = pm.ikHandle(sj=start, ee=end, sol='ikRPsolver', n=end.name() + '_handle', pw=1, w=1)
-    xform.parentMatrixConstraint(piper_ik, ik_handle, r=False, s=False)
+    decompose = xform.parentMatrixConstraint(start_ctrl, duplicates[0], t=True, r=False, s=True)
+    xform.parentMatrixConstraint(piper_ik, duplicates[-1], t=False)
+    ik_handle_name = duplicates[-1].name(stripNamespace=True) + '_handle'
+    ik_handle, _ = pm.ikHandle(sj=duplicates[0], ee=duplicates[-1], sol='ikRPsolver', n=ik_handle_name, pw=1, w=1)
+    pm.parent(ik_handle, piper_ik)
+    pipermath.zeroOut(ik_handle)
+    ik_handle.translate >> piper_ik.handleTranslate
+    ik_handle.parentMatrix >> piper_ik.handleParentMatrix
     # xform.poleVectorMatrixConstraint(ik_handle, mid_ctrl)
+    attribute.addSeparator(mid_ctrl)
+    mid_ctrl.addAttr('poleVectorWeight', k=True, dv=1, min=0, max=1)
     constraint = pm.poleVectorConstraint(mid_ctrl, ik_handle)
-    constraint.target[0].targetWeight.disconnect()  # disconnecting unused cycled connection
+    mid_ctrl.poleVectorWeight >> constraint.attr(mid_ctrl.name() + 'W0')
 
     # connect the rest
     start_ctrl.worldMatrix >> piper_ik.startMatrix
     mid_ctrl.worldMatrix >> piper_ik.poleVectorMatrix
-    piper_ik.worldMatrix >> piper_ik.endMatrix
-    piper_ik.startOutput >> mid.attr('t' + axis.lstrip('n'))
+    piper_ik.startOutput >> mid_duplicate.attr('t' + axis)
+    piper_ik.endOutput >> duplicates[-1].attr('t' + axis)
     piper_ik.twist >> ik_handle.twist
     piper_ik._.lock()
 
-    # inner control connections
-    inner_negate = pm.createNode('multiplyDivide', n=inner_ctrl.name() + '_negate')
-    inner_ctrl.t >> inner_negate.input1
-    inner_negate.input2.set([-1, -1, -1])
-
-    inner_plus = pm.createNode('plusMinusAverage', n=inner_ctrl.name() + '_plus')
-    inner_negate.output >> inner_plus.input3D[0]
-    piper_ik.endOutput >> inner_plus.attr('input3D[1].input3D' + axis.lstrip('n'))
-    inner_plus.output3D >> end.t
+    # scale ctrl connect
+    pipernode.multiply(duplicates[0], decompose.attr('outputScale' + axis.upper()), inputs=[piper_ik.startOutputScale])
+    pipernode.multiply(mid_duplicate, mid_ctrl.attr('s' + axis), inputs=[piper_ik.endOutputScale])
+    attribute.uniformScale(mid_ctrl, axis)
 
     # parent pole vector to end control and create
     pm.parent(mid_ctrl, piper_ik)
     xform.toOffsetMatrix(mid_ctrl)
     space.create([start_ctrl], mid_ctrl)
     mid_ctrl.useScale.set(False)
-    attribute.lockAndHideCompound(mid_ctrl, ['r', 's'])
+    attribute.lockAndHideCompound(mid_ctrl, ['r'])
 
-    return controls
+    # preferred angle connection
+    mid_bind = convert.toBind(mid, pm.warning)
+    if mid_bind:
+        mid_bind.preferredAngle >> piper_ik.preferredAngleInput
+        piper_ik.preferredAngleOutput >> mid_duplicate.preferredAngle
+
+    return duplicates, controls
 
 
 def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=curve.ring, proxy=True):
@@ -315,9 +318,9 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
     Creates a FK and IK controls that drive the chain from start to end.
 
     Args:
-        start (pm.nodetypes.Transform): Start of the chain to be driven by FK controls.
+        start (pm.nodetypes.Joint): Start of the chain to be driven by FK controls.
 
-        end (pm.nodetypes.Transform): End of the chain to be driven by FK controls. If none given, will only drive start
+        end (pm.nodetypes.Joint): End of the chain to be driven by FK controls. If none given, will only drive start
 
         parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
 
@@ -335,9 +338,8 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
     # create joint chains that is the same as the given start and end chain for FK and IK then create controls on those
     transforms = xform.getChain(start, end)
     sizes = [control.calculateSize(transform) for transform in transforms]
-    ik_transforms = xform.duplicateChain(transforms, pcfg.ik_prefix, color='purple', scale=0.5)
     fk_transforms, fk_controls = FK(start, end, parent=parent, axis=axis, shape=fk_shape, sizes=sizes, connect=False)
-    ik_controls = IK(ik_transforms[0], ik_transforms[-1], parent=parent, shape=ik_shape, sizes=sizes)
+    ik_transforms, ik_controls = IK(start, end, parent=parent, shape=ik_shape, sizes=sizes, connect=False)
     controls = fk_controls + ik_controls
 
     # create the switcher control and add the transforms, fk, and iks to its attribute to store it
@@ -367,11 +369,11 @@ def FKIK(start, end, parent=None, axis=None, fk_shape=curve.circle, ik_shape=cur
         switcher_attribute >> original_transform.attr(ik_space)
 
     if not proxy:
-        return controls
+        return fk_transforms, ik_transforms, controls
 
     # make proxy fk ik attribute on all the controls
     switcher_control.visibility.set(False)
-    for ctrl in controls:
+    for ctrl in controls[1:]:
         attribute.addSeparator(ctrl)
         ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
@@ -406,7 +408,7 @@ def banker(joint, ik_control, pivot_track=None, side='', use_track_shape=True):
         side = pcu.getSide(joint_name)
 
     # get the IK handle and validate there is only one
-    ik_handle = ik_control.connections(skipConversionNodes=True, type='ikHandle')
+    ik_handle = list(set(ik_control.connections(skipConversionNodes=True, type='ikHandle')))
     if len(ik_handle) != 1:
         pm.error('Needed only ONE ik_handle. {} found.'.format(str(len(ik_handle))))
 
@@ -418,7 +420,8 @@ def banker(joint, ik_control, pivot_track=None, side='', use_track_shape=True):
         # if IK joint given, get the name of the regular joint by stripping the ik prefix
         if joint_name.startswith(pcfg.ik_prefix):
             stripped_name = pcu.removePrefixes(joint_name, pcfg.ik_prefix)
-            search_joint = pm.PyNode(stripped_name)
+            namespace_name = pcfg.skeleton_namespace + ':' + stripped_name
+            search_joint = pm.PyNode(stripped_name) if pm.objExists(stripped_name) else pm.PyNode(namespace_name)
         else:
             search_joint = joint
 
@@ -523,7 +526,6 @@ def banker(joint, ik_control, pivot_track=None, side='', use_track_shape=True):
     curve_info.result.position >> pivot.rotatePivot
 
     # connect ik handle by letting the pivot drive it
-    ik_handle.t.disconnect()
     pm.parent(ik_handle, pivot)
 
     # make the pivot drive the joint's rotations

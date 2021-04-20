@@ -43,6 +43,38 @@ def get(node_type, ignore=None):
     return piper_nodes
 
 
+def multiply(transform, main_term=None, weight=None, inputs=None):
+    """
+    Creates the multiply node and hooks up all the given given inputs to the given transform's scale.
+
+    Args:
+        transform (pm.nodetypes.Transform): Node to hook multiply onto its scale.
+
+        main_term (pm.general.Attribute): Attribute to connect onto the multiply main_term.
+
+        weight (pm.general.Attribute): Attribute to connect onto the multiply weight.
+
+        inputs (list): Attributes to connect to the input plug of the multiply node.
+
+    Returns:
+        (pm.nodetypes.piperMultiply): Multiply node created.
+    """
+    multiply_node = pm.createNode('piperMultiply', n=transform.name(stripNamespace=True) + '_scaleMultiply')
+    multiply_node.output >> transform.scale
+
+    if main_term:
+        main_term >> multiply_node.mainTerm
+
+    if weight:
+        weight >> multiply_node.weight
+
+    if not inputs:
+        return multiply_node
+
+    [attr >> multiply_node.input[i] for i, attr in enumerate(inputs)]
+    return multiply_node
+
+
 def create(node_type, color=None, name=None, parent=None):
     """
     Creates the given node type with the given color and given name/parent.

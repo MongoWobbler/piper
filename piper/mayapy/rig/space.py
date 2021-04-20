@@ -210,19 +210,10 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
             pm.setKeyframe(to_key, time=current_frame - 1)
 
         [reverse.r.set(0, 0, 0) for reverse in reverses]
-        mid_index = int(len(ik_controls) / 2)
-        iks = [ik_controls[1], ik_controls[mid_index], ik_controls[-1]]
-        for transform, ik_control in reversed(list(zip(transforms, iks))):
-
-            # start of chain
-            if transform == transforms[0]:
-                translate = pm.xform(transform, q=True, ws=True, t=True)
-                scale = pm.xform(transform, q=True, ws=True, s=True)
-                pm.xform(ik_control, ws=True, t=translate)
-                pm.xform(ik_controls[0], ws=True, s=scale)
+        for transform, ik_control in reversed(list(zip(transforms, ik_controls))):
 
             # middle transform
-            elif transform == mid:
+            if transform == mid:
                 translate, _, _, straight = xform.calculatePoleVector(transforms[0], mid, transforms[-1], scale=2)
                 ik_control.t.set(0, 0, 0) if straight else pm.xform(ik_control, ws=True, t=translate)
 

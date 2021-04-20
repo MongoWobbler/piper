@@ -61,9 +61,9 @@ high_poly_suffix = '_high'
 
 # Skeleton
 skeleton_namespace = 'SKL'
-matrix_attribute = 'bindMatrix'
-matrix_inverse_attribute = 'bindInverseMatrix'
+bind_namespace = 'BIND'
 length_attribute = 'bindLength'
+bind_attributes = [length_attribute]
 required_preferred_angle = ['calf', 'lowerarm', 'elbow', 'knee']
 
 # Rig
