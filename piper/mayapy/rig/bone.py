@@ -9,6 +9,8 @@ import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
 import piper.mayapy.pipermath as pipermath
 
+from . import xform
+
 
 def assignLabels(joints=None):
     """
@@ -61,26 +63,93 @@ def assignBindAttributes(joints=None):
     pm.displayInfo('Finished assigning Piper joint attributes to ' + str(len(joints)) + ' joints.')
 
 
-def createAtPivot():
+def _createAtPivot(transform, name='', i=None, component_prefix=None, joints=None):
+    """
+    Simple convenience method for creating a joint at the transform's pivot. Meant to be used by createAtPivot.
+
+    Args:
+        transform (any): Will select given transform to figure out pivot to create joint at.
+
+        name (string): Name to give joint.
+
+        i (int): Used to get specific component node.
+
+        component_prefix (string): Abbreviation for component to get with given i. Usually "vtx", "e", or "f".
+
+        joints (list): Appends created joint to given joints.
+
+    Returns:
+        (list): Joints created, position of joint created, and component node
+    """
+    component = None
+
+    if i is not None and component_prefix is not None:
+        shape_name = transform.node().name()
+        component = pm.PyNode(shape_name + '.{}[{}]'.format(component_prefix, str(i)))
+        position = myu.getManipulatorPosition(component)
+    else:
+        position = myu.getManipulatorPosition(transform)
+
+    joint = pm.joint(p=position, n=name)
+
+    if isinstance(joints, list):
+        joints.append(joint)
+
+    return joint, position, component
+
+
+def createAtPivot(selected=None):
     """
     Creates a joint at the current manipulator pivot point.
     """
+    joints = []
     shift_held = myu.isShiftHeld()
     ctrl_held = myu.isCtrlHeld()
     alt_held = myu.isAltHeld()
+    selected = myu.validateSelect(selected, minimum=1)
 
-    selection = pm.selected()
     if shift_held:
-        for transform in selection:
-            pm.select(cl=True)
+        for transform in selected:
             name = transform.nodeName() if alt_held else ''
-            joint = pm.joint(p=myu.getManipulatorPosition(transform), n=name)
-            if ctrl_held:
-                constraint = pm.orientConstraint(transform, joint, mo=False)
-                pm.delete(constraint)
+            if isinstance(transform, pm.nodetypes.Transform):
+                joint, position, _ = _createAtPivot(transform, name, joints=joints)
+                xform.orientToTransform(transform, joint, ctrl_held)
+
+            elif isinstance(transform, pm.general.MeshVertex):
+                for i in transform.indices():
+                    joint, position, vertex = _createAtPivot(transform, name, i, 'vtx', joints)
+                    xform.orientToVertex(joint, vertex, position, ctrl_held)
+
+            elif isinstance(transform, pm.general.MeshEdge):
+                for i in transform.indices():
+                    joint, position, edge = _createAtPivot(transform, name, i, 'e', joints)
+                    xform.orientToEdge(joint, edge, position, ctrl_held)
+
+            elif isinstance(transform, pm.general.MeshFace):
+                for i in transform.indices():
+                    joint, position, face = _createAtPivot(transform, name, i, 'f', joints)
+                    xform.orientToFace(joint, face, position, ctrl_held)
+
     else:
-        name = selection[-1].nodeName() if alt_held else ''
-        pm.joint(p=myu.getManipulatorPosition(selection), n=name)
+        transform = selected[-1]
+        name = transform.nodeName() if alt_held else ''
+        joint, position, _ = _createAtPivot(transform, name, joints=joints)
+
+        if len(selected) == 1 and ctrl_held:
+
+            if isinstance(transform, pm.nodetypes.Transform):
+                xform.orientToTransform(transform, joint)
+
+            elif isinstance(transform, pm.general.MeshVertex):
+                xform.orientToVertex(joint, transform, position)
+
+            elif isinstance(transform, pm.general.MeshEdge):
+                xform.orientToEdge(joint, transform, position)
+
+            elif isinstance(transform, pm.general.MeshFace):
+                xform.orientToFace(joint, transform, position)
+
+    return joints
 
 
 def health(parent_fail=pm.error,

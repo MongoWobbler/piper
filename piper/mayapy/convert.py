@@ -216,29 +216,39 @@ def axisToTriAxis(axis, absolute=False):
     return TRIAXES[axis]
 
 
-def toVector(transform, invalid_zero=False, error=False):
+def toVector(transform, invalid_default=None, error=False):
     """
     Converts given transform to a PyMel Vector.
 
     Args:
         transform (Any): Node or list to convert to Vector.
 
-        invalid_zero (boolean): If True and given transform is not a valid type, will return a zero Vector.
+        invalid_default (any): If True and given transform is not a valid type, will return a zero Vector or given vector.
 
         error (boolean): If given transform is not a valid type and given invalid_zero is False, will return error.
 
     Returns:
         (pm.dt.Vector): Vector of given transform.
     """
-    if isinstance(transform, (pm.nodetypes.Transform, str)):
+    if isinstance(transform, str):
+        if transform in AXES:
+            location = pm.dt.Vector(axisToVector(transform))
+        else:
+            location = pm.dt.Vector(pm.xform(transform, q=True, ws=True, rp=True))
+
+    elif isinstance(transform, pm.nodetypes.Transform):
         location = pm.dt.Vector(pm.xform(transform, q=True, ws=True, rp=True))
+
     elif isinstance(transform, (list, tuple)):
         location = pm.dt.Vector(transform)
+
     elif isinstance(transform, pm.dt.Vector):
         location = transform
+
     else:  # if we cant convert, return zero or error or pass and return given location
-        if invalid_zero:
-            location = pm.dt.Vector((0, 0, 0))
+        if invalid_default:
+            vector = (0, 0, 0) if invalid_default is True else invalid_default
+            location = pm.dt.Vector(vector)
         elif error:
             location = None
             pm.error(str(type(transform)) + ' is not a valid type to convert to Vector!')

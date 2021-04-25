@@ -1,5 +1,6 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+import os
 import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.ui.window as uiwindow
@@ -59,6 +60,8 @@ def prepare():
     """
     # getRelativeArt checks if scene is saved
     skeleton_path = paths.getRelativeArt()
+    rig_name, _ = os.path.splitext(os.path.basename(skeleton_path))
+    rig_name = rig_name.split(pcfg.skinned_mesh_prefix)[-1]
 
     # if scene is modified, ask user if they would like to save, not save, or cancel operation
     if not uiwindow.save():
@@ -69,7 +72,7 @@ def prepare():
 
     # create new file, reference the skeleton into the new file, create rig group
     pm.newFile(force=True)
-    rig_grp = pipernode.createRig()
+    rig_grp = pipernode.createRig(name=rig_name)
     pm.createReference(skeleton_path, namespace=pcfg.skeleton_namespace)
     pm.createReference(skeleton_path, namespace=pcfg.bind_namespace)
     skinned_meshes = pipernode.get('piperSkinnedMesh')

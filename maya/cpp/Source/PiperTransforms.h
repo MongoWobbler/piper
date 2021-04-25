@@ -51,4 +51,5 @@ public:
 public:
     static MTypeId type_ID;
     static MString node_name;
+    static MObject clip_data;
 };

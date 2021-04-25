@@ -238,11 +238,31 @@ def createSkinnedMesh():
     return piper_skinned_meshes
 
 
-def createRig():
-    piper_rig = create('piperRig', 'burnt orange', name='piper' + pcfg.rig_suffix)
+def createRig(name=''):
+    """
+    Creates the node that houses all rig nodes.
+
+    Args:
+        name (string): If given, will use the given name as the name for the rig node.
+
+    Returns:
+        (PyNode): Rig node created.
+    """
+    name = name if name else 'piper' + pcfg.rig_suffix
+    piper_rig = create('piperRig', 'burnt orange', name=name)
     return piper_rig
 
 
 def createAnimation():
-    piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + 'piperAnimation')
+    """
+    Creates the node that houses a rig. Used to export animation.
+
+    Returns:
+        (PyNode): Animation node created.
+    """
+    scene_name = pm.sceneName().namebase
+    name = scene_name if scene_name else 'piperAnimation'
+    piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + name)
+    rigs = get('piperRig', ignore='piperAnimation')
+    pm.parent(rigs[0], piper_animation) if len(rigs) == 1 else pm.warning('{} rigs found!'.format(str(len(rigs))))
     return piper_animation

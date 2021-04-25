@@ -12,13 +12,14 @@ class PiperMenu(QtWidgets.QMenu):
     def __init__(self, *args, **kwargs):
         super(PiperMenu, self).__init__(*args, **kwargs)
         self.setTearOffEnabled(True)
+        self.setToolTipsVisible(True)
         self.icon = QtGui.QIcon(os.path.join(pcu.getPiperDirectory(), 'icons', 'piper.png'))
         self.actions = []  # stores QWidgets so that they are not garbage collected
 
     def onBeforePressed(self):
         pass
 
-    def onAfterPressed(self):
+    def onAfterPressed(self, method):
         pass
 
     def add(self, name, on_pressed):
@@ -36,11 +37,19 @@ class PiperMenu(QtWidgets.QMenu):
         def wrapper():
             self.onBeforePressed()
             on_pressed()
-            self.onAfterPressed()
+            self.onAfterPressed(on_pressed)
 
         name = name.decode('utf-8') if sys.version.startswith('2') else name
         action = QtWidgets.QAction(name, self)
         action.triggered.connect(wrapper)
+
+        # getting the documentation from the function
+        documentation = on_pressed.__doc__
+        method = on_pressed.__module__ + '.' + on_pressed.__name__
+        status_tip = method + ': ' + documentation.split('Args:')[0].split('Returns:')[0] if documentation else method
+
+        action.setToolTip(documentation)
+        action.setStatusTip(status_tip)
         self.addAction(action)
         self.actions.append(action)
         return action
@@ -154,6 +163,7 @@ class _PiperMainMenu(PiperMenu):
         self.graphics_menu = None
         self.animation_menu = None
         self.settings_menu = None
+        self.on_before_reload = lambda: None
 
     def build(self):
         self.addMenuP(self.scene_menu)
@@ -170,6 +180,7 @@ class _PiperMainMenu(PiperMenu):
 
     def reloadPiper(self):
         manager.closeAll()
+        self.on_before_reload()
         pcu.removeModules(path=pcu.getPiperDirectory())
         self.deleteLater()
 

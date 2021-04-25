@@ -12,7 +12,7 @@ def default(  # geometry
                 referenced_assets=1,
 
                 # animation
-                animation=1,
+                anim=1,
                 animation_only=0,
                 skins=1,
                 shapes=1,
@@ -29,8 +29,8 @@ def default(  # geometry
                 instances=1,
                 log=0,
                 scene_name=0,
-                version=2018,
-                ascii=None):
+                version=pcfg.fbx_default_version,
+                ascii_format=None):
     """
     Default Piper settings for the FBX options.
 
@@ -43,9 +43,9 @@ def default(  # geometry
 
         referenced_assets (int): If True, include referenced assets in FBX.
 
-        animation (int): If True, will include animation data.
+        anim (int): If True, will include animation data.
 
-        animation_only (int): If True, will include ONLY animation data.
+        animation_only (int): If True, will turn everything into transforms, including joints.
 
         skins (int): If True, will include skin deformation data.
 
@@ -71,10 +71,10 @@ def default(  # geometry
 
         version (int): FBX version to use for exporting data.
 
-        ascii (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
+        ascii_format (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
     """
     # initial setup
-    ascii = store.get(pcfg.export_ascii) if ascii is None else ascii
+    ascii_format = store.get(pcfg.export_ascii) if ascii_format is None else ascii_format
     pm.FBXResetExport()
 
     # geometry
@@ -84,7 +84,7 @@ def default(  # geometry
     pm.FBXExportReferencedAssetsContent('-v', referenced_assets)
 
     # animation
-    pm.FBXProperty('Export|IncludeGrp|Animation', '-v', animation)
+    pm.FBXProperty('Export|IncludeGrp|Animation', '-v', anim)
     pm.FBXExportAnimationOnly('-v', animation_only)
     pm.FBXExportSkins('-v', skins)
     pm.FBXExportShapes('-v', shapes)
@@ -101,25 +101,35 @@ def default(  # geometry
     pm.FBXExportInstances('-v', instances)
     pm.FBXExportGenerateLog('-v', log)
     pm.FBXExportUseSceneName('-v', scene_name)
-    pm.FBXExportInAscii('-v', ascii)
+    pm.FBXExportInAscii('-v', ascii_format)
     pm.FBXExportFileVersion('-v', 'FBX' + str(version) + '00')
 
 
-def mesh(ascii=None):
+def mesh(ascii_format=None):
     """
     FBX preset settings for a mesh export.
 
     Args:
-        ascii (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
+        ascii_format (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
     """
-    default(animation=0, skins=0, shapes=0, cameras=0, lights=0, embed=0, ascii=ascii)
+    default(anim=0, skins=0, shapes=0, cameras=0, lights=0, embed=0, ascii_format=ascii_format)
 
 
-def skinnedMesh(ascii=None):
+def skinnedMesh(ascii_format=None):
     """
     FBX preset settings for a skinned mesh export.
 
     Args:
-        ascii (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
+        ascii_format (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
     """
-    default(cameras=0, lights=0, embed=0, connections=0, ascii=ascii)
+    default(cameras=0, lights=0, embed=0, connections=0, ascii_format=ascii_format)
+
+
+def animation(ascii_format=None):
+    """
+    FBX preset settings for an animation export.
+
+    Args:
+        ascii_format (int): Whether FBX file is in Ascii or Binary. If None given, will use Piper's stored settings
+    """
+    default(cameras=0, lights=0, embed=0, connections=0, ascii_format=ascii_format)

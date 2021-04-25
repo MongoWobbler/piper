@@ -1,6 +1,7 @@
 //  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 #include "PiperTransforms.h"
+#include <maya/MFnTypedAttribute.h>
 
 
 MTypeId PiperMesh::type_ID(0x00137140);
@@ -14,6 +15,7 @@ MString PiperRig::node_name("piperRig");
 
 MTypeId PiperAnimation::type_ID(0x00137143);
 MString PiperAnimation::node_name("piperAnimation");
+MObject PiperAnimation::clip_data;
 
 
 void* PiperMesh::creator()
@@ -60,5 +62,12 @@ void* PiperAnimation::creator()
 
 MStatus PiperAnimation::initialize()
 {
+    MFnTypedAttribute typed_fn;
+
+    clip_data = typed_fn.create("clipData", "clp", MFnData::kString);
+    typed_fn.setStorable(true);
+    typed_fn.setWritable(true);
+    addAttribute(clip_data);
+
     return MS::kSuccess;
 }

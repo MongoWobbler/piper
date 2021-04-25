@@ -140,30 +140,32 @@ def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
     mult_matrix.matrixSum >> ctrl.offsetParentMatrix
 
 
-def addSeparator(transform):
+def addSeparator(transform, character=pcfg.separator_character):
     """
-    Adds a '_' attribute to help visually separate attributes in channel box to specified transform.
+    Adds the given character attribute to help visually separate attributes in channel box to specified transform.
 
     Args:
-        transform (string or pm.nodetypes.DependNode): transform node to add a '_' attribute to.
+        transform (string or pm.nodetypes.DependNode): transform node to add given character attribute to.
+
+        character (string): Character to use to visually separate attributes in channel box.
     """
     transform = pm.PyNode(transform)
-    underscore_count = []
-    underscore = '_'
+    separator_count = []
+    separator = character
 
     # get all the attributes with '_' in the transform's attributes
     for full_attribute in transform.listAttr():
         attribute = full_attribute.split(str(transform))
-        if '_' in attribute[1]:
-            underscore_count.append(attribute[1].count('_'))
+        if character in attribute[1]:
+            separator_count.append(attribute[1].count(character))
 
     # make an underscore that is one '_' longer than the longest underscore
-    if underscore_count:
-        underscore = (underscore * max(underscore_count)) + underscore
+    if separator_count:
+        separator = (separator * max(separator_count)) + separator
 
     # make the attribute
-    pm.addAttr(transform, longName=underscore, k=True, at='enum', en='_')
-    transform.attr(underscore).lock()
+    pm.addAttr(transform, longName=separator, k=True, at='enum', en=character)
+    transform.attr(separator).lock()
 
 
 def addDelete(transforms=None):

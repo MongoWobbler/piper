@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import json
 import shutil
 import pymel.core as pm
 import piper_config as pcfg
@@ -140,6 +141,9 @@ class Export(object):
             ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
 
             warn (boolean): If True, warns the user of no nodes found.
+
+        Returns:
+            (list): All export paths.
         """
         if not piper_meshes:
             piper_meshes = pipernode.get('piperMesh', ignore=ignore)
@@ -147,7 +151,7 @@ class Export(object):
         if not piper_meshes:
             return pm.warning('No Piper Meshes found! Please select or make Piper Export Node') if warn else None
 
-        [self._mesh(piper_mesh, self.mesh_settings, textures) for piper_mesh in piper_meshes]
+        return [self._mesh(piper_mesh, self.mesh_settings, textures) for piper_mesh in piper_meshes]
 
     def skinnedMesh(self, skinned_meshes, textures=True, ignore=None, warn=True):
         """
@@ -161,7 +165,11 @@ class Export(object):
             ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
 
             warn (boolean): If True, warns the user of no nodes found.
+
+        Returns:
+            (list): All export paths.
         """
+        export_paths = []
         if not skinned_meshes:
             skinned_meshes = pipernode.get('piperSkinnedMesh', ignore=ignore)
 
@@ -174,14 +182,116 @@ class Export(object):
             fbx_file = fbx_sdk.PiperFBX(export_path)
             deleted = fbx_file.deleteNodesWithPropertyValue(pcfg.delete_node_attribute, True)
             fbx_file.save() if deleted else fbx_file.close()
+            export_paths.append(export_paths)
+
+        return export_paths
 
     def animation(self, animations, ignore=None, warn=True):
-        pass
+        """
+        Exports all or given piper animation groups.
+
+        Args:
+            animations (list): Piper animation nodes to export.
+
+            ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
+
+            warn (boolean): If True, warns the user of no nodes found.
+
+        Returns:
+            (list): All export paths.
+        """
+        export_paths = []
+        pm.refresh(suspend=True)
+        start = pm.playbackOptions(q=True, min=True)
+        end = pm.playbackOptions(q=True, max=True)
+
+        if not animations:
+            animations = pipernode.get('piperAnimation', ignore=ignore)
+
+        for anim in animations:
+            anim_name = anim.name(stripNamespace=True)
+            skinned_meshes = anim.getChildren(ad=True, type='piperSkinnedMesh')
+            skinned_mesh = list(filter(lambda node: node.name().startswith(pcfg.skeleton_namespace), skinned_meshes))
+
+            if len(skinned_mesh) != 1:
+                pm.warning('Found {} skinned meshes in {}!'.format(len(skinned_mesh), anim_name)) if warn else None
+                continue
+
+            root = skinned_mesh[0].getChildren(type='joint')
+            if not root:
+                pm.warning('{} has no root joints!'.format(skinned_mesh[0].name())) if warn else None
+                continue
+
+            # get joints from rig
+            root = root[0]
+            joints = root.getChildren(ad=True, type='joint')
+            joints.append(root)
+
+            # duplicate rig joints
+            root_duplicate = pm.duplicate(root)[0]
+            pm.parent(root_duplicate, w=True)
+            duplicates = root_duplicate.getChildren(ad=True, type='joint')
+            duplicates.append(root_duplicate)
+
+            for joint, duplicate in zip(joints, duplicates):
+
+                # delete unwanted attributes
+                attributes = duplicate.listAttr()
+                for attr in attributes:
+                    attribute_name = attr.name().split('.')[-1]
+
+                    if attribute_name.startswith(pcfg.use_attributes) or attribute_name.endswith('Space'):
+                        pm.setAttr(attr, lock=False)
+                        pm.deleteAttr(attr)
+
+                # connect channels from original to duplicate
+                for attr in ['t', 'r', 's']:
+                    joint.attr(attr) >> duplicate.attr(attr)
+
+            # get clip data
+            starts = []
+            ends = []
+            data = anim.clipData.get()  # could be empty string, empty dictionary, or dictionary with data
+            data = json.loads(data) if data else {}  # json.loads fails with empty string
+
+            if not data:
+                data = {'': {'start': start, 'end': end}}
+
+            for clip_name, clip_data in data.items():
+                starts.append(clip_data['start'])
+                ends.append(clip_data['end'])
+
+            # bake animation keys onto duplicate joints and export
+            pm.select(duplicates)
+            pm.bakeResults(sm=True, time=(min(starts), max(ends)))
+
+            # export each clip
+            for clip_name, clip_data in data.items():
+                pm.playbackOptions(min=clip_data['start'], max=clip_data['end'])
+                export_name = anim_name + '_' + clip_name if clip_name else anim_name
+                export_path = self.export_method(export_name, self.animation_settings)  # export happens here
+                export_paths.append(export_path)
+
+            pm.delete(root_duplicate)
+
+        pm.playbackOptions(min=start, max=end)
+        pm.refresh(suspend=False)
+
+        if not export_paths:
+            return pm.warning('No skinned meshes found under any animation nodes! Export failed. ') if warn else None
+
+        return export_paths
 
     def piperNodes(self):
         """
         Exports all piper nodes from scene.
+
+        Returns:
+            (list): All export paths.
         """
+        mesh_export = []
+        skin_export = []
+        anim_export = []
         selected = pm.selected()  # store selection
         piper_meshes = pipernode.get('piperMesh', ignore='piperSkinnedMesh')
         piper_skinned_meshes = pipernode.get('piperSkinnedMesh', ignore='piperRig')
@@ -192,15 +302,22 @@ class Export(object):
             return
 
         if piper_meshes:
-            self.mesh(piper_meshes, warn=False)
+            mesh_export = self.mesh(piper_meshes, warn=False)
 
         if piper_skinned_meshes:
-            self.skinnedMesh(piper_skinned_meshes, warn=False)
+            skin_export = self.skinnedMesh(piper_skinned_meshes, warn=False)
 
         if piper_animation:
-            self.animation(piper_animation, warn=False)
+            anim_export = self.animation(piper_animation, warn=False)
 
         pm.select(selected)  # selected originally selected nodes
+        exports = mesh_export + skin_export + anim_export
+
+        if len(exports) > 1:
+            size = sum([pcu.getFileSize(export_path, string=False) for export_path in exports])
+            pm.displayInfo('Finished exporting {} files for a total of {} MB'.format(str(len(exports)), str(size)))
+
+        return exports
 
     @staticmethod
     def onStart(export_path):
@@ -236,6 +353,7 @@ class FBX(Export):
         self.extension = '.fbx'
         self.mesh_settings = fbxpreset.mesh
         self.skinned_mesh_settings = fbxpreset.skinnedMesh
+        self.animation_settings = fbxpreset.animation
 
     def write(self, export_path, preset):
         # set the given preset and export

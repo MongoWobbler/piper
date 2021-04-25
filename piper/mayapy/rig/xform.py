@@ -21,7 +21,7 @@ def toOffsetMatrix(transform):
     pipermath.zeroOut(transform)
 
 
-def parent(*transforms, world=False):
+def parent(transforms, world=False):
     """
     Parents transforms to the last given transform and gets rid of joint orient values if transform is a joint.
 
@@ -101,7 +101,7 @@ def duplicateChain(chain, prefix='new_', color='default', scale=1.0):
     new_chain = pm.duplicate(chain, parentOnly=True, renameChildren=True)
 
     start = new_chain[0]
-    parent(start, world=True)
+    parent([start], world=True)
     start.overrideEnabled.set(True)
     start.overrideColor.set(convert.colorToInt(color))
 
@@ -205,7 +205,7 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
 
         if joint_parent:
             pm.parent(mirrored_joint, w=True)
-            parent(mirrored_joint, joint_parent)
+            parent([mirrored_joint, joint_parent])
 
     return mirrored_transforms
 
@@ -484,7 +484,7 @@ def poleVectorMatrixConstraint(ik_handle, control):
     return [blend_colors, pole_matrix, multiplication_matrix, inverse_matrix, compose_matrix, world_point]
 
 
-def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, forward=[0, 0, 1]):
+def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, forward=True):
     """
     Props to Greg Hendrix for walking through the math: https://vimeo.com/240328348
 
@@ -515,19 +515,20 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
 
     # if transform is in a straight line use the location of the mid transform to place the pole vector
     if is_in_straight_line:
-        translation = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
+        translation = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, t=True))
         rotation = pm.xform(mid_transform, q=True, ws=True, ro=True)
 
         if forward:
+            forward = [0, 0, 1] if forward is True else forward
             forward = convert.toVector(forward)
             distance = pipermath.getDistance(start_transform, end_transform)
             forward = forward * (distance * scale)
             translation = translation + forward
 
     else:
-        start = pm.dt.Vector(pm.xform(start_transform, q=True, ws=True, rp=True))
-        mid = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, rp=True))
-        end = pm.dt.Vector(pm.xform(end_transform, q=True, ws=True, rp=True))
+        start = pm.dt.Vector(pm.xform(start_transform, q=True, ws=True, t=True))
+        mid = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, t=True))
+        end = pm.dt.Vector(pm.xform(end_transform, q=True, ws=True, t=True))
 
         start_to_end = end - start
         start_to_mid = mid - start
@@ -546,7 +547,107 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
     return translation, rotation, scale, is_in_straight_line
 
 
-def orient(start, end, aim=None, up=None, world_up=None):
+def orientToTransform(driver, target, condition=True):
+    """
+    Orients the given target to have the same orientation as the given driver. Same as doing an orient constraint.
+
+    Args:
+        driver (pm.nodetypes.Transform): Transform to get rotation from.
+
+        target (pm.nodetypes.Transform): Transform to paste rotation onto.
+
+        condition (boolean): Convenience arg for whether to perform operation or not.
+    """
+    if not condition:
+        return
+
+    rotation = pm.xform(driver, q=True, ws=True, ro=True)
+    pm.xform(target, ws=True, ro=rotation)
+
+
+def orientToVertex(transform, vertex, position=None, condition=True):
+    """
+    Orients the given transform to the given vertex's normal. Up/Side orientation is likely to be random.
+
+    Args:
+        transform (pm.nodetypes.Transform): Node to orient to given vertex.
+
+        vertex (pm.general.MeshVertex): Vertex to get normal from.
+
+        position (pm.dt.Vector or list): transform location.
+
+        condition (boolean): Convenience arg for whether to perform operation or not.
+    """
+    if not condition:
+        return
+
+    if not position:
+        position = pm.xform(transform, q=True, ws=True, t=True)
+
+    normal = vertex.getNormal(space='world')
+    matrix = pipermath.getMatrixFromVector(normal, location=position)
+    pm.xform(transform, ws=True, m=matrix)
+    transform.s.set((1, 1, 1))
+
+
+def orientToEdge(transform, edge, position=None, condition=True):
+    """
+    Orients the given transform to the given edge's direction and normal.
+
+    Args:
+        transform (pm.nodetypes.Transform): Node to orient to given vertex.
+
+        edge (pm.general.MeshEdge): Edge to get vertices direction and normals from.
+
+        position (pm.dt.Vector or list): transform location.
+
+        condition (boolean): Convenience arg for whether to perform operation or not.
+    """
+    if not condition:
+        return
+
+    if not position:
+        position = pm.xform(transform, q=True, ws=True, t=True)
+
+    vertices = edge.connectedVertices()
+    vertex_positions = [vertex.getPosition(space='world') for vertex in vertices]
+
+    direction = vertices[0].getNormal('world') + vertices[-1].getNormal('world')
+    up = pipermath.getDirection(*vertex_positions)
+    matrix = pipermath.getMatrixFromVector(direction, up, location=position)
+    pm.xform(transform, ws=True, m=matrix)
+
+
+def orientToFace(transform, face, position=None, condition=True):
+    """
+    Orients the given transform to the given face's normal.
+
+    Args:
+        transform (pm.nodetypes.Transform): Node to orient to given vertex.
+
+        face (pm.general.MeshFace): Face to get normal from.
+
+        position (pm.dt.Vector or list): transform location.
+
+        condition (boolean): Convenience arg for whether to perform operation or not.
+    """
+    if not condition:
+        return
+
+    if not position:
+        position = pm.xform(transform, q=True, ws=True, t=True)
+
+    edges = face.getEdges()
+    edge = pm.PyNode(face.node().name() + '.e[{}]'.format(str(edges[0])))
+    edge_position = myu.getManipulatorPosition(edge)
+
+    normal = face.getNormal(space='world')
+    up = pipermath.getDirection(position, edge_position)
+    matrix = pipermath.getMatrixFromVector(normal, up, location=position)
+    pm.xform(transform, ws=True, m=matrix)
+
+
+def orientChain(start=None, end=None, aim=None, up=None, world_up=None):
     """
     Orients the chain starting from given start and ending at given end to aim at the child joint with the
     given aim axis.
@@ -562,17 +663,21 @@ def orient(start, end, aim=None, up=None, world_up=None):
 
         world_up (list): Axis up will try to aim at.
     """
+    if not start:
+        start = pm.selected()[0]
+
+    if not end:
+        end = pm.selected()[-1]
+
+    if start == end:
+        pm.error('Please select more than one transform!')
+
     transforms = getChain(start, end)
     first_parent = transforms[0].getParent()
 
-    if aim is None:
-        aim = [1, 0, 0]
-
-    if up is None:
-        up = [1, 0, 0]
-
-    if world_up is None:
-        world_up = [1, 0, 0]
+    aim = convert.toVector(aim, invalid_default=[1, 0, 0])
+    up = convert.toVector(up, invalid_default=[1, 0, 0])
+    world_up = convert.toVector(world_up, invalid_default=[1, 0, 0])
 
     pm.parent(transforms, w=True)
     for i, transform in enumerate(transforms):
@@ -593,7 +698,7 @@ def orient(start, end, aim=None, up=None, world_up=None):
         pm.delete(constraint)
 
 
-def orientWithUpObjects(transform_start=None, up_start=None, aim=None, up_axis=None):
+def orientChainWithUpObjects(transform_start=None, up_start=None, aim=None, up_axis=None):
     """
     Orients the given transforms by aiming the given axis to their child and the up to the respective up transform.
 
@@ -606,18 +711,17 @@ def orientWithUpObjects(transform_start=None, up_start=None, aim=None, up_axis=N
 
         up_axis (list): Axis vector to aim towards the up object.
     """
-
     if not transform_start:
         transform_start = pm.selected()[0]
 
     if not up_start:
         up_start = pm.selected()[-1]
 
-    if aim is None:
-        aim = [0, 1, 0]
+    if transform_start == up_start:
+        pm.error('Please select more than one transform!')
 
-    if up_axis is None:
-        up_axis = [1, 0, 0]
+    aim = convert.toVector(aim, invalid_default=[0, 1, 0])
+    up_axis = convert.toVector(up_axis, invalid_default=[1, 0, 0])
 
     transforms = transform_start.getChildren(ad=True)
     uppers = up_start.getChildren(ad=True)

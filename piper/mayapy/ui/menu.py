@@ -11,6 +11,7 @@ import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.curve as curve
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
+import piper.mayapy.ui.clipper as myclipper
 import piper.mayapy.ui.switcher as myswitcher
 import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
@@ -30,8 +31,13 @@ class MayaPiperMenu(PiperMenu):
     def onBeforePressed(self):
         pm.undoInfo(openChunk=True)
 
-    def onAfterPressed(self):
+    def onAfterPressed(self, method):
         pm.undoInfo(closeChunk=True)
+
+        # repeat last command
+        module = method.__module__
+        full_method = module + '.' + method.__name__
+        pm.repeatLast(ac='python("import {}; {}()")'.format(module, full_method), acl=full_method)
 
 
 class MayaSceneMenu(PiperSceneMenu):
@@ -161,6 +167,7 @@ class MayaNodesMenu(MayaPiperMenu):
     def build(self):
         self.add('Create Mesh', pipernode.createMesh)
         self.add('Create Skinned Mesh', pipernode.createSkinnedMesh)
+        self.add('Create Animation', pipernode.createAnimation)
 
 
 class MayaBonesMenu(MayaPiperMenu):
@@ -203,6 +210,7 @@ class MayaAnimationMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
+        self.add('Clipper', myclipper.show)
         self.add('Space Switcher', myswitcher.show)
 
 
@@ -260,6 +268,7 @@ def create():
     Creates the menu set for Piper and adds it to maya's main Menu Bar.
     """
     piper_menu = getPiperMainMenu()
+    piper_menu.on_before_reload = settings.removeCallbacks
     piper_menu.scene_menu = MayaSceneMenu()
     piper_menu.nodes_menu = MayaNodesMenu()
     piper_menu.export_menu = MayaExportMenu()

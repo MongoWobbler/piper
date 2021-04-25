@@ -1,5 +1,6 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
+import maya.OpenMaya as om
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
@@ -9,6 +10,16 @@ from piper.mayapy.pipe.store import store
 
 # DX11 required for rendering engine
 plugin.load('dx11Shader')
+callbacks = []
+
+
+def removeCallbacks():
+    """
+    Deletes/removes all callbacks that piper has registered.
+    """
+    global callbacks
+    [om.MEventMessage.removeCallback(callback) for callback in callbacks]
+    callbacks = []
 
 
 def setProject(directory):
@@ -84,10 +95,22 @@ def hotkeys():
     pm.displayInfo('Assigned Piper Hotkeys')
 
 
+def onNewSceneOpened(*args):
+    """
+    Called when a new scene is opened, usually through a callback.
+    """
+    if store.get(pcfg.use_piper_units):
+        loadDefaults()
+
+    loadRender()
+
+
 def startup():
     """
     To called when Maya starts up.
     """
+    global callbacks
+
     if store.get(pcfg.use_piper_units):
         loadDefaults()
 
@@ -96,3 +119,6 @@ def startup():
 
     setStartupProject()
     loadRender()
+
+    callback = om.MEventMessage.addEventCallback('NewSceneOpened', onNewSceneOpened)
+    callbacks.append(callback)

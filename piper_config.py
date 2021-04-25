@@ -24,7 +24,7 @@ store_defaults = {art_directory: None,
                   use_piper_units: True,
                   use_tone_map: True,
                   unload_unwanted: True,
-                  export_ascii: 0,
+                  export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
                   hdr_image_path: ''}
 
 # Maya unwanted plug-ins
@@ -52,7 +52,7 @@ maya_default_length = 'cm'
 
 # Maya graphics
 maya_default_rendering_api = 'DirectX11'
-maya_default_tone_map = 'Unity neutral tone-map'
+maya_default_tone_map = 'Un-tone-mapped (sRGB)'
 maya_default_initial_material = 'lambert'
 
 # Geometry
@@ -73,6 +73,7 @@ dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
 
 # Export
+fbx_default_version = 2018
 mesh_prefix = 'SM_'
 skinned_mesh_prefix = 'SKM_'
 animation_prefix = 'A_'
@@ -87,6 +88,7 @@ message_reverse_target = 'msgReverseTarget'
 # Controls
 offset_suffix = '_offset'
 control_suffix = '_ctrl'
+separator_character = '_'
 
 # Parent Matrix
 parent_matrix_mult_suffix = 'ParentMatrix_MM'
@@ -104,6 +106,7 @@ space_use_translate = 'useTranslate'
 space_use_rotate = 'useRotate'
 space_use_scale = 'useScale'
 space_blend_matrix_suffix = '_Spaces_BlendMatrix'
+use_attributes = (space_use_translate, space_use_rotate, space_use_scale, separator_character)
 
 # FKIK
 banker_attribute = 'banker'

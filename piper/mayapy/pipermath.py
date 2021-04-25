@@ -67,15 +67,9 @@ def getMatrixFromVector(forward, up=None, forward_axis='z', location=None):
     Returns:
         (pm.nodetypes.Matrix): Matrix calculated from given forward vector.
     """
-    if isinstance(up, (list, tuple)):
-        up = pm.dt.Vector(up)
-    elif isinstance(up, str):
-        up = pm.dt.Vector(convert.axisToVector(up))
-    elif isinstance(up, pm.dt.Vector):
-        pass
-    else:
-        up = pm.upAxis(axis=True, q=True)
-        up = pm.dt.Vector(convert.axisToVector(up))
+    scene_up = pm.upAxis(axis=True, q=True)
+    scene_up = convert.axisToVector(scene_up)
+    up = convert.toVector(up, invalid_default=scene_up)
 
     right = forward.cross(up).normal()
     up = right.cross(forward).normal()
@@ -88,7 +82,7 @@ def getMatrixFromVector(forward, up=None, forward_axis='z', location=None):
     elif forward_axis == 'z':
         coordinates = [(right * -1).get(), up.get(), forward.get()]
 
-    location = convert.toVector(location, invalid_zero=True)
+    location = convert.toVector(location, invalid_default=True)
     coordinates.append(location)
     return pm.dt.Matrix(*coordinates)
 
