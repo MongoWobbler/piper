@@ -52,7 +52,7 @@ def getAll(transform, cast=False):
         return []
 
 
-def create(spaces, transform, direct=False):
+def create(spaces=None, transform=None, direct=False):
     """
     Creates the given spaces on the given transform.
 
@@ -66,31 +66,38 @@ def create(spaces, transform, direct=False):
     Returns:
           (list): Name of space attribute(s) made.
     """
+    if not spaces and not transform:
+        selected = pm.selected()
+        spaces = selected[:-1]
+        transform = selected[-1]
+
+        if len(selected) < 2:
+            pm.error('Not enough transforms selected!')
+
     space_attributes = []
     parent = transform.getParent()
     transform_name = transform.name(stripNamespace=True)
-    matrix_blend = transform.offsetParentMatrix.listConnections()
-    has_spaces = matrix_blend and transform.hasAttr(pcfg.space_world_name)
+    matrix_blend = attribute.getMessagedSpacesBlender(transform)
 
-    if has_spaces:
-        # define matrix blend from the matrix plug
-        matrix_blend = matrix_blend[0]
-
-        if matrix_blend.nodeType() != 'blendMatrix':
-            pm.error(transform.nodeName() + ' has wrong type: ' + matrix_blend.nodeName() + ' in offsetParentMatrix')
-    else:
+    if not matrix_blend:
         # create and hook up matrix blend
         matrix_blend = pm.createNode('blendMatrix', n=transform_name + pcfg.space_blend_matrix_suffix)
+        attribute.addSpaceMessage(matrix_blend, transform)
         target = matrix_blend.attr('target[0]')
-        offset_matrix = transform.offsetParentMatrix.get()
-        matrix_blend.inputMatrix.set(offset_matrix)
+
+        if transform.offsetParentMatrix.isDestination():
+            plug_source = transform.offsetParentMatrix.connections(scn=True, plugs=True, destination=False)[0]
+            plug_source >> matrix_blend.inputMatrix
+        else:
+            offset_matrix = transform.offsetParentMatrix.get()
+            matrix_blend.inputMatrix.set(offset_matrix)
 
         if direct:
-            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset')
+            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset_MM')
             multiply.matrixIn[0].set(transform.matrix.get())
             matrix_blend.outputMatrix >> multiply.matrixIn[1]
 
-            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blendDecompose')
+            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blend_DM')
             multiply.matrixSum >> decompose.inputMatrix
             decompose.outputTranslate >> transform.translate
             decompose.outputRotate >> transform.rotate
@@ -120,7 +127,7 @@ def create(spaces, transform, direct=False):
 
         # make multiply matrix node and hook it up
         offset = transform.parentMatrix.get() * space.worldInverseMatrix.get()
-        multiply = pm.createNode('multMatrix', n='space_{}_To_{}_multMatrix'.format(transform_name, space_name))
+        multiply = pm.createNode('multMatrix', n='space_{}_To_{}_MM'.format(transform_name, space_name))
         multiply.matrixIn[0].set(offset)
         space.worldMatrix >> multiply.matrixIn[1]
 
@@ -209,6 +216,8 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
         if key:
             pm.setKeyframe(to_key, time=current_frame - 1)
 
+        ik_controls[-1].volumetric.set(False)
+
         [reverse.r.set(0, 0, 0) for reverse in reverses]
         for transform, ik_control in reversed(list(zip(transforms, ik_controls))):
 
@@ -244,6 +253,7 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
         # only match the real controls, not the inner ones
         for transform, fk_control in zip(transforms, fk_controls[:inner_start_index]):
             matrix = transform.worldMatrix.get()
+            fk_control.volumetric.set(0)
             pm.xform(fk_control, ws=True, m=matrix)
 
     if not match_only:

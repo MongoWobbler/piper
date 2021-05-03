@@ -102,6 +102,28 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Multiply node.");
     }
 
+    // Reciprocal Node
+    status = plugin_fn.registerNode(PiperReciprocal::node_name,
+                                    PiperReciprocal::type_ID,
+                                    PiperReciprocal::creator,
+                                    PiperReciprocal::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper Reciprocal node.");
+    }
+
+    // One Minus Node
+    status = plugin_fn.registerNode(PiperOneMinus::node_name,
+                                    PiperOneMinus::type_ID,
+                                    PiperOneMinus::creator,
+                                    PiperOneMinus::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper One Minus node.");
+    }
+
     // Tension Node
     status = plugin_fn.registerNode(TensionNode::node_name,
                                     TensionNode::type_ID,
@@ -121,6 +143,8 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
     plugin_fn.deregisterNode(TensionNode::type_ID);
+    plugin_fn.deregisterNode(PiperOneMinus::type_ID);
+    plugin_fn.deregisterNode(PiperReciprocal::type_ID);
     plugin_fn.deregisterNode(PiperMultiply::type_ID);
     plugin_fn.deregisterNode(PiperIK::type_ID);
     plugin_fn.deregisterNode(PiperFK::type_ID);

@@ -29,4 +29,16 @@ template <typename T, typename C>
 inline T lerp(const T &a, const T &b, const C &f) { return (a * (1.0 - f)) + (b * f); }
 
 template <typename T>
-inline int signOf(T val) { return (T(0) < val) - (val < T(0)); }
+inline int signOf(T val) { return val == 0? 1 : (T(0) < val) - (val < T(0)); }
+
+template <typename T>
+inline T reciprocal(T val)
+{
+    if (val == T(0))
+    {
+        val = T(0.001);
+    }
+
+    // reciprocal
+    return T(1.0) / val;
+}

@@ -252,7 +252,7 @@ def flatten(laundry):
     Flattens a list
 
     Args:
-        laundry (list): list to flatten
+        laundry (iterable): list to flatten
 
     Returns:
         (list): Flattened list.

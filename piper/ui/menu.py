@@ -160,8 +160,9 @@ class _PiperMainMenu(PiperMenu):
         self.export_menu = None
         self.curves_menu = None
         self.bones_menu = None
-        self.graphics_menu = None
+        self.rig_menu = None
         self.animation_menu = None
+        self.graphics_menu = None
         self.settings_menu = None
         self.on_before_reload = lambda: None
 
@@ -171,8 +172,9 @@ class _PiperMainMenu(PiperMenu):
         self.addMenuP(self.export_menu)
         self.addMenuP(self.curves_menu)
         self.addMenuP(self.bones_menu)
-        self.addMenuP(self.graphics_menu)
+        self.addMenuP(self.rig_menu)
         self.addMenuP(self.animation_menu)
+        self.addMenuP(self.graphics_menu)
         self.addMenuP(self.settings_menu)
         self.addSeparator()
 

@@ -19,10 +19,12 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         super(MayaSwitcher, self).__init__(dcc_store=maya_store, *args, **kwargs)
         manager.register(self)
         self.callback = om.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
-        self.onSelectionChanged()  # called to load/update switcher on startup
         self.selected = None
         self.pivots = []
         self.rests = []
+
+        self.onSelectionChanged()  # called to load/update switcher on startup
+
 
     def onSelectionChanged(self, *args):
         """

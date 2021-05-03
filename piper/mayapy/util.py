@@ -159,6 +159,28 @@ def getFirstTypeParent(start, node_type):
     return None
 
 
+def getFirstTypeOrEndsWithParent(start, node_type, ends_with):
+    """
+    Gets the first type of parent found in all of the parents from the given start.
+
+    Args:
+        start (pm.nodetypes.Transform): Transform to find type of parent.
+
+        node_type (string): Type of transform to find.
+
+        ends_with (string): Suffix to search in parents.
+
+    Returns:
+        (pm.nodetypes.Transform or None): First parent in of given node type if found, else None.
+    """
+    parents = start.getAllParents()
+    for parent in parents:
+        if parent.nodeType() == node_type or parent.name().endswith(ends_with):
+            return parent
+
+    return None
+
+
 def getAllParents(start):
     """
     Gets all the parents from the given start node.

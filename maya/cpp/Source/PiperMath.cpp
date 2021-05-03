@@ -10,6 +10,7 @@
 #include <iso646.h>
 
 
+// Piper Multiply
 MTypeId PiperMultiply::type_ID(0x00137146);
 MString PiperMultiply::node_name("piperMultiply");
 MObject PiperMultiply::weight;
@@ -122,4 +123,102 @@ MStatus PiperMultiply::compute(const MPlug& plug, MDataBlock& data)
     }
 
     return MS::kSuccess;
+}
+
+
+// Piper Reciprocal
+MTypeId PiperReciprocal::type_ID(0x00137148);
+MString PiperReciprocal::node_name("piperReciprocal");
+MObject PiperReciprocal::input;
+MObject PiperReciprocal::output;
+
+
+void* PiperReciprocal::creator()
+{
+    return new PiperReciprocal();
+}
+
+
+MStatus PiperReciprocal::initialize()
+{
+    MFnNumericAttribute numeric_fn;
+
+    input = numeric_fn.create("input", "inp", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(input);
+
+    output = numeric_fn.create("output", "out", MFnNumericData::kDouble, 1.0);
+    numeric_fn.setStorable(false);
+    numeric_fn.setKeyable(false);
+    numeric_fn.setWritable(false);
+    addAttribute(output);
+
+    attributeAffects(input, output);
+
+    return MS::kSuccess;
+}
+
+
+MStatus PiperReciprocal::compute(const MPlug &plug, MDataBlock &data)
+{
+    if (plug == output)
+    {
+        double input_value = data.inputValue(input).asDouble();
+        double output_value = reciprocal(input_value);
+        data.outputValue(output).set(output_value);
+        data.outputValue(output).setClean();
+    }
+
+    return MS::kSuccess;
+
+}
+
+
+// Piper One Minus
+MTypeId PiperOneMinus::type_ID(0x00137149);
+MString PiperOneMinus::node_name("piperOneMinus");
+MObject PiperOneMinus::input;
+MObject PiperOneMinus::output;
+
+
+void* PiperOneMinus::creator()
+{
+    return new PiperOneMinus();
+}
+
+
+MStatus PiperOneMinus::initialize()
+{
+    MFnNumericAttribute numeric_fn;
+
+    input = numeric_fn.create("input", "inp", MFnNumericData::kDouble, 0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(input);
+
+    output = numeric_fn.create("output", "out", MFnNumericData::kDouble, 0);
+    numeric_fn.setStorable(false);
+    numeric_fn.setKeyable(false);
+    numeric_fn.setWritable(false);
+    addAttribute(output);
+
+    attributeAffects(input, output);
+
+    return MS::kSuccess;
+}
+
+
+MStatus PiperOneMinus::compute(const MPlug &plug, MDataBlock &data)
+{
+    if (plug == output)
+    {
+        double input_value = data.inputValue(input).asDouble();
+        double output_value = (input_value * -1.0) + signOf(input_value);
+        data.outputValue(output).set(output_value);
+        data.outputValue(output).setClean();
+    }
+
+    return MS::kSuccess;
+
 }

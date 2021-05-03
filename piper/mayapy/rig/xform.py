@@ -386,19 +386,19 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
     driver_name = driver.name(stripNamespace=True)
 
     if target_parent and offset:
-        matrix_mult = pm.createNode('multMatrix', name=target_name + '_parentOffsetMatrixMult')
+        matrix_mult = pm.createNode('multMatrix', name=target_name + pcfg.offset_and_parent_mult_suffix)
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
         matrix_mult.matrixIn[0].set(offset)
         driver.worldMatrix >> matrix_mult.matrixIn[1]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[2]
         output = matrix_mult.matrixSum
     elif target_parent:
-        matrix_mult = pm.createNode('multMatrix', name=target_name + '_parentMatrixMult')
+        matrix_mult = pm.createNode('multMatrix', name=target_name + pcfg.offset_parent_mult_suffix)
         driver.worldMatrix >> matrix_mult.matrixIn[0]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[1]
         output = matrix_mult.matrixSum
     elif offset:
-        matrix_mult = pm.createNode('multMatrix', name=target_name + '_offsetMatrixMult')
+        matrix_mult = pm.createNode('multMatrix', name=target_name + pcfg.offset_only_mult_suffix)
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
         matrix_mult.matrixIn[0].set(offset)
         driver.worldMatrix >> matrix_mult.matrixIn[1]
@@ -410,8 +410,9 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
     if all([t, r, s]) or not any([t, r, s]):
         pass
     else:
-        decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + target_name + 'offsetParent_DM')
-        comp_matrix = pm.createNode('composeMatrix', n=driver_name + '_to_' + target_name + 'offsetParent_CM')
+        matrix_prefix = driver_name + '_to_' + target_name
+        decomp_matrix = pm.createNode('decomposeMatrix', n=matrix_prefix + pcfg.offset_parent_decomp_suffix)
+        comp_matrix = pm.createNode('composeMatrix', n=matrix_prefix + pcfg.offset_parent_comp_suffix)
         output >> decomp_matrix.inputMatrix
 
         if t:
@@ -584,8 +585,13 @@ def orientToVertex(transform, vertex, position=None, condition=True):
     if not position:
         position = pm.xform(transform, q=True, ws=True, t=True)
 
+    neighbor = vertex.connectedVertices()
+    neighbor = neighbor.indices()[0] if isinstance(neighbor, pm.general.MeshVertex) else neighbor[0].indices()[0]
+    neighbor = pm.PyNode(vertex.node().name() + '.vtx[{}]'.format(str(neighbor)))
+    up = pipermath.getDirection(position, neighbor.getPosition(space='world'))
+
     normal = vertex.getNormal(space='world')
-    matrix = pipermath.getMatrixFromVector(normal, location=position)
+    matrix = pipermath.getMatrixFromVector(normal, up, location=position)
     pm.xform(transform, ws=True, m=matrix)
     transform.s.set((1, 1, 1))
 

@@ -18,11 +18,11 @@ use_piper_units = 'use_piper_units'
 export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
 unload_unwanted = 'unload_unwanted_plugins'
-use_tone_map = 'use_tone_map'
+use_piper_render = 'use_tone_map'
 store_defaults = {art_directory: None,
                   game_directory: None,
                   use_piper_units: True,
-                  use_tone_map: True,
+                  use_piper_render: True,
                   unload_unwanted: True,
                   export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
                   hdr_image_path: ''}
@@ -65,12 +65,15 @@ bind_namespace = 'BIND'
 length_attribute = 'bindLength'
 bind_attributes = [length_attribute]
 required_preferred_angle = ['calf', 'lowerarm', 'elbow', 'knee']
+scale_buffer_suffix = '_scale_buffer'
 
 # Rig
 rig_suffix = '_Rig'
 root_joint_name = 'root'
 dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
+group_suffix = '_grp'
+visibility_suffix = 'Visibility'
 
 # Export
 fbx_default_version = 2018
@@ -84,6 +87,8 @@ message_source = 'msgSource'
 message_target = 'msgTarget'
 message_reverse_driver = 'msgReverseDriver'
 message_reverse_target = 'msgReverseTarget'
+message_space_blender = 'msgSpaceBlender'
+message_space_target = 'msgSpaceTarget'
 
 # Controls
 offset_suffix = '_offset'
@@ -98,6 +103,13 @@ parent_matrix_rot_mult_suffix = '_ParentMatrix_Rot_MM_01'
 parent_matrix_rot_inv_suffix = '_ParentMatrix_Rot_Inv'
 parent_matrix_rot_decomp_suffix = '_ParentMatrix_Rot_DM'
 
+# Offset Constraint
+offset_and_parent_mult_suffix = '_OC_ParentOffset_MM'
+offset_parent_mult_suffix = '_OC_Parent_MM'
+offset_only_mult_suffix = '_OC_Offset_MM'
+offset_parent_decomp_suffix = '_OC_ParentOffset_DM'
+offset_parent_comp_suffix = '_OC_ParentOffset_CM'
+
 # Spaces
 spaces_name = 'spaces'
 space_suffix = 'Space'
@@ -105,7 +117,7 @@ space_world_name = 'world' + space_suffix
 space_use_translate = 'useTranslate'
 space_use_rotate = 'useRotate'
 space_use_scale = 'useScale'
-space_blend_matrix_suffix = '_Spaces_BlendMatrix'
+space_blend_matrix_suffix = '_Spaces_BM'
 use_attributes = (space_use_translate, space_use_rotate, space_use_scale, separator_character)
 
 # FKIK

@@ -30,6 +30,7 @@ MObject PiperIK::start_output;
 MObject PiperIK::end_output;
 MObject PiperIK::start_output_scale;
 MObject PiperIK::end_output_scale;
+MObject PiperIK::start_control_scale;
 MObject PiperIK::start_scale;
 MObject PiperIK::end_scale;
 MObject PiperIK::slide;
@@ -38,6 +39,7 @@ MObject PiperIK::stretch;
 MObject PiperIK::softness;
 MObject PiperIK::global_scale;
 MObject PiperIK::pole_vector_matrix;
+MObject PiperIK::pole_control_scale;
 MObject PiperIK::pole_vector_lock;
 MObject PiperIK::twist;
 MObject PiperIK::preferred_angle_input_x;
@@ -148,6 +150,12 @@ MStatus PiperIK::initialize()
     compound_fn.setHidden(true);
     addAttribute(preferred_angle_input);
 
+    start_control_scale = numeric_fn.create("startControlScale", "scs", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    numeric_fn.setHidden(true);
+    addAttribute(start_control_scale);
+
 	start_scale = numeric_fn.create("startScale", "sts", MFnNumericData::kDouble, 1);
 	numeric_fn.setStorable(true);
 	numeric_fn.setKeyable(true);
@@ -172,6 +180,12 @@ MStatus PiperIK::initialize()
     numeric_fn.setHidden(true);
 	numeric_fn.setMin(0.001);
 	addAttribute(global_scale);
+
+    pole_control_scale = numeric_fn.create("poleControlScale", "pcs", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    numeric_fn.setHidden(true);
+    addAttribute(pole_control_scale);
 
 	pole_vector_lock = numeric_fn.create("poleVectorLock", "pvl", MFnNumericData::kDouble, 0);
 	numeric_fn.setStorable(true);
@@ -284,6 +298,7 @@ MStatus PiperIK::initialize()
 	attributeAffects(start_initial_length, start_output);
     attributeAffects(preferred_angle_input, start_output);
     attributeAffects(preferred_angle_blend, start_output);
+    attributeAffects(start_control_scale, start_output);
 
 	attributeAffects(start_matrix, end_output);
 	attributeAffects(handle_parent_matrix, end_output);
@@ -300,6 +315,7 @@ MStatus PiperIK::initialize()
     attributeAffects(end_initial_length, end_output);
     attributeAffects(preferred_angle_input, end_output);
     attributeAffects(preferred_angle_blend, end_output);
+    attributeAffects(pole_control_scale, end_output);
 
     attributeAffects(start_matrix, start_output_scale);
     attributeAffects(handle_parent_matrix, start_output_scale);
@@ -316,6 +332,7 @@ MStatus PiperIK::initialize()
     attributeAffects(start_initial_length, start_output_scale);
     attributeAffects(preferred_angle_input, start_output_scale);
     attributeAffects(preferred_angle_blend, start_output_scale);
+    attributeAffects(start_control_scale, start_output_scale);
 
     attributeAffects(start_matrix, end_output_scale);
     attributeAffects(handle_parent_matrix, end_output_scale);
@@ -332,6 +349,7 @@ MStatus PiperIK::initialize()
     attributeAffects(end_initial_length, end_output_scale);
     attributeAffects(preferred_angle_input, end_output_scale);
     attributeAffects(preferred_angle_blend, end_output_scale);
+    attributeAffects(pole_control_scale, end_output_scale);
 
     attributeAffects(start_matrix, preferred_angle_output);
     attributeAffects(handle_parent_matrix, preferred_angle_output);
@@ -374,8 +392,10 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
         double volumetric_value = data.inputValue(volumetric).asDouble();
         double stretch_value = data.inputValue(stretch).asDouble();
 		double pole_vector_lock_value = data.inputValue(pole_vector_lock).asDouble();
+        double pole_scale_value = data.inputValue(pole_control_scale).asDouble();
 		double global_scale_value = data.inputValue(global_scale).asDouble();
 		double start_scale_value = data.inputValue(start_scale).asDouble();
+        double start_control_scale_value = data.inputValue(start_control_scale).asDouble();
 		double end_scale_value = data.inputValue(end_scale).asDouble();
         double direction_value = data.inputValue(direction).asDouble();
 
@@ -417,10 +437,15 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
 
 			if (delta > 1)
 			{
-				start_output_value = lerp(start_initial_length_value, delta * start_output_value, stretch_value);
+			    start_output_value = lerp(start_initial_length_value, delta * start_output_value, stretch_value);
 				end_output_value = lerp(end_initial_length_value, delta * end_output_value, stretch_value);
 			}
 		}
+
+        // global scale fix
+		double global_scale_inverse = 1.0 / global_scale_value;
+		start_output_value *= global_scale_inverse;
+		end_output_value *= global_scale_inverse;
 
 		// slide
 		double output_total = start_output_value + end_output_value;
@@ -449,12 +474,12 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
 
         // joint scaling
         double normalized_distance = start_output_value / start_initial_length_value;
-        normalized_distance = lerp(1.0, normalized_distance, volumetric_value);
-        double start_output_scale_value = 1.0 / normalized_distance;
+        normalized_distance = lerp(1.0, normalized_distance * global_scale_value, volumetric_value);
+        double start_output_scale_value = (1.0 / normalized_distance);
 
         double end_normalized_distance = end_output_value / end_initial_length_value;
-        end_normalized_distance = lerp(1.0, end_normalized_distance, volumetric_value);
-        double end_output_scale_value = 1.0 / end_normalized_distance;
+        end_normalized_distance = lerp(1.0, end_normalized_distance * global_scale_value, volumetric_value);
+        double end_output_scale_value = (1.0 / end_normalized_distance);
 
         start_output_value = start_output_value * normalized_distance;
         end_output_value = end_output_value * end_normalized_distance * normalized_distance;
@@ -476,6 +501,12 @@ MStatus PiperIK::compute(const MPlug& plug, MDataBlock& data)
             MAngle output_angle = calculatePreferredAngle(input_angle.z, normalized_chain_length, preferred_angle_blend_value);
             data.outputValue(preferred_angle_output).set(0.0, 0.0, output_angle.asRadians());
         }
+
+        // Prevents lower leg from stretching when mid joint control scales up
+        double reciprocal_start_scale = reciprocal(start_control_scale_value);
+        start_output_value *= reciprocal_start_scale;
+        end_output_value *= reciprocal(pole_scale_value);
+        end_output_scale_value *= reciprocal_start_scale;
 
         // output
 		data.outputValue(start_output).set(start_output_value * direction_value);

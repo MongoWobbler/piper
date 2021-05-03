@@ -5,10 +5,12 @@ import pymel.core as pm
 
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.mayapy.rig as rig
 import piper.mayapy.rig.bone as bone
 import piper.mayapy.rig.skin as skin
 import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.curve as curve
+import piper.mayapy.rig.space as space
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.clipper as myclipper
@@ -192,15 +194,17 @@ class MayaBonesMenu(MayaPiperMenu):
         self.add('Health Check', bone.health)
 
 
-class MayaGraphicsMenu(MayaPiperMenu):
+class MayaRigMenu(MayaPiperMenu):
 
-    def __init__(self, title='Graphics', *args, **kwargs):
-        super(MayaGraphicsMenu, self).__init__(title, *args, **kwargs)
+    def __init__(self, title='Rig', *args, **kwargs):
+        super(MayaRigMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
     def build(self):
-        self.add('Create Initial Material', graphics.createInitialMaterial)
-        self.add('Update Materials', graphics.updateMaterials)
+        self.add('Add Space(s)', space.create)
+        self.addSeparator()
+        self.add('Lock Mesh(es)', rig.lockMeshes)
+        self.add('Unlock Mesh(es)', rig.unlockMeshes)
 
 
 class MayaAnimationMenu(MayaPiperMenu):
@@ -214,6 +218,17 @@ class MayaAnimationMenu(MayaPiperMenu):
         self.add('Space Switcher', myswitcher.show)
 
 
+class MayaGraphicsMenu(MayaPiperMenu):
+
+    def __init__(self, title='Graphics', *args, **kwargs):
+        super(MayaGraphicsMenu, self).__init__(title, *args, **kwargs)
+        self.build()
+
+    def build(self):
+        self.add('Create Initial Material', graphics.createInitialMaterial)
+        self.add('Update Materials', graphics.updateMaterials)
+
+
 class MayaSettingsMenu(MayaPiperMenu):
 
     def __init__(self, title='Settings', *args, **kwargs):
@@ -222,7 +237,7 @@ class MayaSettingsMenu(MayaPiperMenu):
 
     def build(self):
         self.addCheckbox('Use Piper Units', store.get(pcfg.use_piper_units), self.onUseUnitsPressed)
-        self.addCheckbox('Use Tone-map', store.get(pcfg.use_tone_map), self.onUseToneMapPressed)
+        self.addCheckbox('Use Piper Render', store.get(pcfg.use_piper_render), self.onUseRenderPressed)
         self.addCheckbox('Export In Ascii', store.get(pcfg.export_ascii), self.onExportInAsciiPressed)
         self.addCheckbox('Unload Unwanted Plug-ins', store.get(pcfg.unload_unwanted), self.onUnloadUnwantedPressed)
         self.add('Set HDR Image', self.onSetHdrImagePressed)
@@ -237,8 +252,8 @@ class MayaSettingsMenu(MayaPiperMenu):
         store.set(pcfg.use_piper_units, state)
 
     @staticmethod
-    def onUseToneMapPressed(state):
-        store.set(pcfg.use_tone_map, state)
+    def onUseRenderPressed(state):
+        store.set(pcfg.use_piper_render, state)
 
     @staticmethod
     def onExportInAsciiPressed(state):
@@ -274,8 +289,9 @@ def create():
     piper_menu.export_menu = MayaExportMenu()
     piper_menu.curves_menu = MayaCurvesMenu()
     piper_menu.bones_menu = MayaBonesMenu()
-    piper_menu.graphics_menu = MayaGraphicsMenu()
+    piper_menu.rig_menu = MayaRigMenu()
     piper_menu.animation_menu = MayaAnimationMenu()
+    piper_menu.graphics_menu = MayaGraphicsMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()
 

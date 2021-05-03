@@ -130,7 +130,7 @@ def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
         fail_display (method): How to display a failed connection.
     """
     bind_transform = convert.toBind(transform, fail_display)
-    mult_matrix = pm.createNode('multMatrix', n=transform.name(stripNamespace=True) + ' bindMatrix_MM')
+    mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + ' bindMatrix_MM')
     bind_transform.worldMatrix >> mult_matrix.matrixIn[0]
 
     if ctrl_parent:
@@ -217,6 +217,18 @@ def addDrivenMessage(source, target):
     addMessage(source, target, pcfg.message_source, pcfg.message_target)
 
 
+def addSpaceMessage(source, target):
+    """
+    Connects the given source to the given target with a space message attribute to store space blender connections.
+
+    Args:
+        source (pm.nodetypes.DependNode): Node that will have the space blender attribute added to it.
+
+        target (pm.nodetypes.DependNode): Node that will have the space target attribute added to it.
+    """
+    addMessage(source, target, pcfg.message_space_blender, pcfg.message_space_target)
+
+
 def addReverseMessage(source, target):
     """
     Connects the given source to the given target with a message attribute to store reverse driven connection.
@@ -253,6 +265,23 @@ def getMessagedTarget(driver):
         (pm.nodetypes.DependNode): Node being driven by driver.
     """
     return driver.attr(pcfg.message_source).connections(scn=True, source=False)[0]
+
+
+def getMessagedSpacesBlender(target):
+    """
+    Gets the blender matrix node from the given target.
+
+    Args:
+        target (pm.nodetypes.DependNode): Node to get blender matrix node connected to it.
+
+    Returns:
+        (pm.nodetypes.DependNode): Blender matrix node if target has attribute and is connected, else None.
+    """
+    if not target.hasAttr(pcfg.message_space_target):
+        return None
+
+    connection = target.attr(pcfg.message_space_target).connections(scn=True, plugs=True, destination=False)
+    return connection[0].node() if connection else None
 
 
 def getNextAvailableIndex(node, attribute_name, default, start_index=0):

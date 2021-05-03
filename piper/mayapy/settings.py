@@ -63,7 +63,7 @@ def loadRender():
     pm.mel.eval('setRenderingEngineInModelPanel "{}";'.format(pcfg.maya_default_rendering_api))
     tone_maps = pm.colorManagementPrefs(q=True, vts=True)
 
-    if pcfg.maya_default_tone_map not in tone_maps or not store.get(pcfg.use_tone_map):
+    if pcfg.maya_default_tone_map not in tone_maps:
         return
 
     pm.colorManagementPrefs(e=True, vtn=pcfg.maya_default_tone_map)
@@ -102,7 +102,8 @@ def onNewSceneOpened(*args):
     if store.get(pcfg.use_piper_units):
         loadDefaults()
 
-    loadRender()
+    if store.get(pcfg.use_piper_render):
+        loadRender()
 
 
 def startup():
@@ -117,8 +118,10 @@ def startup():
     if store.get(pcfg.unload_unwanted):
         plugin.unloadUnwanted()
 
+    if store.get(pcfg.use_piper_render):
+        loadRender()
+
     setStartupProject()
-    loadRender()
 
     callback = om.MEventMessage.addEventCallback('NewSceneOpened', onNewSceneOpened)
     callbacks.append(callback)

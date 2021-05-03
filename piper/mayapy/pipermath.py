@@ -73,18 +73,18 @@ def getMatrixFromVector(forward, up=None, forward_axis='z', location=None):
 
     right = forward.cross(up).normal()
     up = right.cross(forward).normal()
-    coordinates = []
+    matrix = []
 
     if forward_axis == 'x':
-        coordinates = [forward.get(), up.get(), right.get()]
+        matrix = [forward.get(), up.get(), right.get()]
     elif forward_axis == 'y':
-        coordinates = [up.get(), forward.get(), right.get()]
+        matrix = [up.get(), forward.get(), right.get()]
     elif forward_axis == 'z':
-        coordinates = [(right * -1).get(), up.get(), forward.get()]
+        matrix = [(right * -1).get(), up.get(), forward.get()]
 
     location = convert.toVector(location, invalid_default=True)
-    coordinates.append(location)
-    return pm.dt.Matrix(*coordinates)
+    matrix.append(location)
+    return pm.dt.Matrix(*matrix)
 
 
 def getAimRotation(start, end):

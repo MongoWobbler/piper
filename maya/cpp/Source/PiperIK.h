@@ -27,8 +27,9 @@ public:
 	static MObject separator;
 	static MObject start_initial_length;
 	static MObject end_initial_length;
-	static MObject start_scale;
-	static MObject end_scale;
+    static MObject start_control_scale;
+    static MObject start_scale;
+    static MObject end_scale;
 	static MObject direction;
 	static MObject start_output;
 	static MObject end_output;
@@ -40,6 +41,7 @@ public:
     static MObject softness;
 	static MObject global_scale;
 	static MObject pole_vector_matrix;
+    static MObject pole_control_scale;
 	static MObject pole_vector_lock;
 	static MObject twist;
     static MObject preferred_angle_input_x;

@@ -239,7 +239,7 @@ def toVector(transform, invalid_default=None, error=False):
     elif isinstance(transform, pm.nodetypes.Transform):
         location = pm.dt.Vector(pm.xform(transform, q=True, ws=True, rp=True))
 
-    elif isinstance(transform, (list, tuple)):
+    elif isinstance(transform, (list, tuple, pm.dt.Point)):
         location = pm.dt.Vector(transform)
 
     elif isinstance(transform, pm.dt.Vector):

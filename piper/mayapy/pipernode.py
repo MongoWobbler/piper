@@ -4,7 +4,8 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-from .rig import curve
+import piper.mayapy.rig.curve as curve
+import piper.mayapy.attribute as attribute
 
 
 def get(node_type, ignore=None):
@@ -73,6 +74,63 @@ def multiply(transform, main_term=None, weight=None, inputs=None):
 
     [attr >> multiply_node.input[i] for i, attr in enumerate(inputs)]
     return multiply_node
+
+
+def inputOutput(node_type, source=None, output=None):
+    """
+    Creates a node that has an input and output attribute based on given node type.
+
+    Args:
+        node_type (string): Type of node to create.
+
+        source (pm.general.Attribute): Attribute to plug into node's input.
+
+        output (pm.general.Attribute): Attribute to plug node's output into.
+
+    Returns:
+        (pm.nodetypes.DependNode): Node created.
+    """
+    name = source.node().name(stripNamespace=True) + '_' if source else ''
+    suffix = node_type.split('piper')[-1]
+    node = pm.createNode(node_type, name=name + suffix)
+
+    if source:
+        source >> node.input
+
+    if output:
+        node.output >> output
+
+    return node
+
+
+def oneMinus(source=None, output=None):
+    """
+    Creates a one minus node that turns a 0 to 1 range into a 1 to 0 or vice versa.
+
+    Args:
+        source (pm.general.Attribute): Attribute to plug into one minus input.
+
+        output (pm.general.Attribute): Attribute to plug one minus' output into.
+
+    Returns:
+        (pm.nodetypes.piperOneMinus): One minus node created.
+    """
+    return inputOutput('piperOneMinus', source=source, output=output)
+
+
+def reciprocal(source=None, output=None):
+    """
+    Creates a node that takes in the given source attribute and output its reciprocal. Reciprocal == 1/X
+
+    Args:
+        source (pm.general.Attribute): Attribute to plug into reciprocal's input.
+
+        output (pm.general.Attribute): Attribute to plug reciprocal's output into.
+
+    Returns:
+        (pm.nodetypes.piperOneMinus): Reciprocal node created.
+    """
+    return inputOutput('piperReciprocal', source=source, output=output)
 
 
 def create(node_type, color=None, name=None, parent=None):
@@ -250,6 +308,8 @@ def createRig(name=''):
     """
     name = name if name else 'piper' + pcfg.rig_suffix
     piper_rig = create('piperRig', 'burnt orange', name=name)
+    attribute.lockAndHideCompound(piper_rig)
+    attribute.addSeparator(piper_rig)
     return piper_rig
 
 
@@ -263,6 +323,7 @@ def createAnimation():
     scene_name = pm.sceneName().namebase
     name = scene_name if scene_name else 'piperAnimation'
     piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + name)
+    attribute.lockAndHideCompound(piper_animation)
     rigs = get('piperRig', ignore='piperAnimation')
     pm.parent(rigs[0], piper_animation) if len(rigs) == 1 else pm.warning('{} rigs found!'.format(str(len(rigs))))
     return piper_animation

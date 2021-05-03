@@ -23,3 +23,32 @@ public:
     static MObject outputZ;
     static MObject output;
 };
+
+
+class PiperReciprocal : public MPxNode
+{
+public:
+    static void* creator();
+    static MStatus initialize();
+    virtual MStatus compute(const MPlug& plug, MDataBlock& data);
+public:
+    static MTypeId type_ID;
+    static MString node_name;
+    static MObject input;
+    static MObject output;
+};
+
+
+class PiperOneMinus : public MPxNode
+{
+public:
+    static void* creator();
+    static MStatus initialize();
+    virtual MStatus compute(const MPlug& plug, MDataBlock& data);
+public:
+    static MTypeId type_ID;
+    static MString node_name;
+    static MObject input;
+    static MObject output;
+
+};
