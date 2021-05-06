@@ -1,5 +1,5 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
-
+import copy
 import os
 import inspect
 
@@ -82,6 +82,8 @@ class Rig(object):
         self.rig = rig
         self.auto_group = group
         self.group_stack = {}
+        self.controls = []
+        self.inner_controls = []
 
         if path:
             self.prepare(path)
@@ -153,6 +155,42 @@ class Rig(object):
         [pm.parent(children, parent) for (parent, children) in self.group_stack.items()]
         self.group_stack.clear()
 
+    def runControlStack(self):
+        """
+        Adds all the controls in self.controls to the control set node.
+        """
+        pm.select(cl=True)
+        control_set = pm.PyNode(pcfg.control_set) if pm.objExists(pcfg.control_set) else pm.sets(n=pcfg.control_set)
+        inners = pm.PyNode(pcfg.inner_controls) if pm.objExists(pcfg.inner_controls) else pm.sets(n=pcfg.inner_controls)
+        self.controls.insert(0, inners)
+
+        control_set.addMembers(self.controls)
+        inners.addMembers(self.inner_controls)
+
+        self.controls.clear()
+        self.inner_controls.clear()
+
+    def addControls(self, controls, inner=None):
+        """
+        Adds controls to the self.controls stack to be added into the controls set
+
+        Args:
+            controls (list or pm.nodetypes.Transform): Control(s) to be added to controls set.
+
+            inner (list): Inner controls to be added to inner controls list.
+        """
+        self.controls.extend(controls) if isinstance(controls, list) else self.controls.append(controls)
+
+        if inner:
+            self.inner_controls.extend(inner)
+
+    def finish(self):
+        """
+        Groups everything and creates the control set group.
+        """
+        self.runGroupStack()
+        self.runControlStack()
+
     def findGroup(self, reference_transform, transforms):
         """
         Finds the group the given transforms should be parented under based on given reference transform.
@@ -207,25 +245,28 @@ class Rig(object):
 
         group = None
         if name:
-            group = pm.group(name=prefix + '_' + name + pcfg.group_suffix, empty=True)
-            attribute.lockAndHideCompound(group)
+            group_name = prefix + '_' + name + pcfg.group_suffix
+            if pm.objExists(group_name):
+                group = pm.PyNode(group_name)
+            else:
+                group = pm.group(name=group_name, empty=True)
+                attribute.lockAndHideCompound(group)
 
         parent_to_rig = transforms
         if group:
-            # pm.parent(transforms, group) if self.auto_group else self.addToGroupStack(group, transforms)
             self.addToGroupStack(group, transforms)
             parent_to_rig = [group]
 
         if self.rig:
-            # pm.parent(parent_to_rig, self.rig) if self.auto_group else self.addToGroupStack(group, transforms)
             self.addToGroupStack(self.rig, parent_to_rig)
 
             # drive visibility of groups through rig node
             if group:
                 attribute_name = group.name() + pcfg.visibility_suffix
-                self.rig.addAttr(attribute_name, at='bool', dv=1, k=True)
-                self.rig.attr(attribute_name) >> group.visibility
-                group.setAttr('visibility', k=False, cb=False)  # set hidden, still keyable even though k is False
+                if not self.rig.hasAttr(attribute_name):
+                    self.rig.addAttr(attribute_name, at='bool', dv=1, k=True)
+                    self.rig.attr(attribute_name) >> group.visibility
+                    group.setAttr('visibility', k=False, cb=False)  # set hidden, still keyable even though k is False
 
         if self.auto_group:
             self.runGroupStack()
@@ -272,6 +313,7 @@ class Rig(object):
         pivot_ctrl.addAttr(pcfg.dynamic_pivot_rest, dt='string', k=False, h=True, s=True)
         pivot_ctrl.attr(pcfg.dynamic_pivot_rest).set(transform.name())
         self.organize([pivot_ctrl], prefix=inspect.currentframe().f_code.co_name, name='')
+        self.addControls(pivot_ctrl)
         return pivot_ctrl
 
     @staticmethod
@@ -303,8 +345,7 @@ class Rig(object):
             axis_vector = pipermath.getOrientAxis(transforms[0], transforms[0].getChildren()[0])
             axis = convert.axisToString(axis_vector)
 
-        last_axis = axis
-        return axis, last_axis
+        return axis, axis
 
     def FK(self, start, end='', parent=None, axis=None, shape='', sizes=None, connect=True, global_ctrl='', name=''):
         """
@@ -346,10 +387,9 @@ class Rig(object):
 
         for i, (transform, duplicate) in enumerate(zip(transforms, duplicates)):
             dup_name = duplicate.name()
-            calc_axis, last_axis = axis if axis else self._getAxis(i, transforms, last_axis, duplicates)
+            calc_axis, last_axis = [axis, axis] if axis else self._getAxis(i, transforms, last_axis, duplicates)
             size = sizes[i] if sizes else control.calculateSize(transform)
             ctrl_parent = parent if duplicate == duplicates[0] else controls[i - 1]
-
             ctrl = control.create(duplicate, pipernode.createFK, dup_name, calc_axis,
                                   scale=1.2, control_shape=shape, size=size)
 
@@ -413,6 +453,7 @@ class Rig(object):
             controls[0].attr('s' + calc_axis) >> multiply_input
 
         self.organize(controls + [duplicates[0]], prefix=inspect.currentframe().f_code.co_name, name=name)
+        self.addControls(controls, inner=in_controls)
         return duplicates, controls, in_controls
 
     def IK(self, start, end, parent=None, shape=curve.ring, sizes=None, connect=True, global_ctrl='', name=''):
@@ -564,6 +605,7 @@ class Rig(object):
             parent_decompose.attr('outputScale' + axis.upper()) >> piper_ik.globalScale
 
         self.organize(nodes_to_organize, prefix=inspect.currentframe().f_code.co_name, name=name)
+        self.addControls(controls)
         return duplicates, controls, scale_buffer
 
     def FKIK(self, start, end, parent=None, fk_shape='', ik_shape='', proxy=True, global_ctrl='', name=''):
@@ -623,17 +665,23 @@ class Rig(object):
             switcher_attribute >> og_transform.attr(ik_space)
 
         results = fk_transforms, ik_transforms, controls
-        nodes_to_organize = [fk_transforms[0], ik_transforms[0], buffer] + fk_ctrls + [ik_ctrls[0], switcher_control]
+        nodes_to_organize = [fk_transforms[0], buffer] + fk_ctrls + [ik_ctrls[0], switcher_control]
         self.organize(nodes_to_organize, prefix=inspect.currentframe().f_code.co_name, name=name)
+        self.addControls([switcher_control] + fk_ctrls + ik_ctrls, inner=in_ctrls)
 
         if not proxy:
             return results
 
         # make proxy fk ik attribute on all the controls
-        switcher_control.visibility.set(False)
         for ctrl in controls[1:]:  # start on index 1 since switcher is on index 0
             attribute.addSeparator(ctrl)
             ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+
+        # make IK control drive switcher visibility
+        ik_ctrls[-1].addAttr(pcfg.switcher_visibility, at='bool', dv=0, k=True)
+        switcher_visibility = ik_ctrls[-1].attr(pcfg.switcher_visibility)
+        switcher_visibility >> switcher_control.lodVisibility
+        attribute.nonKeyable(switcher_visibility)
 
         return results
 
@@ -806,11 +854,11 @@ class Rig(object):
 
         nodes_to_organize = [reverse_group, normalized_pivot, normalized_track, pivot_track]
         self.findGroup(joint, nodes_to_organize)
+        self.addControls(ctrl)
 
         return ctrl
 
-    @staticmethod
-    def reverse(driver, target, driven_negate=None, transform=None, switcher_ctrl=None, shape=None, axis=None):
+    def reverse(self, driver, target, driven_negate=None, transform=None, switcher_ctrl=None, shape=None, axis=None):
         """
         Creates a control that offsets the given target through rotation (usually foot roll reverse rig).
 
@@ -850,6 +898,7 @@ class Rig(object):
         name = transform.name() + '_reverse'
         driver_parent = driver.getParent()
         ctrl = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
+        self.addControls(ctrl)
 
         name = ctrl.name()
         pm.parent(driver, ctrl)
@@ -888,21 +937,23 @@ class Rig(object):
         compose_matrix.outputMatrix >> driven_negate.offsetParentMatrix
         attribute.addReverseMessage(ctrl, driven_negate)
 
-        if switcher_ctrl:
-            # add reverse control to switcher data and connect ik visibility onto reverse control
-            switcher.addData(switcher_ctrl.attr(pcfg.switcher_reverses), [name])
-            switcher_attribute = switcher_ctrl.attr(pcfg.fk_ik_attribute)
-            switcher_attribute >> ctrl.lodVisibility
+        if not switcher_ctrl:
+            return ctrl
 
-            # add proxy fk_ik attribute to ctrl
-            attribute.addSeparator(ctrl)
-            ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+        # add reverse control to switcher data and connect ik visibility onto reverse control
+        switcher.addData(switcher_ctrl.attr(pcfg.switcher_reverses), [name])
+        switcher_attribute = switcher_ctrl.attr(pcfg.fk_ik_attribute)
+        switcher_attribute >> ctrl.lodVisibility
 
-            # only make driven_negate by affected if IK is set to True
-            blend = pm.createNode('blendMatrix', n=source_name + '_negateBlend')
-            source_matrix >> blend.inputMatrix
-            compose_matrix.outputMatrix >> blend.target[0].targetMatrix
-            switcher_attribute >> blend.target[0].weight
-            blend.outputMatrix >> driven_negate.offsetParentMatrix
+        # add proxy fk_ik attribute to ctrl
+        attribute.addSeparator(ctrl)
+        ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+
+        # only make driven_negate by affected if IK is set to True
+        blend = pm.createNode('blendMatrix', n=source_name + '_negateBlend')
+        source_matrix >> blend.inputMatrix
+        compose_matrix.outputMatrix >> blend.target[0].targetMatrix
+        switcher_attribute >> blend.target[0].weight
+        blend.outputMatrix >> driven_negate.offsetParentMatrix
 
         return ctrl

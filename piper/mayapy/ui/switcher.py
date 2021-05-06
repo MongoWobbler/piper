@@ -20,11 +20,11 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         manager.register(self)
         self.callback = om.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
         self.selected = None
+        self.inners = []
         self.pivots = []
         self.rests = []
 
         self.onSelectionChanged()  # called to load/update switcher on startup
-
 
     def onSelectionChanged(self, *args):
         """
@@ -36,6 +36,8 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
         # declare iterables to add to
         names = []
+        inners_state = []
+        self.inners.clear()
         spaces = pcu.OrderedSet(['local'])
         switchers = set()
         self.pivots = pcu.OrderedSet()
@@ -69,6 +71,12 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
                     self.pivots.add(child_name)
                     self.rests.add(child.attr(pcfg.dynamic_pivot_rest).get())
 
+                # adding inner controls for visibility toggle
+                if child.startswith(pcfg.fk_prefix) and child != node:
+                    visibility = child.visibility.get()
+                    inners_state.append(visibility)
+                    self.inners.append(child)
+
         # update window title with selected and lists widgets with info we gathered
         text = ' - ' + ', '.join(names) if names else ''
         self.setWindowTitle('Switcher' + text)
@@ -76,6 +84,9 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         self.updateList(self.switcher_list, switchers)
         self.updateList(self.pivots_list, self.pivots)
         self.updateList(self.rest_list, self.rests)
+
+        inner_state = not all(inners_state)
+        self.selected_inner_button.setChecked(inner_state)
 
     def onSpacePressed(self, item):
         """
@@ -115,7 +126,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
     def onPivotPressed(self, item):
         """
         Called when dynamic pivot item is clicked. Will set dynamic pivot transforms to 0.
-
+        #
         Args:
             item (QtWidgets.QListWidgetItem): Dynamic pivot to reset when clicked.
         """
@@ -135,6 +146,46 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         pivot_item = self.pivots_list.item(index.row())
         space.resetDynamicPivot(pm.PyNode(pivot_item.text()), key=self.keyframe_box.isChecked(), rest=True)
         pm.undoInfo(closeChunk=True)
+
+    def onAllControlsPressed(self):
+        """
+        App dependent.
+        """
+        if not pm.objExists(pcfg.control_set):
+            return
+
+        control_set = pm.PyNode(pcfg.control_set)
+        controls = control_set.members() if self.all_inner_button.isChecked() else control_set.members(flatten=True)
+        controls = filter(lambda node: not isinstance(node, pm.nodetypes.ObjectSet), controls)
+        state = not self.all_controls_button.isChecked()
+        [ctrl.visibility.set(state) for ctrl in controls]
+
+    def onInnerControlsPressed(self):
+        """
+        App dependent.
+        """
+        if not pm.objExists(pcfg.inner_controls):
+            return
+
+        control_set = pm.PyNode(pcfg.inner_controls)
+        controls = control_set.members()
+        state = not self.all_inner_button.isChecked()
+        [ctrl.visibility.set(state) for ctrl in controls]
+
+    def onSelectedInnerPressed(self):
+        """
+        App dependent.
+        """
+        state = not self.selected_inner_button.isChecked()
+        [ctrl.visibility.set(state) for ctrl in self.inners]
+
+    def onJointsPressed(self):
+        """
+        App dependent.
+        """
+        joints = pm.ls(type='joint')
+        state = not self.joints_button.isChecked()
+        [joint.visibility.set(state) for joint in joints]
 
     def dockCloseEventTriggered(self):
         self.onClosedPressed()

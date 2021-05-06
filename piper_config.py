@@ -19,13 +19,32 @@ export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
 unload_unwanted = 'unload_unwanted_plugins'
 use_piper_render = 'use_tone_map'
+switcher_update_box = 'switcher_update_box'
+switcher_key_box = 'switcher_key_box'
+switcher_match_box = 'switcher_match_box'
+switcher_translate_box = 'switcher_translate_box'
+switcher_rotate_box = 'switcher_rotate_box'
+switcher_scale_box = 'switcher_scale_box'
+switcher_all_controls = 'switcher_all_controls'
+switcher_all_inner = 'switcher_all_inner'
+switcher_joints = 'switcher_joints'
+
 store_defaults = {art_directory: None,
                   game_directory: None,
                   use_piper_units: True,
                   use_piper_render: True,
                   unload_unwanted: True,
                   export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
-                  hdr_image_path: ''}
+                  hdr_image_path: '',
+                  switcher_update_box: True,
+                  switcher_key_box: True,
+                  switcher_match_box: False,
+                  switcher_translate_box: True,
+                  switcher_rotate_box: True,
+                  switcher_scale_box: True,
+                  switcher_all_controls: False,
+                  switcher_all_inner: False,
+                  switcher_joints: False}
 
 # Maya unwanted plug-ins
 maya_unwanted_plugins = ['xgenToolkit',
@@ -74,6 +93,8 @@ dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
 group_suffix = '_grp'
 visibility_suffix = 'Visibility'
+control_set = 'controls'
+inner_controls = 'inner'
 
 # Export
 fbx_default_version = 2018
@@ -126,6 +147,7 @@ fk_prefix = 'fk_'
 ik_prefix = 'ik_'
 fk_ik_attribute = 'fk_ik'
 proxy_fk_ik = 'FK_IK'
+switcher_visibility = 'switcherVisibility'
 switcher_attribute = 'switcher'
 switcher_suffix = '_switcher'
 switcher_transforms = 'transforms'
