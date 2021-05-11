@@ -3,6 +3,7 @@
 import os
 import sys
 
+
 # adds the piper directory and vendor directory to the system's path to look for python scripts
 piper_directory = os.environ['PIPER_DIR']
 vendor_directory = os.path.join(piper_directory, 'vendor', 'py')

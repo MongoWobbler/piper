@@ -33,6 +33,7 @@ class Switcher(QtWidgets.QDialog):
         self.all_inner_button = None
         self.selected_inner_button = None
         self.joints_button = None
+        self.hide_play_button = None
         self.build()
 
         self.store_data = {self.self_update: pcfg.switcher_update_box,
@@ -40,10 +41,7 @@ class Switcher(QtWidgets.QDialog):
                            self.match_only: pcfg.switcher_match_box,
                            self.translate: pcfg.switcher_translate_box,
                            self.rotate: pcfg.switcher_rotate_box,
-                           self.scale: pcfg.switcher_scale_box,
-                           self.all_controls_button: pcfg.switcher_all_controls,
-                           self.all_inner_button: pcfg.switcher_all_inner,
-                           self.joints_button: pcfg.switcher_joints}
+                           self.scale: pcfg.switcher_scale_box}
 
         self.restorePrevious()
 
@@ -61,7 +59,7 @@ class Switcher(QtWidgets.QDialog):
         Returns:
             (QtWidgets.QPushButton): Button created.
         """
-        button = QtWidgets.QPushButton()
+        button = QtWidgets.QToolButton()
         button.setCheckable(True)
         icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format(icon))
         button.setIcon(icon)
@@ -73,12 +71,28 @@ class Switcher(QtWidgets.QDialog):
     def build(self):
         main_layout = QtWidgets.QGridLayout(self)
         buttons_layout = QtWidgets.QHBoxLayout()
+        buttons_layout.setSpacing(0)
 
-        # buttons
+        # select all controls button
+        select_button = QtWidgets.QToolButton()
+        icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format('selectAll'))
+        select_button.setIcon(icon)
+        select_button.clicked.connect(self.onSelectAllPressed)
+        buttons_layout.addWidget(select_button)
+
+        # toggle buttons
         self.all_controls_button = self.createButton('allControls', buttons_layout, self.onAllControlsPressed)
         self.all_inner_button = self.createButton('innerControls', buttons_layout, self.onInnerControlsPressed)
         self.selected_inner_button = self.createButton('selectedInner', buttons_layout, self.onSelectedInnerPressed)
         self.joints_button = self.createButton('joints', buttons_layout, self.onJointsPressed)
+        self.hide_play_button = self.createButton('hideOnPlay', buttons_layout, self.onHideOnPlayPressed)
+
+        # reset/zero out/bind pose button
+        reset_button = QtWidgets.QToolButton()
+        icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format('reset'))
+        reset_button.setIcon(icon)
+        reset_button.clicked.connect(self.onResetPressed)
+        buttons_layout.addWidget(reset_button)
 
         main_layout.addLayout(buttons_layout, 0, 0, 1, 3)
 
@@ -98,6 +112,7 @@ class Switcher(QtWidgets.QDialog):
         main_layout.addWidget(self.keyframe_box, 1, 2)
 
         separator(main_layout, 2, 0, 1, 3)
+        main_layout.setRowMinimumHeight(2, 0)
 
         # inherit translate from space if True
         self.translate = QtWidgets.QCheckBox('Translate')
@@ -217,6 +232,12 @@ class Switcher(QtWidgets.QDialog):
         """
         pass
 
+    def onSelectAllPressed(self):
+        """
+        App dependent.
+        """
+        pass
+
     def onAllControlsPressed(self):
         """
         App dependent.
@@ -236,6 +257,18 @@ class Switcher(QtWidgets.QDialog):
         pass
 
     def onJointsPressed(self):
+        """
+        App dependent.
+        """
+        pass
+
+    def onHideOnPlayPressed(self):
+        """
+        App dependent.
+        """
+        pass
+
+    def onResetPressed(self):
         """
         App dependent.
         """

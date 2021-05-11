@@ -1,5 +1,5 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
-import copy
+
 import os
 import inspect
 
@@ -9,9 +9,9 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-import piper.mayapy.attribute as attribute
-import piper.mayapy.pipermath as pipermath
+import piper.mayapy.mayamath as mayamath
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.attribute as attribute
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.ui.window as uiwindow
 
@@ -62,6 +62,34 @@ def unlockMeshes():
     Unlocks all the transforms under piper skinned nodes that have mesh shapes.
     """
     setLockOnMeshes(0)
+
+
+def zeroOut(controls=None):
+    """
+    Zeroes out the given controls to their bind pose. Retains current space.
+
+    Args:
+        controls (list): Controls to zero out.
+    """
+    if not controls:
+        controls = pm.selected()
+
+    if not controls:
+        controls = control.getAll()
+
+    current_space = None
+    for ctrl in controls:
+        has_spaces = space.exists(ctrl)
+
+        if has_spaces:
+            spaces = space.getAll(ctrl)
+            current_space = space.getCurrent(ctrl)
+            [ctrl.attr(space_attribute).set(0) for space_attribute in spaces]
+
+        mayamath.zeroOut(ctrl)
+
+        if has_spaces and current_space:
+            space.switch(ctrl, current_space)
 
 
 class Rig(object):
@@ -136,40 +164,6 @@ class Rig(object):
 
         return self.rig
 
-    def addToGroupStack(self, parent, children):
-        """
-        Adds the given children as the value to the given parent key to the group_stack dictionary.
-
-        Args:
-            parent (pm.nodetypes.Transform): Node to add as key that things will be parented to.
-
-            children (list): Nodes to parent to given parent.
-        """
-        current = self.group_stack.get(parent)
-        self.group_stack[parent] = current + children if current else children
-
-    def runGroupStack(self):
-        """
-        Parents all the given children to their corresponding parent key in the group stack dictionary.
-        """
-        [pm.parent(children, parent) for (parent, children) in self.group_stack.items()]
-        self.group_stack.clear()
-
-    def runControlStack(self):
-        """
-        Adds all the controls in self.controls to the control set node.
-        """
-        pm.select(cl=True)
-        control_set = pm.PyNode(pcfg.control_set) if pm.objExists(pcfg.control_set) else pm.sets(n=pcfg.control_set)
-        inners = pm.PyNode(pcfg.inner_controls) if pm.objExists(pcfg.inner_controls) else pm.sets(n=pcfg.inner_controls)
-        self.controls.insert(0, inners)
-
-        control_set.addMembers(self.controls)
-        inners.addMembers(self.inner_controls)
-
-        self.controls.clear()
-        self.inner_controls.clear()
-
     def addControls(self, controls, inner=None):
         """
         Adds controls to the self.controls stack to be added into the controls set
@@ -184,12 +178,17 @@ class Rig(object):
         if inner:
             self.inner_controls.extend(inner)
 
-    def finish(self):
+    def addToGroupStack(self, parent, children):
         """
-        Groups everything and creates the control set group.
+        Adds the given children as the value to the given parent key to the group_stack dictionary.
+
+        Args:
+            parent (pm.nodetypes.Transform): Node to add as key that things will be parented to.
+
+            children (list): Nodes to parent to given parent.
         """
-        self.runGroupStack()
-        self.runControlStack()
+        current = self.group_stack.get(parent)
+        self.group_stack[parent] = current + children if current else children
 
     def findGroup(self, reference_transform, transforms):
         """
@@ -224,6 +223,74 @@ class Rig(object):
 
         if found and self.auto_group:
             self.runGroupStack()
+
+    def runGroupStack(self):
+        """
+        Parents all the given children to their corresponding parent key in the group stack dictionary.
+        """
+        [pm.parent(children, parent) for (parent, children) in self.group_stack.items()]
+        self.group_stack.clear()
+
+    def runControlStack(self):
+        """
+        Adds all the controls in self.controls to the control set node.
+        """
+        pm.select(cl=True)
+        control_set = pm.PyNode(pcfg.control_set) if pm.objExists(pcfg.control_set) else pm.sets(n=pcfg.control_set)
+        inners = pm.PyNode(pcfg.inner_controls) if pm.objExists(pcfg.inner_controls) else pm.sets(n=pcfg.inner_controls)
+        self.controls.insert(0, inners)
+
+        inners.addMembers(self.inner_controls)
+        control_set.addMembers(self.controls)
+
+        self.controls.clear()
+        self.inner_controls.clear()
+
+    def finish(self, colorize=True):
+        """
+        Groups everything and creates the control set group.
+        """
+        if colorize:
+            self.colorize()
+
+        self.runGroupStack()
+        self.runControlStack()
+
+    def colorize(self):
+        """
+        Colors all the controls according to setting in piper_config.py
+        """
+        left_control = pcfg.left_suffix + pcfg.control_suffix
+        left_banker = pcfg.left_suffix + pcfg.banker_suffix + pcfg.control_suffix
+        left_reverse = pcfg.left_suffix + pcfg.reverse_suffix + pcfg.control_suffix
+
+        right_control = pcfg.right_suffix + pcfg.control_suffix
+        right_banker = pcfg.right_suffix + pcfg.banker_suffix + pcfg.control_suffix
+        right_reverse = pcfg.right_suffix + pcfg.reverse_suffix + pcfg.control_suffix
+
+        left_suffixes = (left_control, left_banker, left_reverse)
+        right_suffixes = (right_control, right_banker, right_reverse)
+
+        for ctrl in self.controls:
+            ctrl_name = ctrl.name()
+            if ctrl_name.endswith(left_suffixes):
+                curve.color(ctrl, pcfg.rig_colors['left'])
+            elif ctrl_name.endswith(right_suffixes):
+                curve.color(ctrl, pcfg.rig_colors['right'])
+            else:
+                curve.color(ctrl, pcfg.rig_colors['middle'])
+
+        left_suffix = pcfg.left_suffix + pcfg.inner_suffix + pcfg.control_suffix
+        right_suffix = pcfg.right_suffix + pcfg.inner_suffix + pcfg.control_suffix
+
+        for ctrl in self.inner_controls:
+            ctrl_name = ctrl.name()
+            if ctrl_name.endswith(left_suffix):
+                curve.color(ctrl, pcfg.rig_colors['left_inner'])
+            elif ctrl_name.endswith(right_suffix):
+                curve.color(ctrl, pcfg.rig_colors['right_inner'])
+            else:
+                curve.color(ctrl, pcfg.rig_colors['middle_inner'])
 
     def organize(self, transforms, prefix=None, name=None):
         """
@@ -337,12 +404,12 @@ class Rig(object):
             duplicates = transforms
 
         if duplicates[i] != duplicates[-1]:
-            axis_vector = pipermath.getOrientAxis(duplicates[i], duplicates[i + 1])
+            axis_vector = mayamath.getOrientAxis(duplicates[i], duplicates[i + 1])
             axis = convert.axisToString(axis_vector)
 
         # attempt to deduce axis if transform only has one child and axis is not given
         elif len(transforms) == 1 and transforms[0].getChildren() and len(transforms[0].getChildren()) == 1:
-            axis_vector = pipermath.getOrientAxis(transforms[0], transforms[0].getChildren()[0])
+            axis_vector = mayamath.getOrientAxis(transforms[0], transforms[0].getChildren()[0])
             axis = convert.axisToString(axis_vector)
 
         return axis, axis
@@ -398,8 +465,8 @@ class Rig(object):
             ctrl._.lock()
 
             xform.offsetConstraint(ctrl, duplicate, message=True)
-            in_ctrl = control.create(duplicate, name=dup_name + '_inner', axis=calc_axis, shape=curve.plus, size=size,
-                                     parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
+            in_ctrl = control.create(duplicate, name=dup_name + pcfg.inner_suffix, axis=calc_axis, shape=curve.plus,
+                                     size=size, parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
 
             decompose = xform.parentMatrixConstraint(in_ctrl, duplicate)
             decomposes.append(decompose)
@@ -440,7 +507,7 @@ class Rig(object):
                 multiplies.append(multiply)
 
         # edge cases for scaling
-        if parent and len(transforms) > 1:
+        if parent and len(transforms) > 1 and parent != global_ctrl:
             multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[0])
             parent.attr('s' + calc_axis) >> multiply_input
 
@@ -500,7 +567,7 @@ class Rig(object):
 
             if transform != transforms[-1]:
                 next_transform = transforms[i + 1]
-                axis_vector = pipermath.getOrientAxis(transform, next_transform)
+                axis_vector = mayamath.getOrientAxis(transform, next_transform)
                 axis = convert.axisToString(axis_vector)
 
             # start
@@ -551,8 +618,9 @@ class Rig(object):
         xform.parentMatrixConstraint(piper_ik, duplicates[-1], t=False)
         ik_handle_name = duplicates[-1].name(stripNamespace=True) + '_handle'
         ik_handle, _ = pm.ikHandle(sj=duplicates[0], ee=duplicates[-1], sol='ikRPsolver', n=ik_handle_name, pw=1, w=1)
+        ik_handle.visibility.set(False)
         pm.parent(ik_handle, piper_ik)
-        pipermath.zeroOut(ik_handle)
+        mayamath.zeroOut(ik_handle)
         ik_handle.translate >> piper_ik.handleTranslate
         ik_handle.parentMatrix >> piper_ik.handleParentMatrix
         # xform.poleVectorMatrixConstraint(ik_handle, mid_ctrl)
@@ -705,8 +773,7 @@ class Rig(object):
             (pm.nodetypes.Transform): Control that moves the reverse foot pivot.
         """
         joint_name = joint.name()
-        prefix = joint_name + '_'
-        axis = pipermath.getOrientAxis(joint.getParent(), joint)
+        axis = mayamath.getOrientAxis(joint.getParent(), joint)
         axes = convert.axisToTriAxis(axis)
 
         if not side:
@@ -736,7 +803,7 @@ class Rig(object):
 
             # create the pivot track curve
             pm.select(cl=True)
-            pivot_track = curve.originCrossSection(meshes, side=side, name=prefix + 'pivotTrack')
+            pivot_track = curve.originCrossSection(meshes, side=side, name=joint_name + '_pivotTrack')
 
             # validate that only one is made
             if len(pivot_track) != 1:
@@ -745,8 +812,8 @@ class Rig(object):
             pivot_track = pivot_track[0]
 
         # create the pivot and the normalized pivot, move the norm pivot to joint and then to floor
-        pivot = pm.group(em=True, name=prefix + 'Pivot')
-        normalized_pivot = pm.group(em=True, name=prefix + 'normalizedPivot')
+        pivot = pm.group(em=True, name=joint_name + '_Pivot')
+        normalized_pivot = pm.group(em=True, name=joint_name + '_normalPivot')
         pm.matchTransform(normalized_pivot, joint, pos=True, rot=False, scale=False)
         normalized_pivot.ty.set(0)
         xform.toOffsetMatrix(normalized_pivot)
@@ -760,20 +827,20 @@ class Rig(object):
             size = None
 
         if use_track_shape:
-            ctrl = pm.duplicate(pivot_track, n=prefix + 'bank')[0]
+            ctrl = pm.duplicate(pivot_track, n=joint_name + pcfg.banker_suffix + pcfg.control_suffix)[0]
             curve.color(ctrl, 'burnt orange')
         else:
-            ctrl = control.create(joint, shape=curve.plus, name=prefix + 'bank', axis=axes[0], color='burnt orange',
-                                  matrix_offset=True, size=size, inner=.125, outer=1.25)
+            ctrl = control.create(joint, shape=curve.plus, name=joint_name + pcfg.banker_suffix, axis=axes[0],
+                                  color='burnt orange', matrix_offset=True, size=size, inner=.125, outer=1.25)
 
         attribute.lockAndHide(ctrl.attr('r' + axes[0]))
         attribute.lockAndHideCompound(ctrl, ['t', 's'])
 
         # node to add small number
-        small_add = pm.createNode('plusMinusAverage', n=prefix + 'plusSmallNumber')
+        small_add = pm.createNode('plusMinusAverage', n=joint_name + '_plusSmallNumber')
         small_add.input1D[0].set(0.001)
 
-        normalize_node = pm.createNode('vectorProduct', n=prefix + 'pivotNormal')
+        normalize_node = pm.createNode('vectorProduct', n=joint_name + '_pivotNormal')
         normalize_node.operation.set(0)
         normalize_node.normalizeOutput.set(True)
 
@@ -782,7 +849,7 @@ class Rig(object):
         small_add.output1D >> normalize_node.attr('input1' + axes[2].upper())
 
         # need to multiply the rotation by -1
-        negative_mult = pm.createNode('multDoubleLinear', n=prefix + 'negative')
+        negative_mult = pm.createNode('multDoubleLinear', n=joint_name + '_negative')
         ctrl.attr('r' + axes[2]) >> negative_mult.input1
         negative_mult.input2.set(-1)
         normalize_input_attribute = negative_mult.output
@@ -802,7 +869,7 @@ class Rig(object):
 
         # delete the duplicate and finally make the normalize track. Make sure to close the curve and center pivots
         pm.delete(duplicate_curve)
-        normalized_track = pm.curve(d=1, p=positions, k=range(len(positions)), ws=True, n=prefix + 'normalizedTrack')
+        normalized_track = pm.curve(d=1, p=positions, k=range(len(positions)), ws=True, n=joint_name + '_normalTrack')
         normalized_track = pm.closeCurve(normalized_track, replaceOriginal=True)[0]
         pm.xform(normalized_track, centerPivots=True)
 
@@ -814,15 +881,15 @@ class Rig(object):
         decomposed_matrix = pm.createNode('decomposeMatrix', n=normalize_node + '_decompose')
         normalized_pivot.worldMatrix >> decomposed_matrix.inputMatrix
 
-        nearest_point = pm.createNode('nearestPointOnCurve', n=prefix + 'nearestPoint')
+        nearest_point = pm.createNode('nearestPointOnCurve', n=joint_name + '_nearestPoint')
         decomposed_matrix.outputTranslate >> nearest_point.inPosition
         normalized_track.getShape().worldSpace >> nearest_point.inputCurve
 
-        curve_info = pm.createNode('pointOnCurveInfo', n=prefix + 'curveInfo')
+        curve_info = pm.createNode('pointOnCurveInfo', n=joint_name + '_curveInfo')
         nearest_point.parameter >> curve_info.parameter
         pivot_track.getShape().worldSpace >> curve_info.inputCurve
 
-        reverse_group = pm.group(em=True, n=prefix + 'reverse_grp')
+        reverse_group = pm.group(em=True, n=joint_name + '_reverse_grp')
         xform.parentMatrixConstraint(ik_control, reverse_group, offset=True)
         pm.parent([pivot, ctrl], reverse_group)
 
@@ -890,12 +957,12 @@ class Rig(object):
 
         # attempt to deduce axis if transform only has one child and axis is not given
         if not axis and transform.getChildren() and len(transform.getChildren()) == 1:
-            axis_vector = pipermath.getOrientAxis(transform, transform.getChildren()[0])
+            axis_vector = mayamath.getOrientAxis(transform, transform.getChildren()[0])
             axis = convert.axisToString(axis_vector)
             axis = convert.axisToTriAxis(axis)[1]
 
         # create control
-        name = transform.name() + '_reverse'
+        name = transform.name() + pcfg.reverse_suffix
         driver_parent = driver.getParent()
         ctrl = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
         self.addControls(ctrl)
@@ -957,3 +1024,35 @@ class Rig(object):
         blend.outputMatrix >> driven_negate.offsetParentMatrix
 
         return ctrl
+
+    def humanLeg(self, start, end, ball, side='', parent=None, global_ctrl=None, name=''):
+        """
+        Convenience method for rigging a leg. FKIK chain, with banker, and reverse controls.
+
+        Args:
+            start (pm.nodetypes.Joint): Start of the chain to be driven by FK controls.
+
+            end (pm.nodetypes.Joint): End of the chain to be driven by FK controls. If none given, will only drive start
+
+            ball (pm.nodetypes.Transform): Transform that will be driven by FK chain and reversed.
+
+            side (string): Side to create banker control on.
+
+            parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
+
+            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
+
+            name (str or None): Name to give group that will house all IK components.
+
+        Returns:
+            (list): Nodes created.
+        """
+        fk_transforms, ik_transforms, ctrls = self.FKIK(start, end, parent=parent, global_ctrl=global_ctrl, name=name)
+
+        banker = self.banker(ik_transforms[-1], ctrls[-1], side=side)
+        ball_joint, ball_control, ball_inner = self.FK(ball, name=name)
+        xform.offsetConstraint(end, ball_control[0], offset=True)
+        ik_handle = ctrls[-1].connections(skipConversionNodes=True, type='ikHandle')[0]
+        reverse_ctrl = self.reverse(ik_handle, ik_transforms[-1], ball_control[0], ball, ctrls[0])
+
+        return [fk_transforms, ik_transforms, ctrls], [ball_joint, ball_control, ball_inner], [banker, reverse_ctrl]

@@ -220,7 +220,7 @@ def getSkinnedMeshes(skin_clusters):
     Gets all the skinned meshes as a root joint dictionary associated with the given skin clusters.
 
     Args:
-        skin_clusters (list): SkinCluster to find geometry and influence objects (joints) of.
+        skin_clusters (Iterable): SkinCluster to find geometry and influence objects (joints) of.
 
     Returns:
         (dictionary): Root joint as key, set of geometry being influenced as value.

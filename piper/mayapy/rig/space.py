@@ -3,8 +3,8 @@
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
-import piper.mayapy.pipermath as pipermath
 
 from . import xform
 from . import switcher
@@ -25,6 +25,20 @@ def _connect(transform, target, space):
     transform.attr(pcfg.space_use_translate) >> target.useTranslate
     transform.attr(pcfg.space_use_rotate) >> target.useRotate
     transform.attr(pcfg.space_use_scale) >> target.useScale
+
+
+def exists(transform):
+    """
+    Gets whether the given transform has spaces or not.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to check if has spaces.
+
+    Returns:
+        (boolean): True if has a spaces blender connected, False if it does not.
+    """
+    matrix_blend = attribute.getMessagedSpacesBlender(transform)
+    return bool(matrix_blend)
 
 
 def getAll(transform, cast=False):
@@ -50,6 +64,24 @@ def getAll(transform, cast=False):
         return [pm.PyNode(space_name) for space_name in spaces] if cast else spaces
     else:
         return []
+
+
+def getCurrent(transform):
+    """
+    Gets the space the transform is currently on.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to get current space it is on.
+
+    Returns:
+        (string): Name of space given transform is currently on.
+    """
+    spaces = getAll(transform)
+    for space_attribute in spaces:
+        if transform.attr(space_attribute).get():
+            return space_attribute
+
+    return None
 
 
 def create(spaces=None, transform=None, direct=False):
@@ -248,7 +280,7 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
         inner_start_index = int(len(fk_controls)/2)
         for inner_ctrl in fk_controls[inner_start_index:]:
             switch(inner_ctrl)
-            pipermath.zeroOut(inner_ctrl)
+            mayamath.zeroOut(inner_ctrl)
 
         # only match the real controls, not the inner ones
         for transform, fk_control in zip(transforms, fk_controls[:inner_start_index]):
@@ -283,6 +315,6 @@ def resetDynamicPivot(pivot_control, key=True, rest=False):
         pm.setKeyframe(pivot_control, time=current_frame - 1)
         pm.setKeyframe(parent, time=current_frame - 1)
 
-    pm.xform(pivot_control, ws=True, m=rest_matrix) if rest else pipermath.zeroOut(pivot_control)
+    pm.xform(pivot_control, ws=True, m=rest_matrix) if rest else mayamath.zeroOut(pivot_control)
     pm.xform(parent, ws=True, m=matrix)
     pm.xform(parent, ws=True, m=matrix)  # called twice because Maya is stupid

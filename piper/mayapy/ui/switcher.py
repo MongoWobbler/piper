@@ -9,7 +9,9 @@ import piper.core.util as pcu
 from piper.ui.widget import manager
 from piper.ui.switcher import Switcher
 from piper.mayapy.pipe.store import store
+import piper.mayapy.rig as rig
 import piper.mayapy.rig.space as space
+import piper.mayapy.rig.control as control
 import piper.mayapy.rig.switcher as switcher
 
 
@@ -25,6 +27,37 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         self.rests = []
 
         self.onSelectionChanged()  # called to load/update switcher on startup
+
+    def restorePrevious(self):
+        """
+        Restores the previous settings the window had when it was closed.
+        """
+        # all controls state
+        rigs = pm.ls(type='piperRig')
+        states = [attr.get() for gig in rigs for attr in gig.listAttr(v=True, k=True, st='*' + pcfg.visibility_suffix)]
+        state = not all(states)
+        self.all_controls_button.setChecked(state)
+
+        # joints state
+        state = not all([joint.visibility.get() for joint in pm.ls(type='joint')])
+        self.joints_button.setChecked(state)
+
+        # hide/play state
+        controls = control.getAll()
+        state = all([ctrl.hideOnPlayback.get() for ctrl in controls])
+        self.hide_play_button.setChecked(state)
+
+        # inner controls state
+        if not pm.objExists(pcfg.inner_controls):
+            super(MayaSwitcher, self).restorePrevious()
+            return
+
+        # TODO: Browse through all the namespaces searching for inner control sets
+        control_set = pm.PyNode(pcfg.inner_controls)
+        controls = control_set.members()
+        state = not all([ctrl.visibility.get() for ctrl in controls])
+        self.all_inner_button.setChecked(state)
+        super(MayaSwitcher, self).restorePrevious()
 
     def onSelectionChanged(self, *args):
         """
@@ -147,22 +180,24 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         space.resetDynamicPivot(pm.PyNode(pivot_item.text()), key=self.keyframe_box.isChecked(), rest=True)
         pm.undoInfo(closeChunk=True)
 
+    def onSelectAllPressed(self):
+        """
+        Selected all the controls.
+        """
+        controls = control.getAll()
+        pm.select(controls)
+
     def onAllControlsPressed(self):
         """
-        App dependent.
+        Toggles between showing/hiding all controls.
         """
-        if not pm.objExists(pcfg.control_set):
-            return
-
-        control_set = pm.PyNode(pcfg.control_set)
-        controls = control_set.members() if self.all_inner_button.isChecked() else control_set.members(flatten=True)
-        controls = filter(lambda node: not isinstance(node, pm.nodetypes.ObjectSet), controls)
+        rigs = pm.ls(type='piperRig')
         state = not self.all_controls_button.isChecked()
-        [ctrl.visibility.set(state) for ctrl in controls]
+        [attr.set(state) for gig in rigs for attr in gig.listAttr(v=True, k=True, st='*' + pcfg.visibility_suffix)]
 
     def onInnerControlsPressed(self):
         """
-        App dependent.
+        Toggles between showing/hiding all inner controls.
         """
         if not pm.objExists(pcfg.inner_controls):
             return
@@ -174,18 +209,32 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
     def onSelectedInnerPressed(self):
         """
-        App dependent.
+        Toggles between showing/hiding selected controls' inner control.
         """
         state = not self.selected_inner_button.isChecked()
         [ctrl.visibility.set(state) for ctrl in self.inners]
 
     def onJointsPressed(self):
         """
-        App dependent.
+        Toggles between showing/hiding all joints in scene.
         """
         joints = pm.ls(type='joint')
         state = not self.joints_button.isChecked()
         [joint.visibility.set(state) for joint in joints]
+
+    def onHideOnPlayPressed(self):
+        """
+        Toggles between showing/hiding controls during playback.
+        """
+        controls = control.getAll()
+        state = self.hide_play_button.isChecked()
+        [ctrl.hideOnPlayback.set(state) for ctrl in controls]
+
+    def onResetPressed(self):
+        """
+        Sets the selected controls to zero/bind pose.
+        """
+        rig.zeroOut()
 
     def dockCloseEventTriggered(self):
         self.onClosedPressed()

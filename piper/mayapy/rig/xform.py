@@ -5,7 +5,7 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-import piper.mayapy.pipermath as pipermath
+import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
 
 
@@ -18,7 +18,7 @@ def toOffsetMatrix(transform):
         transform (pm.nodetypes.Transform): Transform to zero out.
     """
     transform.offsetParentMatrix.set(transform.matrix.get())
-    pipermath.zeroOut(transform)
+    mayamath.zeroOut(transform)
 
 
 def parent(transforms, world=False):
@@ -426,7 +426,7 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
 
     if plug:
         output >> target.offsetParentMatrix
-        pipermath.zeroOut(target)
+        mayamath.zeroOut(target)
 
     if message:
         attribute.addDrivenMessage(driver, target)
@@ -522,7 +522,7 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
         if forward:
             forward = [0, 0, 1] if forward is True else forward
             forward = convert.toVector(forward)
-            distance = pipermath.getDistance(start_transform, end_transform)
+            distance = mayamath.getDistance(start_transform, end_transform)
             forward = forward * (distance * scale)
             translation = translation + forward
 
@@ -540,7 +540,7 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
 
         chain_length = (mid - start).length() + (end - mid).length()
         translation = (mid - mid_chain_point).normal() * chain_length * scale + mid
-        rotation = pipermath.getAimRotation(mid_chain_point, translation)
+        rotation = mayamath.getAimRotation(mid_chain_point, translation)
 
     single_scale = mid_transform.radius.get() if mid_transform.hasAttr('radius') else 1
     scale = [single_scale, single_scale, single_scale]
@@ -588,10 +588,10 @@ def orientToVertex(transform, vertex, position=None, condition=True):
     neighbor = vertex.connectedVertices()
     neighbor = neighbor.indices()[0] if isinstance(neighbor, pm.general.MeshVertex) else neighbor[0].indices()[0]
     neighbor = pm.PyNode(vertex.node().name() + '.vtx[{}]'.format(str(neighbor)))
-    up = pipermath.getDirection(position, neighbor.getPosition(space='world'))
+    up = mayamath.getDirection(position, neighbor.getPosition(space='world'))
 
     normal = vertex.getNormal(space='world')
-    matrix = pipermath.getMatrixFromVector(normal, up, location=position)
+    matrix = mayamath.getMatrixFromVector(normal, up, location=position)
     pm.xform(transform, ws=True, m=matrix)
     transform.s.set((1, 1, 1))
 
@@ -619,8 +619,8 @@ def orientToEdge(transform, edge, position=None, condition=True):
     vertex_positions = [vertex.getPosition(space='world') for vertex in vertices]
 
     direction = vertices[0].getNormal('world') + vertices[-1].getNormal('world')
-    up = pipermath.getDirection(*vertex_positions)
-    matrix = pipermath.getMatrixFromVector(direction, up, location=position)
+    up = mayamath.getDirection(*vertex_positions)
+    matrix = mayamath.getMatrixFromVector(direction, up, location=position)
     pm.xform(transform, ws=True, m=matrix)
 
 
@@ -648,8 +648,8 @@ def orientToFace(transform, face, position=None, condition=True):
     edge_position = myu.getManipulatorPosition(edge)
 
     normal = face.getNormal(space='world')
-    up = pipermath.getDirection(position, edge_position)
-    matrix = pipermath.getMatrixFromVector(normal, up, location=position)
+    up = mayamath.getDirection(position, edge_position)
+    matrix = mayamath.getMatrixFromVector(normal, up, location=position)
     pm.xform(transform, ws=True, m=matrix)
 
 

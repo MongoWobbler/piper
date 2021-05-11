@@ -25,9 +25,6 @@ switcher_match_box = 'switcher_match_box'
 switcher_translate_box = 'switcher_translate_box'
 switcher_rotate_box = 'switcher_rotate_box'
 switcher_scale_box = 'switcher_scale_box'
-switcher_all_controls = 'switcher_all_controls'
-switcher_all_inner = 'switcher_all_inner'
-switcher_joints = 'switcher_joints'
 
 store_defaults = {art_directory: None,
                   game_directory: None,
@@ -41,10 +38,7 @@ store_defaults = {art_directory: None,
                   switcher_match_box: False,
                   switcher_translate_box: True,
                   switcher_rotate_box: True,
-                  switcher_scale_box: True,
-                  switcher_all_controls: False,
-                  switcher_all_inner: False,
-                  switcher_joints: False}
+                  switcher_scale_box: True}
 
 # Maya unwanted plug-ins
 maya_unwanted_plugins = ['xgenToolkit',
@@ -88,6 +82,9 @@ scale_buffer_suffix = '_scale_buffer'
 
 # Rig
 rig_suffix = '_Rig'
+inner_suffix = '_inner'
+banker_suffix = '_bank'
+reverse_suffix = '_reverse'
 root_joint_name = 'root'
 dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
@@ -95,6 +92,12 @@ group_suffix = '_grp'
 visibility_suffix = 'Visibility'
 control_set = 'controls'
 inner_controls = 'inner'
+rig_colors = {'middle': 'yellow',
+              'middle_inner': 'salmon',
+              'left': 'red',
+              'left_inner': 'magenta',
+              'right': 'blue',
+              'right_inner': 'light blue'}
 
 # Export
 fbx_default_version = 2018

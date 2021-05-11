@@ -7,7 +7,7 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-import piper.mayapy.pipermath as pipermath
+import piper.mayapy.mayamath as mayamath
 
 from . import xform
 
@@ -57,7 +57,7 @@ def assignBindAttributes(joints=None):
 
         joint_parent = joint.getParent()
         if joint_parent and isinstance(joint_parent, pm.nodetypes.Joint):
-            length = pipermath.getDistance(joint_parent, joint)
+            length = mayamath.getDistance(joint_parent, joint)
             joint.bindLength.set(length)
 
     pm.displayInfo('Finished assigning Piper joint attributes to ' + str(len(joints)) + ' joints.')

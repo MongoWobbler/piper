@@ -2,6 +2,7 @@
 
 import pymel.core as pm
 import piper_config as pcfg
+import piper.core.pipermath as pipermath
 import piper.mayapy.util as myu
 import piper.mayapy.attribute as attribute
 
@@ -9,7 +10,27 @@ from . import xform
 from . import curve
 
 
-def calculateSize(joint, scale=1, use_skins=True):
+def getAll(namespace=''):
+    """
+    Gets all the controls found in the control set with the given namespace.
+
+    Args:
+        namespace (string): Name of namespace to append as prefix to the control set name.
+
+    Returns:
+        (list): All controls
+    """
+    control_set = namespace + ':' + pcfg.control_set if namespace else pcfg.control_set
+
+    if not pm.objExists(control_set):
+        return []
+
+    control_set = pm.PyNode(control_set)
+    controls = control_set.members(flatten=True)
+    return controls
+
+
+def calculateSize(joint, scale=1, use_skins=True, try_root=True):
     """
     Calculates the size a control should be based on verts affected bounds or joint radius.
 
@@ -20,11 +41,36 @@ def calculateSize(joint, scale=1, use_skins=True):
 
         use_skins (boolean): If True, will try to use the bounding box of influencing skins to calculate size.
 
+        try_root (boolean): If True, will try to get the average length of the vertex positions of the meshes
+
     Returns:
         (list): X, Y, Z Scale.
     """
     skin_clusters = joint.future(type='skinCluster')
-    if use_skins and skin_clusters:
+    joint_name = joint.name(stripNamespace=True)
+
+    if try_root and joint_name == pcfg.root_joint_name:
+        skins = {skin for bone in joint.getChildren(ad=True) for skin in bone.future(type='skinCluster')}
+        meshes = {geo.getParent() for skin in skins for geo in skin.getGeometry()}
+
+        # no mesh is not bound
+        if not meshes:
+            return calculateSize(joint, scale, use_skins=False, try_root=False)
+
+        length = 0
+        positions = []
+
+        for mesh in meshes:
+            positions += myu.getVertexPositions(mesh)
+
+        for position in positions:
+            projection = [position[0], 0, position[2]]  # project onto XZ plane
+            length += pipermath.magnitude(projection)
+
+        average_length = length / len(positions)
+        return average_length, average_length, average_length
+
+    elif use_skins and skin_clusters:
         distance_sum = 0
         pm.select(cl=True)
 
@@ -97,6 +143,7 @@ def create(transform,
     """
     control = shape(name=name + pcfg.control_suffix, *args, **kwargs)
     curve.color(control, color)
+    # pm.controller(control)
 
     if not size:
         size = calculateSize(transform)

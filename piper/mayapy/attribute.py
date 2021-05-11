@@ -130,14 +130,15 @@ def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
         fail_display (method): How to display a failed connection.
     """
     bind_transform = convert.toBind(transform, fail_display)
-    mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + ' bindMatrix_MM')
-    bind_transform.worldMatrix >> mult_matrix.matrixIn[0]
 
     if ctrl_parent:
-        bind_transform.parentInverseMatrix >> mult_matrix.matrixIn[1]
-        ctrl_parent.worldMatrix >> mult_matrix.matrixIn[2]
-
-    mult_matrix.matrixSum >> ctrl.offsetParentMatrix
+        mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + ' bindMatrix_MM')
+        bind_transform.matrix >> mult_matrix.matrixIn[0]
+        ctrl_parent.worldMatrix >> mult_matrix.matrixIn[1]
+        mult_matrix.matrixSum >> ctrl.offsetParentMatrix
+    else:
+        # bind_transform.worldMatrix >> mult_matrix.matrixIn[0]
+        bind_transform.worldMatrix >> ctrl.offsetParentMatrix
 
 
 def addSeparator(transform, character=pcfg.separator_character):
