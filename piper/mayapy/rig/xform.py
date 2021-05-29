@@ -9,6 +9,19 @@ import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
 
 
+def isUniformlyScaled(transform):
+    """
+    Returns whether the given is uniformly scaled or not.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to check for uniform scale.
+
+    Returns:
+        (boolean): True if all scale values are the same in all axis.
+    """
+    return round(transform.sx.get(), 3) == round(transform.sy.get(), 3) == round(transform.sz.get(), 3)
+
+
 def toOffsetMatrix(transform):
     """
     Convenience method for moving the matrix of a transform to the offset matrix and zeroing out the values.

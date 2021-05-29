@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import time
 import inspect
 
 import pymel.core as pm
@@ -32,6 +33,35 @@ def getMeshes():
     """
     nodes = pipernode.get('piperSkinnedMesh')
     return {mesh.getParent() for skin in nodes for mesh in skin.getChildren(ad=True, type='mesh') if mesh.getParent()}
+
+
+def getSkeletonNodes(rigs=None):
+    """
+    Gets all the piperSkinnedMesh nodes that are a child of a piperRig node that start with the skeleton namespace.
+
+    Args:
+        rigs (list): rigs to find skeleton nodes of. If None given, will search for selected or scene rigs.
+
+    Returns:
+        (dictionary): piperSkinnedMesh nodes in rig(s) that start with skeleton namespace. Rig as value
+    """
+    if not rigs:
+        rigs = pipernode.get('piperRig')
+
+    return {child: rig for rig in rigs for child in rig.getChildren(ad=True, type='piperSkinnedMesh') if
+            pcfg.skeleton_namespace in child.namespace()}
+
+
+def getSkeletonMeshes(rigs=None):
+    """
+    Gets all the transforms that are under the piperSkinnedMesh node that starts with the skeleton namespace.
+
+    Returns:
+        (dictionary): Transforms with mesh shape under piperSkinnedMesh node that starts with skeleton namespace.
+    """
+    nodes = getSkeletonNodes(rigs=rigs)
+    return {mesh.getParent(): {'skinned_mesh': node, 'rig': rig} for node, rig in nodes.items()
+            for mesh in node.getChildren(ad=True, type='mesh')}
 
 
 def setLockOnMeshes(lock):
@@ -107,6 +137,7 @@ class Rig(object):
 
             group (boolean): If True, will automatically parent nodes into the groups and/or into rig node.
         """
+        self.start_time = time.time()
         self.rig = rig
         self.auto_group = group
         self.group_stack = {}
@@ -155,11 +186,13 @@ class Rig(object):
         # create new file, reference the skeleton into the new file, create rig group
         pm.newFile(force=True)
         self.rig = pipernode.createRig(name=rig_name)
+        one_minus = pipernode.oneMinus(self.rig.highPolyVisibility)
         pm.createReference(skeleton_path, namespace=pcfg.skeleton_namespace)
         pm.createReference(skeleton_path, namespace=pcfg.bind_namespace)
-        skinned_meshes = pipernode.get('piperSkinnedMesh')
-        [node.visibility.set(False) for node in skinned_meshes if node.name().startswith(pcfg.bind_namespace)]
-        pm.parent(skinned_meshes, self.rig)
+        skinned_nodes = pipernode.get('piperSkinnedMesh')
+        [node.visibility.set(False) for node in skinned_nodes if node.name().startswith(pcfg.bind_namespace)]
+        pm.parent(skinned_nodes, self.rig)
+        [one_minus.output >> mesh.visibility for mesh in getSkeletonMeshes()]
         lockMeshes()
 
         return self.rig
@@ -255,6 +288,10 @@ class Rig(object):
 
         self.runGroupStack()
         self.runControlStack()
+
+        end_time = time.time()
+        total_time = round(end_time - self.start_time, 2)
+        pm.displayInfo(self.rig.name() + '\'s rig is finished. Time = ' + str(total_time) + ' seconds.')
 
     def colorize(self):
         """
@@ -384,6 +421,29 @@ class Rig(object):
         return pivot_ctrl
 
     @staticmethod
+    def _tagControllerParent(ctrl, parent, i, controls):
+        """
+        Derives whether to tag the given ctrl with the parent, the parent's inner control, or the last in controls.
+
+        Args:
+            ctrl (pm.nodetypes.Transform or string): Transform that will receive parent to pick walk up to.
+
+            parent (pm.nodetypes.Transform): Parent that could drive ctrl's chain.
+
+            i (int): Iterator.
+
+            controls (list): Controls being added to chain.
+        """
+        pick_walk_parent = controls[-1] if controls else None
+        if parent and i == 0:
+            inner_ctrl = parent.name().replace(pcfg.control_suffix, pcfg.inner_suffix + pcfg.control_suffix)
+            pick_walk_parent = inner_ctrl if pm.objExists(inner_ctrl) else parent
+
+        if pick_walk_parent:
+            pm.select(ctrl, pick_walk_parent)
+            pm.mel.eval('TagAsControllerParent')
+
+    @staticmethod
     def _getAxis(i, transforms, last_axis, duplicates=None):
         """
         Attempts to figure out the axis for the given iteration of the given transforms and/or duplicates.
@@ -456,13 +516,13 @@ class Rig(object):
             dup_name = duplicate.name()
             calc_axis, last_axis = [axis, axis] if axis else self._getAxis(i, transforms, last_axis, duplicates)
             size = sizes[i] if sizes else control.calculateSize(transform)
-            ctrl_parent = parent if duplicate == duplicates[0] else controls[i - 1]
+            ctrl_parent = parent if i == 0 else controls[i - 1]
             ctrl = control.create(duplicate, pipernode.createFK, dup_name, calc_axis,
                                   scale=1.2, control_shape=shape, size=size)
 
+            self._tagControllerParent(ctrl, parent, i, in_controls)
             attribute.bindConnect(transform, ctrl, ctrl_parent)  # connects attributes that offset controls
             controls.append(ctrl)
-            ctrl._.lock()
 
             xform.offsetConstraint(ctrl, duplicate, message=True)
             in_ctrl = control.create(duplicate, name=dup_name + pcfg.inner_suffix, axis=calc_axis, shape=curve.plus,
@@ -482,10 +542,6 @@ class Rig(object):
 
             if connect:
                 xform.parentMatrixConstraint(duplicate, transform)
-
-            # easier to support game engines scale is uniform
-            attribute.uniformScale(ctrl, calc_axis)
-            attribute.uniformScale(in_ctrl, calc_axis)
 
             # used for scale calculation in FK control
             ctrl.worldMatrix >> ctrl.scaleDriverMatrix
@@ -563,7 +619,7 @@ class Rig(object):
         for i, (transform, duplicate) in enumerate(zip(transforms, duplicates)):
             dup_name = duplicate.name(stripNamespace=True)
             size = sizes[i] if sizes else control.calculateSize(transform)
-            ctrl_parent = parent if transform == transforms[0] else None
+            ctrl_parent = parent if i == 0 else None
 
             if transform != transforms[-1]:
                 next_transform = transforms[i + 1]
@@ -601,7 +657,7 @@ class Rig(object):
             if connect:
                 xform.parentMatrixConstraint(duplicate, transform)
 
-            attribute.uniformScale(ctrl, axis)
+            self._tagControllerParent(ctrl, parent, i, controls)
             controls.append(ctrl)
 
         piper_ik = controls[-1]
@@ -636,7 +692,6 @@ class Rig(object):
         piper_ik.startOutput >> mid_duplicate.attr('t' + axis)
         piper_ik.endOutput >> duplicates[-1].attr('t' + axis)
         piper_ik.twist >> ik_handle.twist
-        piper_ik._.lock()
 
         # scale ctrl connect
         decompose_scale = decompose.attr('outputScale' + axis.upper())
@@ -919,6 +974,9 @@ class Rig(object):
             attribute.addSeparator(ctrl)
             ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
+        pm.select(ctrl, ik_control)
+        pm.mel.eval('TagAsControllerParent')
+
         nodes_to_organize = [reverse_group, normalized_pivot, normalized_track, pivot_track]
         self.findGroup(joint, nodes_to_organize)
         self.addControls(ctrl)
@@ -962,12 +1020,12 @@ class Rig(object):
             axis = convert.axisToTriAxis(axis)[1]
 
         # create control
-        name = transform.name() + pcfg.reverse_suffix
+        name = transform.name(stripNamespace=True) + pcfg.reverse_suffix
         driver_parent = driver.getParent()
         ctrl = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
         self.addControls(ctrl)
 
-        name = ctrl.name()
+        name = ctrl.name(stripNamespace=True)
         pm.parent(driver, ctrl)
         attribute.lockAndHideCompound(ctrl, ['t', 's'])
         target_source = target.rotate.connections(scn=True, plugs=True, destination=False)
@@ -975,7 +1033,7 @@ class Rig(object):
         # add control's rotation to whatever is connected to target's rotate.
         if target_source:
             target_source = target_source[0]
-            plus = pm.createNode('plusMinusAverage', n='_'.join([target.name(), 'plus', ctrl.name()]))
+            plus = pm.createNode('plusMinusAverage', n='_'.join([target.name(), 'plus', name]))
             target_source >> plus.input3D[0]
             ctrl.rotate >> plus.input3D[1]
             plus.output3D >> target.rotate
@@ -1054,5 +1112,8 @@ class Rig(object):
         xform.offsetConstraint(end, ball_control[0], offset=True)
         ik_handle = ctrls[-1].connections(skipConversionNodes=True, type='ikHandle')[0]
         reverse_ctrl = self.reverse(ik_handle, ik_transforms[-1], ball_control[0], ball, ctrls[0])
+
+        pm.select(reverse_ctrl, banker)
+        pm.mel.eval('TagAsControllerParent')
 
         return [fk_transforms, ik_transforms, ctrls], [ball_joint, ball_control, ball_inner], [banker, reverse_ctrl]

@@ -27,6 +27,7 @@ public:
 public:
     static MTypeId type_ID;
     static MString node_name;
+    static MObject wraps;
 };
 
 
@@ -39,6 +40,8 @@ public:
 public:
     static MTypeId type_ID;
     static MString node_name;
+    static MObject separator;
+    static MObject high_poly;
 };
 
 

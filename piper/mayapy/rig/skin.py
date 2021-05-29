@@ -2,8 +2,10 @@
 
 import os
 import pymel.core as pm
+import maya.cmds as cmds
 import piper.core.util as pcu
 import piper.mayapy.util as myu
+import maya.internal.nodes.proximitywrap.node_interface as node_interface
 
 
 def returnToBindPose(joints=None):
@@ -22,6 +24,31 @@ def returnToBindPose(joints=None):
     poses = {pose for joint in joints for pose in pm.dagPose(joint, bp=True, q=True)}
     [pm.dagPose(pose, g=True, restore=True) for pose in poses]
     return poses
+
+
+def createProximityWrap(source, target):
+    """
+    Creates a proximity with the given source and target transforms.
+
+    Args:
+        source (pm.nodetypes.Transform): Transform with skinned mesh that will drive given target.
+
+        target (pm.nodetypes.Transform): Transform with mesh shape that will be driven by given source.
+
+    Returns:
+        (pm.nodetypes.ProximityWrap): Proximity wrap node created.
+    """
+    # implementing with maya.cmds since PyMel raises the following warning for every attribute set.
+    # Warning: pymel.core.general : Could not create desired MFn. Defaulting to MFnDependencyNode.
+    deformer = cmds.deformer(target.name(), type='proximityWrap', name=target.name(stripNamespace=True) + '_pWrap')[0]
+    cmds.setAttr(deformer + '.maxDrivers', 1)
+    cmds.setAttr(deformer + '.falloffScale', 1.4)
+    cmds.setAttr(deformer + '.smoothInfluences', 5)
+    cmds.setAttr(deformer + '.smoothNormals', 5)
+
+    proximity_interface = node_interface.NodeInterface(deformer)
+    proximity_interface.addDriver(source.getShapes()[-1].name())  # last shape should be the deformed shape
+    return deformer
 
 
 def createTensionDisplay(transforms=None, shape_display=pm.warning, skin_display=pm.warning):

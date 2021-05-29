@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import json
+import getpass
 import inspect
 import operator
 import platform
@@ -81,6 +82,8 @@ def getApp():
         return 'Houdini'
     elif 'UnrealEnginePython' in path:
         return 'UE4'
+    elif '3dx' in path and 'Max' in path:
+        return '3dxMax'
     else:
         raise ValueError('Current compatible software is Maya or Houdini')
 
@@ -170,7 +173,7 @@ def getAllFilesEndingWithWord(word, starting_directory):
     matched = []
 
     for directory, _, files in os.walk(starting_directory):
-        [matched.append(os.path.join(directory, fn).replace('\\', '/')) for fn in files if fn.lower().endswith(word)]
+        [matched.append(os.path.join(directory, fn).replace('\\', '/')) for fn in files if fn.endswith(word)]
 
     return matched
 
@@ -371,12 +374,11 @@ def openDocumentation():
     webbrowser.open(pcfg.documentation_link, new=2)
 
 
-def welcome():
+def getWelcomeMessage():
     """
     Convenience method for welcoming user to piper.
     """
-    print(os.environ['USER'] + '\'s Piper is ready to use with ' + getApp())
-    print('\n')
+    return getpass.getuser() + '\'s Piper is ready to use with ' + getApp()
 
 
 class Link(object):

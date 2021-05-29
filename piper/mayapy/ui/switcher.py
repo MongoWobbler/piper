@@ -44,17 +44,11 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
         # hide/play state
         controls = control.getAll()
-        state = all([ctrl.hideOnPlayback.get() for ctrl in controls])
+        state = all([ctrl.hideOnPlayback.get() for ctrl in controls]) if controls else False
         self.hide_play_button.setChecked(state)
 
         # inner controls state
-        if not pm.objExists(pcfg.inner_controls):
-            super(MayaSwitcher, self).restorePrevious()
-            return
-
-        # TODO: Browse through all the namespaces searching for inner control sets
-        control_set = pm.PyNode(pcfg.inner_controls)
-        controls = control_set.members()
+        controls = control.getAllInnerControls()
         state = not all([ctrl.visibility.get() for ctrl in controls])
         self.all_inner_button.setChecked(state)
         super(MayaSwitcher, self).restorePrevious()
@@ -98,14 +92,14 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
             # grabs children of node and node to see if any are dynamic pivots
             for child in node.getChildren() + [node]:
-                child_name = child.nodeName()
+                child_name = child.name(stripNamespace=True)
 
                 if child_name.endswith(pcfg.dynamic_pivot_suffix + pcfg.control_suffix):
                     self.pivots.add(child_name)
                     self.rests.add(child.attr(pcfg.dynamic_pivot_rest).get())
 
                 # adding inner controls for visibility toggle
-                if child.startswith(pcfg.fk_prefix) and child != node:
+                if child_name.startswith(pcfg.fk_prefix) and child != node:
                     visibility = child.visibility.get()
                     inners_state.append(visibility)
                     self.inners.append(child)
@@ -182,7 +176,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
     def onSelectAllPressed(self):
         """
-        Selected all the controls.
+        Selects all the controls.
         """
         controls = control.getAll()
         pm.select(controls)
@@ -193,17 +187,13 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         rigs = pm.ls(type='piperRig')
         state = not self.all_controls_button.isChecked()
-        [attr.set(state) for gig in rigs for attr in gig.listAttr(v=True, k=True, st='*' + pcfg.visibility_suffix)]
+        [attr.set(state) for r in rigs for attr in r.listAttr(ud=True, v=True, k=True, st='*' + pcfg.visibility_suffix)]
 
     def onInnerControlsPressed(self):
         """
         Toggles between showing/hiding all inner controls.
         """
-        if not pm.objExists(pcfg.inner_controls):
-            return
-
-        control_set = pm.PyNode(pcfg.inner_controls)
-        controls = control_set.members()
+        controls = control.getAllInnerControls()
         state = not self.all_inner_button.isChecked()
         [ctrl.visibility.set(state) for ctrl in controls]
 
@@ -232,7 +222,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
 
     def onResetPressed(self):
         """
-        Sets the selected controls to zero/bind pose.
+        Sets the selected controls to zero/bind pose. If no controls selected, zeroes out all controls in scene.
         """
         rig.zeroOut()
 

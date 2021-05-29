@@ -111,14 +111,14 @@ MStatus PiperIK::initialize()
 
 	start_initial_length = numeric_fn.create("startInitialLength", "sil", MFnNumericData::kDouble, 0);
 	numeric_fn.setStorable(true);
-	numeric_fn.setKeyable(true);
+	numeric_fn.setWritable(true);
 	numeric_fn.setHidden(true);
 	numeric_fn.setMin(0.001);
 	addAttribute(start_initial_length);
 
 	end_initial_length = numeric_fn.create("endInitialLength", "eil", MFnNumericData::kDouble, 0);
 	numeric_fn.setStorable(true);
-	numeric_fn.setKeyable(true);
+	numeric_fn.setWritable(true);
     numeric_fn.setHidden(true);
 	numeric_fn.setMin(0.001);
 	addAttribute(end_initial_length);
@@ -152,7 +152,7 @@ MStatus PiperIK::initialize()
 
     start_control_scale = numeric_fn.create("startControlScale", "scs", MFnNumericData::kDouble, 1);
     numeric_fn.setStorable(true);
-    numeric_fn.setKeyable(true);
+    numeric_fn.setWritable(true);
     numeric_fn.setHidden(true);
     addAttribute(start_control_scale);
 
@@ -176,14 +176,14 @@ MStatus PiperIK::initialize()
 
 	global_scale = numeric_fn.create("globalScale", "gbs", MFnNumericData::kDouble, 1);
 	numeric_fn.setStorable(true);
-	numeric_fn.setKeyable(true);
+	numeric_fn.setWritable(true);
     numeric_fn.setHidden(true);
 	numeric_fn.setMin(0.001);
 	addAttribute(global_scale);
 
     pole_control_scale = numeric_fn.create("poleControlScale", "pcs", MFnNumericData::kDouble, 1);
     numeric_fn.setStorable(true);
-    numeric_fn.setKeyable(true);
+    numeric_fn.setWritable(true);
     numeric_fn.setHidden(true);
     addAttribute(pole_control_scale);
 

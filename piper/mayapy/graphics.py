@@ -53,7 +53,7 @@ class PiperShader(object):
         scene_path = pm.sceneName()
 
         if not scene_path:
-            return pm.warning('Scene is not saved. Please save scene to search for textures') if warn else None
+            return pm.error('Scene is not saved. Please save scene to search for textures') if warn else None
 
         # using abspath lets the texture directory use terminal paths like "../Textures"
         self.textures_directory = os.path.abspath(os.path.join(scene_path, pcfg.textures_directory))

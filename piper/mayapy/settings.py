@@ -13,6 +13,14 @@ plugin.load('dx11Shader')
 callbacks = []
 
 
+def welcome():
+    """
+    Displays the welcome message.
+    """
+    message = pcu.getWelcomeMessage()
+    pm.displayInfo(message)
+
+
 def removeCallbacks():
     """
     Deletes/removes all callbacks that piper has registered.

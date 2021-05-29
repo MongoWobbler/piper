@@ -10,6 +10,7 @@ import piper.core.fbx_sdk as fbx_sdk
 import piper.mayapy.plugin as plugin
 import piper.mayapy.graphics as graphics
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.animation as animation
 import piper.mayapy.pipe.fbxpreset as fbxpreset
 import piper.mayapy.pipe.paths as paths
 
@@ -26,6 +27,7 @@ class Export(object):
         self.mesh_settings = None
         self.skinned_mesh_settings = None
         self.animation_settings = None
+        self.animation_errors = {}
         self.export_method = self._write
 
     def write(self, export_path, settings):
@@ -149,7 +151,7 @@ class Export(object):
             piper_meshes = pipernode.get('piperMesh', ignore=ignore)
 
         if not piper_meshes:
-            return pm.warning('No Piper Meshes found! Please select or make Piper Export Node') if warn else None
+            pm.warning('No Piper Meshes found! Please select or make Piper Export Node') if warn else None
 
         return [self._mesh(piper_mesh, self.mesh_settings, textures) for piper_mesh in piper_meshes]
 
@@ -174,7 +176,7 @@ class Export(object):
             skinned_meshes = pipernode.get('piperSkinnedMesh', ignore=ignore)
 
         if not skinned_meshes:
-            return pm.warning('No Piper Skin nodes found! Please select or make Piper Export Node') if warn else None
+            pm.warning('No Piper Skin nodes found! Please select or make Piper Export Node') if warn else None
 
         # export skinned meshes and delete any joints in the fbx file that have the delete attribute on them
         for skinned_mesh in skinned_meshes:
@@ -202,16 +204,22 @@ class Export(object):
         """
         export_paths = []
         pm.refresh(suspend=True)
+        self.animation_errors.clear()
         start = pm.playbackOptions(q=True, min=True)
         end = pm.playbackOptions(q=True, max=True)
 
         if not animations:
             animations = pipernode.get('piperAnimation', ignore=ignore)
 
+        # check to make sure animation is healthy
+        if pcfg.check_anim_health_on_export:
+            namespaces = {rig.namespace() for anim in animations for rig in anim.getChildren(ad=True, type='piperRig')}
+            self.animation_errors = animation.health(namespaces, resume=False)
+
         for anim in animations:
             anim_name = anim.name(stripNamespace=True)
             skinned_meshes = anim.getChildren(ad=True, type='piperSkinnedMesh')
-            skinned_mesh = list(filter(lambda node: node.name().startswith(pcfg.skeleton_namespace), skinned_meshes))
+            skinned_mesh = list(filter(lambda node: pcfg.skeleton_namespace in node.namespace(), skinned_meshes))
 
             if len(skinned_mesh) != 1:
                 pm.warning('Found {} skinned meshes in {}!'.format(len(skinned_mesh), anim_name)) if warn else None
@@ -245,8 +253,7 @@ class Export(object):
                         pm.deleteAttr(attr)
 
                 # connect channels from original to duplicate
-                for attr in ['t', 'r', 's']:
-                    joint.attr(attr) >> duplicate.attr(attr)
+                [joint.attr(attr) >> duplicate.attr(attr) for attr in ['t', 'r', 's']]
 
             # get clip data
             starts = []
@@ -278,7 +285,7 @@ class Export(object):
         pm.refresh(suspend=False)
 
         if not export_paths:
-            return pm.warning('No skinned meshes found under any animation nodes! Export failed. ') if warn else None
+            pm.warning('No skinned meshes found under any animation nodes! Export failed. ') if warn else None
 
         return export_paths
 
@@ -310,12 +317,21 @@ class Export(object):
         if piper_animation:
             anim_export = self.animation(piper_animation, warn=False)
 
-        pm.select(selected)  # selected originally selected nodes
+        pm.select(selected)  # select originally selected nodes
         exports = mesh_export + skin_export + anim_export
 
-        if len(exports) > 1:
+        if len(exports) > 0:
             size = sum([pcu.getFileSize(export_path, string=False) for export_path in exports])
-            pm.displayInfo('Finished exporting {} files for a total of {} MB'.format(str(len(exports)), str(size)))
+            text = 'Finished exporting {} file(s) for a total of {} MB '.format(str(len(exports)), str(size))
+            display = pm.displayInfo
+
+            if self.animation_errors:
+                display = pm.warning
+                text += 'with export warnings! See Script Editor for details.'
+
+            display(text)
+        else:
+            pm.warning('No files exported. Export must have failed.')
 
         return exports
 

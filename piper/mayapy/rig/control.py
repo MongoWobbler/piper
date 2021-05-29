@@ -10,24 +10,38 @@ from . import xform
 from . import curve
 
 
-def getAll(namespace=''):
+def getAll(namespaces=None):
     """
     Gets all the controls found in the control set with the given namespace.
 
     Args:
-        namespace (string): Name of namespace to append as prefix to the control set name.
+        namespaces (Iterable): Names of namespace to append as prefix to the control set name.
 
     Returns:
-        (list): All controls
+        (set): All controls.
     """
-    control_set = namespace + ':' + pcfg.control_set if namespace else pcfg.control_set
+    if namespaces:
+        sets = [pm.PyNode(n + ':' + pcfg.control_set) for n in namespaces if pm.objExists(n + ':' + pcfg.control_set)]
+    else:
+        sets = pm.ls(pcfg.control_set, recursive=True)
 
-    if not pm.objExists(control_set):
-        return []
-
-    control_set = pm.PyNode(control_set)
-    controls = control_set.members(flatten=True)
+    controls = {ctrl for control_set in sets for ctrl in control_set.members(flatten=True)}
     return controls
+
+
+def getAllInnerControls():
+    """
+    Gets all the inner controls found in scene.
+
+    Returns:
+        (set): All inner controls.
+    """
+    exists = pm.objExists(pcfg.inner_controls) or pm.objExists('*:' + pcfg.inner_controls)
+    if not exists:
+        return set()
+
+    control_sets = pm.ls(pcfg.inner_controls, recursive=True)
+    return {ctrl for control_set in control_sets for ctrl in control_set.members()}
 
 
 def calculateSize(joint, scale=1, use_skins=True, try_root=True):
@@ -143,7 +157,7 @@ def create(transform,
     """
     control = shape(name=name + pcfg.control_suffix, *args, **kwargs)
     curve.color(control, color)
-    # pm.controller(control)
+    pm.controller(control)
 
     if not size:
         size = calculateSize(transform)
@@ -170,6 +184,9 @@ def create(transform,
         else:
             pm.matchTransform(control, transform)
             pm.parent(control, parent)
+
+        pm.select(control, parent)
+        pm.mel.eval('TagAsControllerParent')
     else:
         if matrix_offset:
             control.offsetParentMatrix.set(transform.worldMatrix.get())

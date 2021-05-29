@@ -15,7 +15,6 @@ def piperTools():
     """
     Loads all piper plug-ins, loads piper settings, creates the menu, and welcomes the user
     """
-    import piper.core.util as pcu
     import piper.mayapy.plugin as plugin
     import piper.mayapy.ui.menu as mymenu
     import piper.mayapy.settings as settings
@@ -23,4 +22,4 @@ def piperTools():
     plugin.loadAll()
     settings.startup()
     mymenu.create()
-    pcu.welcome()
+    settings.welcome()

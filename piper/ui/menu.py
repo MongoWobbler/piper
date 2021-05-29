@@ -22,7 +22,7 @@ class PiperMenu(QtWidgets.QMenu):
     def onAfterPressed(self, method):
         pass
 
-    def add(self, name, on_pressed):
+    def add(self, name, on_pressed, *args, **kwargs):
         """
         Convenience method for adding a new item to the menu.
 
@@ -36,7 +36,7 @@ class PiperMenu(QtWidgets.QMenu):
         """
         def wrapper():
             self.onBeforePressed()
-            on_pressed()
+            on_pressed(*args, **kwargs)
             self.onAfterPressed(on_pressed)
 
         name = name.decode('utf-8') if sys.version.startswith('2') else name
@@ -161,6 +161,7 @@ class _PiperMainMenu(PiperMenu):
         self.curves_menu = None
         self.bones_menu = None
         self.rig_menu = None
+        self.reference_menu = None
         self.animation_menu = None
         self.graphics_menu = None
         self.settings_menu = None
@@ -173,6 +174,7 @@ class _PiperMainMenu(PiperMenu):
         self.addMenuP(self.curves_menu)
         self.addMenuP(self.bones_menu)
         self.addMenuP(self.rig_menu)
+        self.addMenuP(self.reference_menu)
         self.addMenuP(self.animation_menu)
         self.addMenuP(self.graphics_menu)
         self.addMenuP(self.settings_menu)

@@ -42,7 +42,7 @@ MStatus PiperFK::initialize()
 
     initial_length = numeric_fn.create("initialLength", "ile", MFnNumericData::kDouble, 0.001);
     numeric_fn.setStorable(true);
-    numeric_fn.setKeyable(true);
+    numeric_fn.setWritable(true);
     numeric_fn.setHidden(true);
     numeric_fn.setMin(0.001);
     addAttribute(initial_length);

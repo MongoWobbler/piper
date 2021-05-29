@@ -1,6 +1,9 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+
+from PySide2 import QtWidgets
+
 import pymel.core as pm
 
 import piper_config as pcfg
@@ -20,8 +23,9 @@ import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
+import piper.mayapy.animation as animation
+import piper.mayapy.animation.resolution as resolution
 
-from PySide2 import QtWidgets
 from piper.mayapy.pipe.store import store
 from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperExportMenu, getPiperMainMenu
 
@@ -206,6 +210,19 @@ class MayaRigMenu(MayaPiperMenu):
         self.add('Lock Mesh(es)', rig.lockMeshes)
         self.add('Unlock Mesh(es)', rig.unlockMeshes)
 
+class MayaReferenceMenu(MayaPiperMenu):
+
+    def __init__(self, title='Reference', *args, **kwargs):
+        super(MayaReferenceMenu, self).__init__(title, *args, **kwargs)
+        self.build()
+
+    def build(self):
+        rig_suffixes = (pcfg.rig_suffix + '.mb', pcfg.rig_suffix + '.ma')
+        rigs = pcu.getAllFilesEndingWithWord(rig_suffixes, store.get(pcfg.art_directory))
+        for rig in rigs:
+            name = os.path.basename(os.path.abspath(rig + '/../..'))
+            self.add(name, animation.referenceRig, rig)
+
 
 class MayaAnimationMenu(MayaPiperMenu):
 
@@ -216,6 +233,11 @@ class MayaAnimationMenu(MayaPiperMenu):
     def build(self):
         self.add('Clipper', myclipper.show)
         self.add('Space Switcher', myswitcher.show)
+        self.addSeparator()
+        self.add('Reference High-Poly', resolution.createHigh)
+        self.add('Remove High-Poly', resolution.removeHigh)
+        self.addSeparator()
+        self.add('Health Check', animation.health)
 
 
 class MayaGraphicsMenu(MayaPiperMenu):
@@ -291,6 +313,7 @@ def create():
     piper_menu.bones_menu = MayaBonesMenu()
     piper_menu.rig_menu = MayaRigMenu()
     piper_menu.animation_menu = MayaAnimationMenu()
+    piper_menu.reference_menu = MayaReferenceMenu()
     piper_menu.graphics_menu = MayaGraphicsMenu()
     piper_menu.settings_menu = MayaSettingsMenu()
     piper_menu.build()

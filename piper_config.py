@@ -47,6 +47,7 @@ maya_unwanted_plugins = ['xgenToolkit',
                          'hairPhysicalShader',
                          'mayaCharacterization',
                          'mayaHIK',
+                         'gameVertexCount'
                          'OpenEXRLoader',
                          'retargeterNodes',
                          'sceneAssembly',
@@ -71,6 +72,8 @@ maya_default_initial_material = 'lambert'
 # Geometry
 low_poly_suffix = '_low'
 high_poly_suffix = '_high'
+high_poly_namespace = 'HIGH'
+high_poly_file_suffix = '_High'
 
 # Skeleton
 skeleton_namespace = 'SKL'
@@ -81,7 +84,9 @@ required_preferred_angle = ['calf', 'lowerarm', 'elbow', 'knee']
 scale_buffer_suffix = '_scale_buffer'
 
 # Rig
-rig_suffix = '_Rig'
+rig_suffix = 'Rig'
+rig_namespace = 'RIG'
+skinned_mesh_grp = 'Skinned_Mesh_grp'
 inner_suffix = '_inner'
 banker_suffix = '_bank'
 reverse_suffix = '_reverse'
@@ -105,6 +110,7 @@ mesh_prefix = 'SM_'
 skinned_mesh_prefix = 'SKM_'
 animation_prefix = 'A_'
 delete_node_attribute = 'delete'
+check_anim_health_on_export = True
 
 # messages
 message_source = 'msgSource'

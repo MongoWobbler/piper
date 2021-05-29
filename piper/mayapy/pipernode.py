@@ -4,11 +4,11 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
-import piper.mayapy.rig.curve as curve
 import piper.mayapy.attribute as attribute
+from .rig import curve  # must do relative import in python 2
 
 
-def get(node_type, ignore=None):
+def get(node_type, ignore=None, search=True):
     """
     Gets the selected given node type or all the given node types in the scene if none selected.
 
@@ -16,6 +16,8 @@ def get(node_type, ignore=None):
         node_type (string): Type of node to get.
 
         ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
+
+        search (boolean): If True, and nothing is selected, will attempt to search the scene for all of the given type.
 
     Returns:
         (list) All nodes of the given node type.
@@ -34,7 +36,7 @@ def get(node_type, ignore=None):
                 piper_nodes.add(first_type_parent) if first_type_parent else None
 
     # search the whole scene for the piper node
-    else:
+    elif search:
         piper_nodes = pm.ls(type=node_type)
 
     # don't include any nodes that are a child of the given ignore type
@@ -176,6 +178,7 @@ def createShaped(node_type, name=None, control_shape=curve.circle):
         (PyNode): Transform node created with control shape curves as child(ren).
     """
     transform = create(node_type, name=name)
+    transform._.lock()
     ctrl = control_shape()
     curves = ctrl.getChildren(type='nurbsCurve')
     pm.parent(curves, transform, shape=True, add=True)
@@ -306,8 +309,10 @@ def createRig(name=''):
     Returns:
         (PyNode): Rig node created.
     """
-    name = name if name else 'piper' + pcfg.rig_suffix
+    name = name if name else 'piperRig'
     piper_rig = create('piperRig', 'burnt orange', name=name)
+    piper_rig._.lock()
+    attribute.nonKeyable(piper_rig.highPolyVisibility)
     attribute.lockAndHideCompound(piper_rig)
     attribute.addSeparator(piper_rig)
     return piper_rig

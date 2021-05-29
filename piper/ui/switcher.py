@@ -61,6 +61,8 @@ class Switcher(QtWidgets.QDialog):
         """
         button = QtWidgets.QToolButton()
         button.setCheckable(True)
+        button.setToolTip(on_pressed.__doc__)
+        button.setStatusTip(on_pressed.__doc__)
         icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format(icon))
         button.setIcon(icon)
         button.clicked.connect(on_pressed)
@@ -75,6 +77,8 @@ class Switcher(QtWidgets.QDialog):
 
         # select all controls button
         select_button = QtWidgets.QToolButton()
+        select_button.setToolTip(self.onSelectAllPressed.__doc__)
+        select_button.setStatusTip(self.onSelectAllPressed.__doc__)
         icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format('selectAll'))
         select_button.setIcon(icon)
         select_button.clicked.connect(self.onSelectAllPressed)
@@ -89,6 +93,8 @@ class Switcher(QtWidgets.QDialog):
 
         # reset/zero out/bind pose button
         reset_button = QtWidgets.QToolButton()
+        reset_button.setToolTip(self.onResetPressed.__doc__)
+        reset_button.setStatusTip(self.onResetPressed.__doc__)
         icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format('reset'))
         reset_button.setIcon(icon)
         reset_button.clicked.connect(self.onResetPressed)
@@ -111,7 +117,7 @@ class Switcher(QtWidgets.QDialog):
         self.keyframe_box.setChecked(True)
         main_layout.addWidget(self.keyframe_box, 1, 2)
 
-        separator(main_layout, 2, 0, 1, 3)
+        # separator(main_layout, 2, 0, 1, 3)
         main_layout.setRowMinimumHeight(2, 0)
 
         # inherit translate from space if True
