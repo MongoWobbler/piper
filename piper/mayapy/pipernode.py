@@ -130,7 +130,7 @@ def reciprocal(source=None, output=None):
         output (pm.general.Attribute): Attribute to plug reciprocal's output into.
 
     Returns:
-        (pm.nodetypes.piperOneMinus): Reciprocal node created.
+        (pm.nodetypes.piperReciprocal): Reciprocal node created.
     """
     return inputOutput('piperReciprocal', source=source, output=output)
 
@@ -197,7 +197,7 @@ def createFK(name=None, control_shape=curve.circle):
         control_shape (method): Method that generates nurbs curve that Piper FK transform will use.
 
     Returns:
-        (PyNode): Piper FK node created.
+        (pm.nodetypes.piperFK): Piper FK node created.
     """
     return createShaped('piperFK', name, control_shape)
 
@@ -212,9 +212,41 @@ def createIK(name=None, control_shape=curve.circle):
         control_shape (method): Method that generates nurbs curve that Piper IK transform will use.
 
     Returns:
-        (PyNode): Piper IK node created.
+        (pm.nodetypes.piperIK): Piper IK node created.
     """
     return createShaped('piperIK', name, control_shape)
+
+
+def createOrientMatrix(position, orientation, name=None):
+    """
+    Creates a piper orient matrix node that keeps given position matrix, but maintains given orientation matrix.
+
+    Args:
+        position (pm.general.Attribute or pm.dt.Matrix): position to plug into orient matrix position attribute.
+
+        orientation (pm.general.Attribute or pm.dt.Matrix): orientation to plug into orient matrix orient attribute.
+
+        name (string): Name to give piper orient matrix node.
+
+    Returns:
+        (pm.nodetypes.piperOrientMatrix): Piper Orient Matrix node created.
+    """
+    if not name:
+        name = 'orientMatrix'
+
+    node = pm.createNode('piperOrientMatrix', name=name)
+
+    if isinstance(position, pm.general.Attribute):
+        position >> node.positionMatrix
+    elif isinstance(position, pm.dt.Matrix):
+        node.positionMatrix.set(position)
+
+    if isinstance(orientation, pm.general.Attribute):
+        orientation >> node.orientMatrix
+    elif isinstance(orientation, pm.dt.Matrix):
+        node.orientMatrix.set(orientation)
+
+    return node
 
 
 def createMesh():
@@ -222,7 +254,7 @@ def createMesh():
     Creates a piper mesh group(s) based on whether user has selection, shift held, and scene saved.
 
     Returns:
-        (PyNode or list): Usually PyNode created. If Shift held, will return list or all piperMesh(es) created.
+        (pm.nt.piperMesh or list): Usually PyNode created. If Shift held, will return list or all piperMesh(es) created.
     """
     selected = pm.selected()
     scene_name = pm.sceneName().namebase
@@ -307,7 +339,7 @@ def createRig(name=''):
         name (string): If given, will use the given name as the name for the rig node.
 
     Returns:
-        (PyNode): Rig node created.
+        (pm.nodetypes.piperRig): Rig node created.
     """
     name = name if name else 'piperRig'
     piper_rig = create('piperRig', 'burnt orange', name=name)
@@ -323,7 +355,7 @@ def createAnimation():
     Creates the node that houses a rig. Used to export animation.
 
     Returns:
-        (PyNode): Animation node created.
+        (pm.nodetypes.piperAnimation): Animation node created.
     """
     scene_name = pm.sceneName().namebase
     name = scene_name if scene_name else 'piperAnimation'

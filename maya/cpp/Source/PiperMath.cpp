@@ -3,6 +3,7 @@
 #include "PiperMath.h"
 #include "util.h"
 
+#include <maya/MFnMatrixAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MGlobal.h>
@@ -217,6 +218,95 @@ MStatus PiperOneMinus::compute(const MPlug &plug, MDataBlock &data)
         double output_value = (input_value * -1.0) + signOf(input_value);
         data.outputValue(output).set(output_value);
         data.outputValue(output).setClean();
+    }
+
+    return MS::kSuccess;
+
+}
+
+// Piper Orient Matrix
+MTypeId PiperOrientMatrix::type_ID(0x0013714A);
+MString PiperOrientMatrix::node_name("piperOrientMatrix");
+MObject PiperOrientMatrix::use_orient;
+MObject PiperOrientMatrix::position_matrix;
+MObject PiperOrientMatrix::orient_matrix;
+MObject PiperOrientMatrix::output;
+
+
+void* PiperOrientMatrix::creator()
+{
+    return new PiperOrientMatrix();
+}
+
+
+MStatus PiperOrientMatrix::initialize()
+{
+    MFnMatrixAttribute matrix_fn;
+    MFnNumericAttribute numeric_fn;
+
+    use_orient = numeric_fn.create("useOrient", "uso", MFnNumericData::kBoolean, 1.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    numeric_fn.setWritable(true);
+    addAttribute(use_orient);
+
+    position_matrix = matrix_fn.create("positionMatrix", "pom");
+    matrix_fn.setStorable(true);
+    matrix_fn.setKeyable(true);
+    addAttribute(position_matrix);
+
+    orient_matrix = matrix_fn.create("orientMatrix", "oim");
+    matrix_fn.setStorable(true);
+    matrix_fn.setKeyable(true);
+    addAttribute(orient_matrix);
+
+    output = matrix_fn.create("output", "out");
+    matrix_fn.setStorable(false);
+    matrix_fn.setKeyable(false);
+    matrix_fn.setWritable(false);
+    addAttribute(output);
+
+    attributeAffects(use_orient, output);
+    attributeAffects(position_matrix, output);
+    attributeAffects(orient_matrix, output);
+
+    return MS::kSuccess;
+}
+
+
+MStatus PiperOrientMatrix::compute(const MPlug &plug, MDataBlock &data)
+{
+    if (plug == output)
+    {
+        bool use_orient_value = data.inputValue(use_orient).asBool();
+        MMatrix position_matrix_value = data.inputValue(position_matrix).asMatrix();
+
+        if (use_orient_value)
+        {
+            MMatrix orient_matrix_value = data.inputValue(orient_matrix).asMatrix();
+
+            MTransformationMatrix position_transform = MTransformationMatrix(position_matrix_value);
+            MTransformationMatrix orient_transform = MTransformationMatrix(orient_matrix_value);
+            MTransformationMatrix output_transform;
+
+            double x, y, z, w;
+            orient_transform.getRotationQuaternion(x, y, z, w);
+            output_transform.setRotationQuaternion(x, y, z, w);
+
+            double scale[3];
+            position_transform.getScale(scale, MSpace::kWorld);
+            output_transform.setScale(scale, MSpace::kWorld);
+            output_transform.setTranslation(position_transform.getTranslation(MSpace::kWorld), MSpace::kWorld);
+
+            data.outputValue(output).set(output_transform.asMatrix());
+        }
+        else
+        {
+            data.outputValue(output).set(position_matrix_value);
+        }
+
+        data.outputValue(output).setClean();
+
     }
 
     return MS::kSuccess;

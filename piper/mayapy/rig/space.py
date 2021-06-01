@@ -5,12 +5,13 @@ import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
+import piper.mayapy.pipernode as pipernode
 
 from . import xform
 from . import switcher
 
 
-def _connect(transform, target, space):
+def _connect(transform, target, space, orient_matrix=None):
     """
     Convenience method for connecting the use transforms attributes from the piper space to matrix blend target.
 
@@ -25,6 +26,9 @@ def _connect(transform, target, space):
     transform.attr(pcfg.space_use_translate) >> target.useTranslate
     transform.attr(pcfg.space_use_rotate) >> target.useRotate
     transform.attr(pcfg.space_use_scale) >> target.useScale
+
+    if orient_matrix:
+        transform.attr(pcfg.space_use_orient) >> orient_matrix.useOrient
 
 
 def exists(transform):
@@ -84,7 +88,7 @@ def getCurrent(transform):
     return None
 
 
-def create(spaces=None, transform=None, direct=False):
+def create(spaces=None, transform=None, direct=False, warn=True):
     """
     Creates the given spaces on the given transform.
 
@@ -94,6 +98,8 @@ def create(spaces=None, transform=None, direct=False):
         transform (pm.nodetypes.Transform): Transform to have ability to switch between given spaces.
 
         direct (boolean): If False, will plug output matrix into offsetParentMatrix, else direct connection.
+
+        warn (boolean): If True, will warn about any existing spaces on given transform that clash with given spaces.
 
     Returns:
           (list): Name of space attribute(s) made.
@@ -106,6 +112,7 @@ def create(spaces=None, transform=None, direct=False):
         if len(selected) < 2:
             pm.error('Not enough transforms selected!')
 
+    orient_matrix = None
     space_attributes = []
     parent = transform.getParent()
     transform_name = transform.name(stripNamespace=True)
@@ -145,15 +152,25 @@ def create(spaces=None, transform=None, direct=False):
         attribute.addSeparator(transform)
         transform.addAttr(pcfg.space_use_translate, at='bool', dv=1, k=True)
         transform.addAttr(pcfg.space_use_rotate, at='bool', dv=1, k=True)
+        transform.addAttr(pcfg.space_use_orient, at='bool', dv=0, k=True)
         transform.addAttr(pcfg.space_use_scale, at='bool', dv=1, k=True)
         transform.addAttr(pcfg.spaces_name, dt='string', k=False, h=True, s=True)
         transform.addAttr(pcfg.space_world_name, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
         _connect(transform, target, transform.attr(pcfg.space_world_name))
         space_attributes.append(pcfg.space_world_name)
 
+    # used for orient
+    has_input_matrix = matrix_blend.inputMatrix.isDestination()
+    position = matrix_blend.inputMatrix.connections(scn=True, p=True, d=False)[0] if has_input_matrix else None
+
     for space in spaces:
         space_name = space.name(stripNamespace=True)
         space_attribute = space_name + pcfg.space_suffix
+
+        if transform.hasAttr(space_attribute):
+            pm.warning(space_attribute + ' already exists on ' + transform_name) if warn else None
+            continue
+
         transform.addAttr(space_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
         target = attribute.getNextAvailableTarget(matrix_blend, 1)
 
@@ -162,13 +179,20 @@ def create(spaces=None, transform=None, direct=False):
         multiply = pm.createNode('multMatrix', n='space_{}_To_{}_MM'.format(transform_name, space_name))
         multiply.matrixIn[0].set(offset)
         space.worldMatrix >> multiply.matrixIn[1]
+        target_plug = multiply.matrixSum
 
         # counter drive parent
         if parent:
             parent.worldInverseMatrix >> multiply.matrixIn[2]
 
-        multiply.matrixSum >> target.targetMatrix
-        _connect(transform, target, transform.attr(space_attribute))
+        # if has input matrix, then create an orient space
+        if has_input_matrix:
+            orient_name = '{}_X_{}_OM'.format(transform_name, space_name)
+            orient_matrix = pipernode.createOrientMatrix(position, multiply.matrixSum, name=orient_name)
+            target_plug = orient_matrix.output
+
+        target_plug >> target.targetMatrix
+        _connect(transform, target, transform.attr(space_attribute), orient_matrix)
         space_attributes.append(space_attribute)
 
     # update the spaces attribute
@@ -178,7 +202,7 @@ def create(spaces=None, transform=None, direct=False):
     return space_attributes
 
 
-def switch(transform, new_space=None, t=True, r=True, s=True, key=False):
+def switch(transform, new_space=None, t=True, r=True, o=False, s=True, key=False):
     """
     Switches the given transform to the given new_space while maintaining the world transform of the given transform.
     Choose to switch driving translate, rotate, or scale attributes on or off too.
@@ -192,6 +216,8 @@ def switch(transform, new_space=None, t=True, r=True, s=True, key=False):
 
         r (boolean): If True, space will affect rotate values.
 
+        o (boolean): If True, space will affect orient values.
+
         s (boolean): If True, space will affect scale values.
 
         key (boolean): If True, will set a key at the previous frame on the transform.
@@ -203,6 +229,7 @@ def switch(transform, new_space=None, t=True, r=True, s=True, key=False):
     position = transform.worldMatrix.get()
     transform.useTranslate.set(t)
     transform.useRotate.set(r)
+    transform.useOrient.set(o)
     transform.useScale.set(s)
     spaces = getAll(transform)
     [transform.attr(space_attribute).set(0) for space_attribute in spaces]

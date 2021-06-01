@@ -52,3 +52,19 @@ public:
     static MObject output;
 
 };
+
+
+class PiperOrientMatrix : public MPxNode
+{
+public:
+    static void* creator();
+    static MStatus initialize();
+    virtual MStatus compute(const MPlug& plug, MDataBlock& data);
+public:
+    static MTypeId type_ID;
+    static MString node_name;
+    static MObject use_orient;
+    static MObject position_matrix;
+    static MObject orient_matrix;
+    static MObject output;
+};

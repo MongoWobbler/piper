@@ -533,7 +533,8 @@ class Rig(object):
             in_controls.append(in_ctrl)
 
             transform_parent = None if transform.name() == pcfg.root_joint_name else transform.getParent()
-            transform.attr(pcfg.length_attribute) >> ctrl.initialLength
+            bind_transform = convert.toBind(transform, return_node=True)
+            bind_transform.attr(pcfg.length_attribute) >> ctrl.initialLength
             spaces = [transform_parent, ctrl_parent]
             spaces = filter(lambda node: not isinstance(node, (pm.nodetypes.PiperSkinnedMesh, type(None))), spaces)
 
@@ -662,8 +663,10 @@ class Rig(object):
 
         piper_ik = controls[-1]
         nodes_to_organize = [controls[0], scale_buffer, piper_ik]
-        mid.attr(pcfg.length_attribute) >> piper_ik.startInitialLength
-        transforms[-1].attr(pcfg.length_attribute) >> piper_ik.endInitialLength
+        mid_bind = convert.toBind(mid, return_node=True)
+        bind_transform = convert.toBind(transforms[-1], return_node=True)
+        mid_bind.attr(pcfg.length_attribute) >> piper_ik.startInitialLength
+        bind_transform.attr(pcfg.length_attribute) >> piper_ik.endInitialLength
 
         if axis.startswith('n'):
             piper_ik.direction.set(-1)

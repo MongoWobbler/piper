@@ -13,6 +13,7 @@ import piper.mayapy.rig as rig
 import piper.mayapy.rig.space as space
 import piper.mayapy.rig.control as control
 import piper.mayapy.rig.switcher as switcher
+import piper.mayapy.pipernode as pipernode
 
 
 class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
@@ -124,6 +125,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         t = self.translate.isChecked()
         r = self.rotate.isChecked()
+        o = self.orient.isChecked()
         s = self.scale.isChecked()
         k = self.keyframe_box.isChecked()
 
@@ -133,7 +135,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
             name = None
 
         pm.undoInfo(openChunk=True)
-        [space.switch(node, name, t=t, r=r, s=s, key=k) for node in self.selected if name is None or node.hasAttr(name)]
+        [space.switch(n, name, t=t, r=r, o=o, s=s, key=k) for n in self.selected if name is None or n.hasAttr(name)]
         pm.undoInfo(closeChunk=True)
 
     def onSwitcherPressed(self, item):
@@ -153,7 +155,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
     def onPivotPressed(self, item):
         """
         Called when dynamic pivot item is clicked. Will set dynamic pivot transforms to 0.
-        #
+
         Args:
             item (QtWidgets.QListWidgetItem): Dynamic pivot to reset when clicked.
         """
@@ -225,6 +227,13 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         Sets the selected controls to zero/bind pose. If no controls selected, zeroes out all controls in scene.
         """
         rig.zeroOut()
+
+    def onRigPressed(self):
+        """
+        Selects the rigs associated with current selection. If nothing selected, selects all piperRigs in scene.
+        """
+        rigs = pipernode.get('piperRig')
+        pm.select(rigs)
 
     def dockCloseEventTriggered(self):
         self.onClosedPressed()

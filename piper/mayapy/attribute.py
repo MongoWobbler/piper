@@ -132,12 +132,11 @@ def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
     bind_transform = convert.toBind(transform, fail_display)
 
     if ctrl_parent:
-        mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + ' bindMatrix_MM')
+        mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + pcfg.bind_matrix_suffix)
         bind_transform.matrix >> mult_matrix.matrixIn[0]
         ctrl_parent.worldMatrix >> mult_matrix.matrixIn[1]
         mult_matrix.matrixSum >> ctrl.offsetParentMatrix
     else:
-        # bind_transform.worldMatrix >> mult_matrix.matrixIn[0]
         bind_transform.worldMatrix >> ctrl.offsetParentMatrix
 
 

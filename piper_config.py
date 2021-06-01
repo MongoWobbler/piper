@@ -24,6 +24,7 @@ switcher_key_box = 'switcher_key_box'
 switcher_match_box = 'switcher_match_box'
 switcher_translate_box = 'switcher_translate_box'
 switcher_rotate_box = 'switcher_rotate_box'
+switcher_orient_box = 'switcher_orient_box'
 switcher_scale_box = 'switcher_scale_box'
 
 store_defaults = {art_directory: None,
@@ -38,6 +39,7 @@ store_defaults = {art_directory: None,
                   switcher_match_box: False,
                   switcher_translate_box: True,
                   switcher_rotate_box: True,
+                  switcher_orient_box: False,
                   switcher_scale_box: True}
 
 # Maya unwanted plug-ins
@@ -79,6 +81,7 @@ high_poly_file_suffix = '_High'
 skeleton_namespace = 'SKL'
 bind_namespace = 'BIND'
 length_attribute = 'bindLength'
+distance_suffix = '_distance'
 bind_attributes = [length_attribute]
 required_preferred_angle = ['calf', 'lowerarm', 'elbow', 'knee']
 scale_buffer_suffix = '_scale_buffer'
@@ -93,6 +96,7 @@ reverse_suffix = '_reverse'
 root_joint_name = 'root'
 dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
+bind_matrix_suffix = '_bindMatrix_MM'
 group_suffix = '_grp'
 visibility_suffix = 'Visibility'
 control_set = 'controls'
@@ -146,6 +150,7 @@ space_suffix = 'Space'
 space_world_name = 'world' + space_suffix
 space_use_translate = 'useTranslate'
 space_use_rotate = 'useRotate'
+space_use_orient = 'useOrient'
 space_use_scale = 'useScale'
 space_blend_matrix_suffix = '_Spaces_BM'
 use_attributes = (space_use_translate, space_use_rotate, space_use_scale, separator_character)

@@ -23,9 +23,9 @@ def createHigh(rigs=None):
          (list): Absolute path of references made.
     """
     warnings = []
+    piper_rigs = []
     references = {}
     high_references = []
-    piper_rig = None
     skeleton_meshes = rig.getSkeletonMeshes(rigs=rigs)
 
     # get all the data more organized based on what file reference each mesh belongs to
@@ -96,6 +96,7 @@ def createHigh(rigs=None):
 
             # create proximity wrap
             piper_rig = meshes[mesh]['rig']
+            piper_rigs.append(piper_rig)
             high_poly = pm.PyNode(high_name)
             deformer = skin.createProximityWrap(mesh, high_poly)
             deformers.append(deformer)
@@ -109,7 +110,7 @@ def createHigh(rigs=None):
         deformers_data = json.dumps(deformers)
         skinned_mesh.wraps.set(deformers_data)
 
-    pm.select(piper_rig)
+    pm.select(piper_rigs)
 
     # finished referencing high poly, display warnings if any found
     warning_length = len(warnings)

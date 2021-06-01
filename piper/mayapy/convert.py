@@ -280,7 +280,7 @@ def toDegrees(transform):
     return [math.degrees(angle) for angle in rotation]
 
 
-def toBind(node, fail_display=None):
+def toBind(node, fail_display=None, return_node=False):
     """
     Converts the given node to the its bind namespace equivalent.
 
@@ -289,13 +289,15 @@ def toBind(node, fail_display=None):
 
         fail_display (method): How to display failure of finding bind node.
 
+        return_node (boolean): If True, will return the given node if bind conversion fails.
+
     Returns:
         node (pm.nodetypes.DependNode): Node with bind namespace.
     """
-    bind_name = node.name().replace(pcfg.skeleton_namespace, pcfg.bind_namespace)
+    bind_name = node.name().replace(pcfg.skeleton_namespace + ':', pcfg.bind_namespace + ':')
 
     if not pm.objExists(bind_name) and fail_display:
         fail_display(bind_name + ' does not exist!')
-        return
+        return node if return_node else None
 
     return pm.PyNode(bind_name)

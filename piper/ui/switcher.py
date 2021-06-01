@@ -6,7 +6,6 @@ from PySide2 import QtWidgets, QtCore, QtGui
 
 import piper_config as pcfg
 import piper.core.util as pcu
-from piper.ui.widget import separator
 
 
 class Switcher(QtWidgets.QDialog):
@@ -24,6 +23,7 @@ class Switcher(QtWidgets.QDialog):
         self.match_only = None
         self.translate = None
         self.rotate = None
+        self.orient = None
         self.scale = None
         self.spaces_list = None
         self.switcher_list = None
@@ -41,11 +41,12 @@ class Switcher(QtWidgets.QDialog):
                            self.match_only: pcfg.switcher_match_box,
                            self.translate: pcfg.switcher_translate_box,
                            self.rotate: pcfg.switcher_rotate_box,
+                           self.orient: pcfg.switcher_orient_box,
                            self.scale: pcfg.switcher_scale_box}
 
         self.restorePrevious()
 
-    def createButton(self, icon, layout, on_pressed):
+    def createButton(self, icon, layout, on_pressed, checkable=True):
         """
         Convenience method for creating a toggleable button.
 
@@ -56,11 +57,13 @@ class Switcher(QtWidgets.QDialog):
 
             on_pressed (method): Called when button is pressed.
 
+            checkable (boolean): If True, will set button to be checkable type.
+
         Returns:
             (QtWidgets.QPushButton): Button created.
         """
         button = QtWidgets.QToolButton()
-        button.setCheckable(True)
+        button.setCheckable(checkable)
         button.setToolTip(on_pressed.__doc__)
         button.setStatusTip(on_pressed.__doc__)
         icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format(icon))
@@ -70,92 +73,93 @@ class Switcher(QtWidgets.QDialog):
 
         return button
 
+    @staticmethod
+    def createList(layout, on_pressed):
+        """
+        Convenience method for creating a QListWidget with no focus that gets added to given layout.
+
+        Args:
+            layout (QtWidgets.QLayout): Layout to add QListWidget to.
+
+            on_pressed (method): Called when any item of list is clicked.
+
+        Returns:
+            (QtWidgets.QListWidget): List widget created.
+        """
+        widget = QtWidgets.QListWidget()
+        widget.itemClicked.connect(on_pressed)
+        widget.setFocusPolicy(QtCore.Qt.NoFocus)
+        layout.addWidget(widget, alignment=QtGui.Qt.AlignTop)
+        return widget
+
+    @staticmethod
+    def createBox(name, layout, checked=True, on_pressed=None):
+        """
+        Convenience method for creating a QCheckBox with given name in given layout with given checked state.
+
+        Args:
+            name (string): Name/text of QCheckbox.
+
+            layout (QWidgets.QLayout): Layout to add QCheckBox to.
+
+            checked (boolean): Checked state of box.
+
+            on_pressed (method): If given, will connect to stateChanged signal of QCheckBox.
+
+        Returns:
+            (QtWidgets.QCheckBox): QCheckBox created.
+        """
+        box = QtWidgets.QCheckBox(name)
+        box.setChecked(checked)
+        layout.addWidget(box, alignment=QtGui.Qt.AlignJustify)
+
+        if on_pressed:
+            box.stateChanged.connect(on_pressed)
+
+        return box
+
     def build(self):
-        main_layout = QtWidgets.QGridLayout(self)
+        # creating layouts
+        main_layout = QtWidgets.QVBoxLayout(self)
         buttons_layout = QtWidgets.QHBoxLayout()
+        function_boxes_layout = QtWidgets.QHBoxLayout()
+        transform_boxes_layout = QtWidgets.QHBoxLayout()
         buttons_layout.setSpacing(0)
 
-        # select all controls button
-        select_button = QtWidgets.QToolButton()
-        select_button.setToolTip(self.onSelectAllPressed.__doc__)
-        select_button.setStatusTip(self.onSelectAllPressed.__doc__)
-        icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format('selectAll'))
-        select_button.setIcon(icon)
-        select_button.clicked.connect(self.onSelectAllPressed)
-        buttons_layout.addWidget(select_button)
-
         # toggle buttons
+        self.createButton('selectAll', buttons_layout, self.onSelectAllPressed, checkable=False)
         self.all_controls_button = self.createButton('allControls', buttons_layout, self.onAllControlsPressed)
         self.all_inner_button = self.createButton('innerControls', buttons_layout, self.onInnerControlsPressed)
         self.selected_inner_button = self.createButton('selectedInner', buttons_layout, self.onSelectedInnerPressed)
         self.joints_button = self.createButton('joints', buttons_layout, self.onJointsPressed)
         self.hide_play_button = self.createButton('hideOnPlay', buttons_layout, self.onHideOnPlayPressed)
+        self.createButton('reset', buttons_layout, self.onResetPressed, checkable=False)
+        self.createButton('out_piperRig', buttons_layout, self.onRigPressed, checkable=False)
 
-        # reset/zero out/bind pose button
-        reset_button = QtWidgets.QToolButton()
-        reset_button.setToolTip(self.onResetPressed.__doc__)
-        reset_button.setStatusTip(self.onResetPressed.__doc__)
-        icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format('reset'))
-        reset_button.setIcon(icon)
-        reset_button.clicked.connect(self.onResetPressed)
-        buttons_layout.addWidget(reset_button)
+        main_layout.addLayout(buttons_layout)
 
-        main_layout.addLayout(buttons_layout, 0, 0, 1, 3)
+        # function checkboxes
+        self.match_only = self.createBox('Match Only', function_boxes_layout, False)
+        self.self_update = self.createBox('Update', function_boxes_layout, on_pressed=self.onUpdatePressed)
+        self.keyframe_box = self.createBox('Key', function_boxes_layout)
 
-        # used only for fk/ik so that we match position without changing FK/IK attribute
-        self.match_only = QtWidgets.QCheckBox('Match Only')
-        main_layout.addWidget(self.match_only, 1, 0)
+        main_layout.addLayout(function_boxes_layout)
 
-        # update on selection changed if this box is set to True
-        self.self_update = QtWidgets.QCheckBox('Update')
-        self.self_update.setChecked(True)
-        self.self_update.stateChanged.connect(self.onUpdatePressed)
-        main_layout.addWidget(self.self_update, 1, 1)
+        # transform checkboxes
+        self.translate = self.createBox('T', transform_boxes_layout)
+        self.rotate = self.createBox('R', transform_boxes_layout)
+        self.orient = self.createBox('O', transform_boxes_layout, False)
+        self.scale = self.createBox('S', transform_boxes_layout)
 
-        # keyframe checkbox
-        self.keyframe_box = QtWidgets.QCheckBox('Key')
-        self.keyframe_box.setChecked(True)
-        main_layout.addWidget(self.keyframe_box, 1, 2)
-
-        # separator(main_layout, 2, 0, 1, 3)
-        main_layout.setRowMinimumHeight(2, 0)
-
-        # inherit translate from space if True
-        self.translate = QtWidgets.QCheckBox('Translate')
-        self.translate.setChecked(True)
-        main_layout.addWidget(self.translate, 3, 0)
-
-        # inherit rotate from space if True
-        self.rotate = QtWidgets.QCheckBox('Rotate')
-        self.rotate.setChecked(True)
-        main_layout.addWidget(self.rotate, 3, 1)
-
-        # inherit scale from space if True
-        self.scale = QtWidgets.QCheckBox('Scale')
-        self.scale.setChecked(True)
-        main_layout.addWidget(self.scale, 3, 2)
+        main_layout.addLayout(transform_boxes_layout)
 
         # widget list views, setting focus off so user can use keyboard shortcuts after changing space
-        self.spaces_list = QtWidgets.QListWidget()
-        self.spaces_list.itemClicked.connect(self.onSpacePressed)
-        self.spaces_list.setFocusPolicy(QtCore.Qt.NoFocus)
-        main_layout.addWidget(self.spaces_list, 4, 0, 1, 3)
+        self.spaces_list = self.createList(main_layout, self.onSpacePressed)
+        self.switcher_list = self.createList(main_layout, self.onSwitcherPressed)
+        self.pivots_list = self.createList(main_layout, self.onPivotPressed)
+        self.rest_list = self.createList(main_layout, self.onPivotRestPressed)
 
-        self.switcher_list = QtWidgets.QListWidget()
-        self.switcher_list.itemClicked.connect(self.onSwitcherPressed)
-        self.switcher_list.setFocusPolicy(QtCore.Qt.NoFocus)
-        main_layout.addWidget(self.switcher_list, 5, 0, 1, 3)
-
-        self.pivots_list = QtWidgets.QListWidget()
-        self.pivots_list.itemClicked.connect(self.onPivotPressed)
-        self.pivots_list.setFocusPolicy(QtCore.Qt.NoFocus)
-        main_layout.addWidget(self.pivots_list, 6, 0, 1, 2)
-
-        self.rest_list = QtWidgets.QListWidget()
-        self.rest_list.itemClicked.connect(self.onPivotRestPressed)
-        self.rest_list.setFocusPolicy(QtCore.Qt.NoFocus)
-        main_layout.addWidget(self.rest_list, 7, 2)
-        main_layout.setRowStretch(8, 1)
+        main_layout.addStretch()
 
     def restorePrevious(self):
         """
@@ -275,6 +279,12 @@ class Switcher(QtWidgets.QDialog):
         pass
 
     def onResetPressed(self):
+        """
+        App dependent.
+        """
+        pass
+
+    def onRigPressed(self):
         """
         App dependent.
         """

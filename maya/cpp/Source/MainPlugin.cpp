@@ -124,6 +124,17 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper One Minus node.");
     }
 
+    // Orient Matrix
+    status = plugin_fn.registerNode(PiperOrientMatrix::node_name,
+                                    PiperOrientMatrix::type_ID,
+                                    PiperOrientMatrix::creator,
+                                    PiperOrientMatrix::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper Orient Matrix node.");
+    }
+
     // Tension Node
     status = plugin_fn.registerNode(TensionNode::node_name,
                                     TensionNode::type_ID,
