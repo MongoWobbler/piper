@@ -170,6 +170,11 @@ switcher_ik = 'ikControls'
 switcher_reverses = 'reverses'
 switcher_attributes = [switcher_transforms, switcher_fk, switcher_ik, switcher_reverses, fk_ik_attribute]
 
+# Twist
+twist_blend_suffix = '_twist_BM'
+twist_weight_attribute = 'twistWeight'
+twist_blend_weight_attribute = 'distanceWeight'
+
 # Textures
 art_textures_directory_name = '/Textures'
 game_textures_directory_name = '/Materials'

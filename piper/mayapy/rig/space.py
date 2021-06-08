@@ -124,9 +124,9 @@ def create(spaces=None, transform=None, direct=False, warn=True):
         attribute.addSpaceMessage(matrix_blend, transform)
         target = matrix_blend.attr('target[0]')
 
-        if transform.offsetParentMatrix.isDestination():
-            plug_source = transform.offsetParentMatrix.connections(scn=True, plugs=True, destination=False)[0]
-            plug_source >> matrix_blend.inputMatrix
+        offset_parent_matrix_plug = attribute.getSourcePlug(transform.offsetParentMatrix)
+        if offset_parent_matrix_plug:
+            offset_parent_matrix_plug >> matrix_blend.inputMatrix
         else:
             offset_matrix = transform.offsetParentMatrix.get()
             matrix_blend.inputMatrix.set(offset_matrix)
@@ -160,9 +160,7 @@ def create(spaces=None, transform=None, direct=False, warn=True):
         space_attributes.append(pcfg.space_world_name)
 
     # used for orient
-    has_input_matrix = matrix_blend.inputMatrix.isDestination()
-    position = matrix_blend.inputMatrix.connections(scn=True, p=True, d=False)[0] if has_input_matrix else None
-
+    position = attribute.getSourcePlug(matrix_blend.inputMatrix)
     for space in spaces:
         space_name = space.name(stripNamespace=True)
         space_attribute = space_name + pcfg.space_suffix
@@ -173,22 +171,33 @@ def create(spaces=None, transform=None, direct=False, warn=True):
 
         transform.addAttr(space_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
         target = attribute.getNextAvailableTarget(matrix_blend, 1)
+        target_plug = space.worldMatrix
 
         # make multiply matrix node and hook it up
-        offset = transform.parentMatrix.get() * space.worldInverseMatrix.get()
-        multiply = pm.createNode('multMatrix', n='space_{}_To_{}_MM'.format(transform_name, space_name))
-        multiply.matrixIn[0].set(offset)
-        space.worldMatrix >> multiply.matrixIn[1]
-        target_plug = multiply.matrixSum
+        if direct or parent:
+            multiply = pm.createNode('multMatrix', n='space_{}_To_{}_MM'.format(transform_name, space_name))
+            is_space_plugged = False
+            inverse_matrix_plug = multiply.matrixIn[1]
 
-        # counter drive parent
-        if parent:
-            parent.worldInverseMatrix >> multiply.matrixIn[2]
+            # direct connections require offset
+            if direct:
+                offset = transform.parentMatrix.get() * space.worldInverseMatrix.get()
+                multiply.matrixIn[0].set(offset)
+                target_plug >> multiply.matrixIn[1]
+                inverse_matrix_plug = multiply.matrixIn[2]
+                is_space_plugged = True
+
+            # counter drive parent
+            if parent:
+                None if is_space_plugged else target_plug >> multiply.matrixIn[0]
+                parent.worldInverseMatrix >> inverse_matrix_plug
+
+            target_plug = multiply.matrixSum
 
         # if has input matrix, then create an orient space
-        if has_input_matrix:
+        if position:
             orient_name = '{}_X_{}_OM'.format(transform_name, space_name)
-            orient_matrix = pipernode.createOrientMatrix(position, multiply.matrixSum, name=orient_name)
+            orient_matrix = pipernode.createOrientMatrix(position, target_plug, name=orient_name)
             target_plug = orient_matrix.output
 
         target_plug >> target.targetMatrix

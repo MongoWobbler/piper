@@ -22,9 +22,10 @@ def get(node_type, ignore=None, search=True):
     Returns:
         (list) All nodes of the given node type.
     """
+    piper_nodes = []
     selected = pm.selected()
-    if selected:
 
+    if selected:
         # get only the piper nodes from selection
         piper_nodes = pm.ls(selected, type=node_type)
 
@@ -247,6 +248,48 @@ def createOrientMatrix(position, orientation, name=None):
         node.orientMatrix.set(orientation)
 
     return node
+
+
+def createSwingTwist(driver, target, axis='y', swing=0, twist=1):
+    """
+    Creates the swing twist node with given axis, swing, and twist attributes.
+
+    Args:
+        driver (pm.nodetypes.Transform): Node that will drive given target. Must have BIND used as rest matrix.
+
+        target (pm.nodetypes.Transform): Node that will be driven with twist/swing through offsetParentMatrix.
+
+        axis (string): Axis in which node will output twist.
+
+        swing (float): Weight of swing rotation.
+
+        twist (float): Weight of twist rotation.
+
+    Returns:
+        (pm.nodetypes.swingTwist): Swing Twist node created.
+    """
+    name = target.name(stripNamespace=True) + '_ST'
+    swing_twist = pm.createNode('swingTwist', n=name)
+    axis_index = convert.axisToIndex(axis)
+    swing_twist.twistAxis.set(axis_index)
+    swing_twist.swing.set(swing)
+    swing_twist.twist.set(twist)
+    driver_bind = convert.toBind(driver, fail_display=pm.error)
+
+    driver.matrix >> swing_twist.driverMatrix
+    driver_bind.matrix >> swing_twist.driverRestMatrix
+
+    offset_driver = swing_twist.outMatrix
+    node_plug = attribute.getSourcePlug(target.offsetParentMatrix)
+
+    if node_plug:
+        mult_matrix = pm.createNode('multMatrix', n=name + '_MM')
+        swing_twist.outMatrix >> mult_matrix.matrixIn[0]
+        node_plug >> mult_matrix.matrixIn[1]
+        offset_driver = mult_matrix.matrixSum
+
+    offset_driver >> target.offsetParentMatrix
+    return swing_twist
 
 
 def createMesh():

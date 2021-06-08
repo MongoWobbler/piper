@@ -279,11 +279,12 @@ MStatus PiperOrientMatrix::compute(const MPlug &plug, MDataBlock &data)
     if (plug == output)
     {
         bool use_orient_value = data.inputValue(use_orient).asBool();
-        MMatrix position_matrix_value = data.inputValue(position_matrix).asMatrix();
+        MMatrix orient_matrix_value = data.inputValue(orient_matrix).asMatrix();
 
         if (use_orient_value)
         {
-            MMatrix orient_matrix_value = data.inputValue(orient_matrix).asMatrix();
+            MMatrix position_matrix_value = data.inputValue(position_matrix).asMatrix();
+
 
             MTransformationMatrix position_transform = MTransformationMatrix(position_matrix_value);
             MTransformationMatrix orient_transform = MTransformationMatrix(orient_matrix_value);
@@ -302,7 +303,7 @@ MStatus PiperOrientMatrix::compute(const MPlug &plug, MDataBlock &data)
         }
         else
         {
-            data.outputValue(output).set(position_matrix_value);
+            data.outputValue(output).set(orient_matrix_value);
         }
 
         data.outputValue(output).setClean();

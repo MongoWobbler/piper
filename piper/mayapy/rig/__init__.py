@@ -437,11 +437,10 @@ class Rig(object):
         pick_walk_parent = controls[-1] if controls else None
         if parent and i == 0:
             inner_ctrl = parent.name().replace(pcfg.control_suffix, pcfg.inner_suffix + pcfg.control_suffix)
-            pick_walk_parent = inner_ctrl if pm.objExists(inner_ctrl) else parent
+            pick_walk_parent = pm.PyNode(inner_ctrl) if pm.objExists(inner_ctrl) else parent
 
         if pick_walk_parent:
-            pm.select(ctrl, pick_walk_parent)
-            pm.mel.eval('TagAsControllerParent')
+            control.tagAsControllerParent(ctrl, pick_walk_parent)
 
     @staticmethod
     def _getAxis(i, transforms, last_axis, duplicates=None):
@@ -641,9 +640,9 @@ class Rig(object):
 
             # mid
             elif transform == mid:
-                ctrl = control.create(duplicate, curve.orb, dup_name, axis, scale=0.01, matrix_offset=False, size=size)
-                translation, rotate, scale, _ = xform.calculatePoleVector(start, mid, end)
-                pm.xform(ctrl, t=translation, ro=rotate, s=scale)
+                ctrl = control.create(duplicate, curve.orb, dup_name, axis, scale=0.1, matrix_offset=False, size=size)
+                translation, rotate, _, _ = xform.calculatePoleVector(start, mid, end)
+                pm.xform(ctrl, t=translation, ro=rotate)
                 mid_ctrl = ctrl
 
             # end
@@ -706,7 +705,6 @@ class Rig(object):
         pm.parent(mid_ctrl, piper_ik)
         xform.toOffsetMatrix(mid_ctrl)
         space.create([start_ctrl], mid_ctrl)
-        mid_ctrl.useScale.set(False)
         attribute.lockAndHideCompound(mid_ctrl, ['r'])
 
         # preferred angle connection
@@ -810,6 +808,75 @@ class Rig(object):
         attribute.nonKeyable(switcher_visibility)
 
         return results
+
+    def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, global_ctrl=None, name=''):
+        """
+        Creates the twist control that mimics twist of given target based on given weight.
+
+        Args:
+            joint (pm.nodetypes.Transform): Joint to create FK control with twist attributes on.
+
+            driver (pm.nodetypes.Transform): The "parent" for the given joint.
+
+            target(pm.nodetypes.Transform): Used to mimic twist.
+
+            axis (string or None): Axis to mimic twist of.
+
+            blended (boolean): If True, will blend translate of joint between given driver and target.
+
+            weight (float): Amount of twist joint will mimic from given target.
+
+            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
+
+            name (str or None): Name to give group that will house all twist components.
+
+        Returns:
+            (list): Duplicate joint(s) as first index, control(s) as second index, and inner control(s) as third index.
+        """
+        # get distance variables before making FK controls.
+        distance_percentage = 1
+        if driver != target:
+            total_distance = mayamath.getDistance(driver, target)
+            joint_distance = mayamath.getDistance(driver, joint)
+            distance_percentage = joint_distance / total_distance
+
+        # derive axis from driver and target
+        if not axis:
+            axis = mayamath.getOrientAxis(driver, joint)
+            axis = convert.axisToString(axis, absolute=True)
+
+        # create FK control
+        parent = None if blended else driver
+        duplicates, controls, in_ctrl = self.FK(joint, parent=parent, axis=axis, global_ctrl=global_ctrl, name=name)
+        ctrl = controls[0]
+        attribute.addSeparator(ctrl)
+
+        if blended:
+            # name and create blend matrix
+            driver_name = driver.name(stripNamespace=True)
+            target_name = target.name(stripNamespace=True)
+            blend_name = driver_name + '_To_' + target_name + pcfg.twist_blend_suffix
+            blend_matrix = pm.createNode('blendMatrix', n=blend_name)
+
+            # connect blend matrix and set default values
+            driver.worldMatrix >> blend_matrix.inputMatrix
+            target.worldMatrix >> blend_matrix.target[0].targetMatrix
+            blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
+            blend_matrix.target[0].useRotate.set(False)
+            blend_matrix.target[0].useScale.set(False)
+            blend_matrix.target[0].useShear.set(False)
+
+            # create attribute on control to drive the distance weight
+            ctrl.addAttr(pcfg.twist_blend_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=-1, smx=1)
+            ctrl.attr(pcfg.twist_blend_weight_attribute) >> blend_matrix.target[0].weight
+            ctrl.attr(pcfg.twist_blend_weight_attribute).set(distance_percentage)
+
+        # create twist node and add twist attribute on control
+        twist_node = pipernode.createSwingTwist(target, ctrl, axis=axis, twist=weight)
+        ctrl.addAttr(pcfg.twist_weight_attribute, k=True, dv=weight, hsx=True, hsn=True, smn=-1, smx=1)
+        ctrl.attr(pcfg.twist_weight_attribute) >> twist_node.twist
+
+        return duplicates, controls, in_ctrl
 
     def banker(self, joint, ik_control, pivot_track=None, side='', use_track_shape=True):
         """
@@ -977,9 +1044,7 @@ class Rig(object):
             attribute.addSeparator(ctrl)
             ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
-        pm.select(ctrl, ik_control)
-        pm.mel.eval('TagAsControllerParent')
-
+        control.tagAsControllerParent(ctrl, ik_control)
         nodes_to_organize = [reverse_group, normalized_pivot, normalized_track, pivot_track]
         self.findGroup(joint, nodes_to_organize)
         self.addControls(ctrl)
@@ -1115,8 +1180,6 @@ class Rig(object):
         xform.offsetConstraint(end, ball_control[0], offset=True)
         ik_handle = ctrls[-1].connections(skipConversionNodes=True, type='ikHandle')[0]
         reverse_ctrl = self.reverse(ik_handle, ik_transforms[-1], ball_control[0], ball, ctrls[0])
-
-        pm.select(reverse_ctrl, banker)
-        pm.mel.eval('TagAsControllerParent')
+        control.tagAsControllerParent(reverse_ctrl, banker)
 
         return [fk_transforms, ik_transforms, ctrls], [ball_joint, ball_control, ball_inner], [banker, reverse_ctrl]

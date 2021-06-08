@@ -51,6 +51,10 @@ AXES = {'x': (1, 0, 0),
         'ny': (0, -1, 0),
         'nz': (0, 0, -1)}
 
+INDEXED_AXES = {'x': 0,
+                'y': 1,
+                'z': 2}
+
 TRIAXES = {'x': ['x', 'y', 'z'],
            'y': ['y', 'x', 'z'],
            'z': ['z', 'x', 'y'],
@@ -216,6 +220,19 @@ def axisToTriAxis(axis, absolute=False):
     return TRIAXES[axis]
 
 
+def axisToIndex(axis):
+    """
+    Converts the given axis to an index position.
+
+    Args:
+        axis (string): Axis to convert to int as index position.
+
+    Returns:
+        (int): Index of axis.
+    """
+    return INDEXED_AXES[axis]
+
+
 def toVector(transform, invalid_default=None, error=False):
     """
     Converts given transform to a PyMel Vector.
@@ -295,6 +312,17 @@ def toBind(node, fail_display=None, return_node=False):
         node (pm.nodetypes.DependNode): Node with bind namespace.
     """
     bind_name = node.name().replace(pcfg.skeleton_namespace + ':', pcfg.bind_namespace + ':')
+
+    if bind_name.startswith(pcfg.fk_prefix):
+        bind_name = bind_name.split(pcfg.fk_prefix)[-1]
+    elif bind_name.startswith(pcfg.ik_prefix):
+        bind_name = bind_name.split(pcfg.ik_prefix)[-1]
+
+    if not bind_name.startswith(pcfg.bind_namespace):
+        bind_name = pcfg.bind_namespace + ':' + bind_name
+
+    if bind_name.endswith(pcfg.control_suffix):
+        bind_name = bind_name.split(pcfg.control_suffix)[0]
 
     if not pm.objExists(bind_name) and fail_display:
         fail_display(bind_name + ' does not exist!')

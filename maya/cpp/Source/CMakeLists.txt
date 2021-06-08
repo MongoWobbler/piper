@@ -36,7 +36,8 @@ set(SOURCE_FILES
         "PiperFK.h"
         "PiperMath.cpp"
         "PiperMath.h"
-        )
+        "SwingTwistNode.cpp"
+        "SwingTwistNode.h")
 
 find_package(Maya REQUIRED)
 

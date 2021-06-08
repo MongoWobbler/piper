@@ -4,6 +4,7 @@
 #include "PiperIK.h"
 #include "PiperFK.h"
 #include "PiperMath.h"
+#include "SwingTwistNode.h"
 #include "TensionNode.h"
 #include <maya/MFnPlugin.h>
 
@@ -135,6 +136,17 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Orient Matrix node.");
     }
 
+    // Swing Twist Node
+    status = plugin_fn.registerNode(SwingTwistNode::node_name,
+                                    SwingTwistNode::type_ID,
+                                    SwingTwistNode::creator,
+                                    SwingTwistNode::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Swing Twist node.");
+    }
+
     // Tension Node
     status = plugin_fn.registerNode(TensionNode::node_name,
                                     TensionNode::type_ID,
@@ -154,6 +166,8 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
     plugin_fn.deregisterNode(TensionNode::type_ID);
+    plugin_fn.deregisterNode(SwingTwistNode::type_ID);
+    plugin_fn.deregisterNode(PiperOrientMatrix::type_ID);
     plugin_fn.deregisterNode(PiperOneMinus::type_ID);
     plugin_fn.deregisterNode(PiperReciprocal::type_ID);
     plugin_fn.deregisterNode(PiperMultiply::type_ID);

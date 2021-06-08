@@ -284,7 +284,41 @@ def getMessagedSpacesBlender(target):
     return connection[0].node() if connection else None
 
 
-def getNextAvailableIndex(node, attribute_name, default, start_index=0):
+def getSourcePlug(attribute):
+    """
+    Convenience method for getting the source plug attribute of given attribute.
+
+    Args:
+        attribute (pm.general.Attribute): Attribute to see if it's connected or not and get its source connection.
+
+    Returns:
+        (pm.general.Attribute): Attribute that is connected to drive given attribute.
+    """
+    return attribute.connections(scn=True, p=True, d=False)[0] if attribute.isDestination() else None
+
+
+def getNextAvailableIndex(attribute):
+    """
+    Gets the next available index from given attribute.
+    Thanks to mGear for function:
+    https://github.com/mgear-dev/mgear_core/blob/20398a25c4cc81b4a5b285c3d041bd0eb5d97d10/scripts/mgear/core/attribute.py#L1100
+
+    Args:
+        attribute (pm.general.Attribute): Attribute array to get next available index of.
+
+    Returns:
+        (int): First available attribute index.
+    """
+    indexes = attribute.getNumElements()
+    if indexes == attribute.numConnectedElements():
+        return indexes
+
+    for i in range(indexes):
+        if not attribute.attr(attribute.elements()[i]).listConnections():
+            return i
+
+
+def getNextAvailableIndexDefault(node, attribute_name, default, start_index=0):
     """
     Gets the first available index in which the given attribute is open and equal to the given default.
 
@@ -326,7 +360,7 @@ def getNextAvailableMultiplyInput(node, start_index=0):
     Returns:
         (pm.general.Attribute): Available attribute to plug in.
     """
-    i = getNextAvailableIndex(node, 'input[{}]', 1, start_index)
+    i = getNextAvailableIndexDefault(node, 'input[{}]', 1, start_index)
     return node.attr('input[{}]'.format(str(i)))
 
 
@@ -343,5 +377,5 @@ def getNextAvailableTarget(node, start_index=0):
     Returns:
         (pm.general.Attribute): First available target attribute.
     """
-    i = getNextAvailableIndex(node, 'target[{}].targetMatrix', pm.dt.Matrix(), start_index)
+    i = getNextAvailableIndexDefault(node, 'target[{}].targetMatrix', pm.dt.Matrix(), start_index)
     return node.attr('target[{}]'.format(str(i)))

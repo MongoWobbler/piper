@@ -10,6 +10,48 @@ from . import xform
 from . import curve
 
 
+def getTag(node):
+    """
+    Gets the tag associated with the given node, if none given a tag is created.
+
+    Args:
+        node (pm.nodetypes.DependNode): node to find tag of.
+
+    Returns:
+        (pm.nodetypes.Controller): Tag associated with given nodes.
+    """
+    tag = node.message.connections(scn=False, d=True, type='controller')
+
+    if not tag:
+        pm.controller(node)  # make controller tag if none found
+        return getTag(node)  # pm.controller does not return anything, so use getTag to get the node
+
+    return tag[0]
+
+
+def tagAsControllerParent(child, parent):
+    """
+    Tags the given child as the child of the given parent in the controller tag.
+
+    Args:
+        child (pm.nodetypes.DependNode): Node to become a child of given parent in controller tag.
+
+        parent (pm.nodetypes.DependNode): Node to become parent of given child in controller tag.
+
+    Returns:
+        (list): Child tag as first index, parent tag as second index.
+    """
+    child_tag = getTag(child)
+    parent_tag = getTag(parent)
+    index = attribute.getNextAvailableIndex(parent_tag.children)
+    children_plug = parent_tag.attr('children[{}]'.format(str(index)))
+
+    parent_tag.prepopulate >> child_tag.prepopulate
+    child_tag.parent >> children_plug
+
+    return child_tag, parent_tag
+
+
 def getAll(namespaces=None):
     """
     Gets all the controls found in the control set with the given namespace.
@@ -185,8 +227,7 @@ def create(transform,
             pm.matchTransform(control, transform)
             pm.parent(control, parent)
 
-        pm.select(control, parent)
-        pm.mel.eval('TagAsControllerParent')
+        tagAsControllerParent(control, parent)
     else:
         if matrix_offset:
             control.offsetParentMatrix.set(transform.worldMatrix.get())
