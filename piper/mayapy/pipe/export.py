@@ -1,12 +1,16 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import os
+import abc
 import json
 import shutil
+
 import pymel.core as pm
+
 import piper_config as pcfg
 import piper.core.util as pcu
 import piper.core.fbx_sdk as fbx_sdk
+import piper.mayapy.rig as rig
 import piper.mayapy.plugin as plugin
 import piper.mayapy.graphics as graphics
 import piper.mayapy.pipernode as pipernode
@@ -20,7 +24,7 @@ plugin.load('fbxmaya')
 plugin.load('objExport')
 
 
-class Export(object):
+class Export(abc.ABC):
 
     def __init__(self):
         self.extension = None
@@ -30,6 +34,7 @@ class Export(object):
         self.animation_errors = {}
         self.export_method = self._write
 
+    @abc.abstractmethod
     def write(self, export_path, settings):
         """
         Dependent on export method. Meant to be overridden by child class.
@@ -184,7 +189,7 @@ class Export(object):
             fbx_file = fbx_sdk.PiperFBX(export_path)
             deleted = fbx_file.deleteNodesWithPropertyValue(pcfg.delete_node_attribute, True)
             fbx_file.save() if deleted else fbx_file.close()
-            export_paths.append(export_paths)
+            export_paths.append(export_path)
 
         return export_paths
 
@@ -213,7 +218,7 @@ class Export(object):
 
         # check to make sure animation is healthy
         if pcfg.check_anim_health_on_export:
-            namespaces = {rig.namespace() for anim in animations for rig in anim.getChildren(ad=True, type='piperRig')}
+            namespaces = {pig.namespace() for anim in animations for pig in anim.getChildren(ad=True, type='piperRig')}
             self.animation_errors = animation.health(namespaces, resume=False)
 
         for anim in animations:
@@ -230,6 +235,11 @@ class Export(object):
                 pm.warning('{} has no root joints!'.format(skinned_mesh[0].name())) if warn else None
                 continue
 
+            piper_rig = anim.getChildren(ad=True, type='piperRig')
+            if not piper_rig:
+                pm.warning('{} has no piper rig!'.format(anim.name())) if warn else None
+                continue
+
             # get joints from rig
             root = root[0]
             joints = root.getChildren(ad=True, type='joint')
@@ -241,9 +251,19 @@ class Export(object):
             duplicates = root_duplicate.getChildren(ad=True, type='joint')
             duplicates.append(root_duplicate)
 
-            for joint, duplicate in zip(joints, duplicates):
+            # get root control, if root is uniformly scaled, then don't export attributes, else hook up stuff
+            piper_rig = piper_rig[0]
+            root_control = rig.getRootControl(piper_rig)
+            if not pcfg.export_root_scale_curves or animation.isUniformlyScaled(root):
+                pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_up))
+                pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_sides))
+            else:
+                root_control.attr(pcfg.squash_stretch_weight_attribute).set(0)
+                root.attr(pcfg.root_scale_up) >> root_duplicate.attr(pcfg.root_scale_up)
+                root.attr(pcfg.root_scale_sides) >> root_duplicate.attr(pcfg.root_scale_sides)
 
-                # delete unwanted attributes
+            # delete unwanted attributes
+            for joint, duplicate in zip(joints, duplicates):
                 attributes = duplicate.listAttr()
                 for attr in attributes:
                     attribute_name = attr.name().split('.')[-1]
@@ -280,6 +300,7 @@ class Export(object):
                 export_paths.append(export_path)
 
             pm.delete(root_duplicate)
+            root_control.attr(pcfg.squash_stretch_weight_attribute).set(1)
 
         pm.playbackOptions(min=start, max=end)
         pm.refresh(suspend=False)

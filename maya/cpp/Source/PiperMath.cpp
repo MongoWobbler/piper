@@ -311,5 +311,143 @@ MStatus PiperOrientMatrix::compute(const MPlug &plug, MDataBlock &data)
     }
 
     return MS::kSuccess;
+}
 
+
+// Piper Blend Axis
+MTypeId PiperBlendAxis::type_ID(0x0013714C);
+MString PiperBlendAxis::node_name("piperBlendAxis");
+MObject PiperBlendAxis::weight;
+MObject PiperBlendAxis::axis1;
+MObject PiperBlendAxis::axis1X;
+MObject PiperBlendAxis::axis1Y;
+MObject PiperBlendAxis::axis1Z;
+MObject PiperBlendAxis::axis2;
+MObject PiperBlendAxis::axis2X;
+MObject PiperBlendAxis::axis2Y;
+MObject PiperBlendAxis::axis2Z;
+MObject PiperBlendAxis::output;
+MObject PiperBlendAxis::outputX;
+MObject PiperBlendAxis::outputY;
+MObject PiperBlendAxis::outputZ;
+
+
+void* PiperBlendAxis::creator()
+{
+    return new PiperBlendAxis();
+}
+
+
+MStatus PiperBlendAxis::initialize()
+{
+    MFnMatrixAttribute matrix_fn;
+    MFnNumericAttribute numeric_fn;
+    MFnCompoundAttribute compound_fn;
+
+    weight = numeric_fn.create("weight", "weg", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    numeric_fn.setMin(0);
+    numeric_fn.setMax(1);
+    addAttribute(weight);
+
+    axis1X = numeric_fn.create("axis1X", "a1x", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis1X);
+
+    axis1Y = numeric_fn.create("axis1Y", "a1y", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis1Y);
+
+    axis1Z = numeric_fn.create("axis1Z", "a1z", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis1Z);
+
+    axis1 = compound_fn.create("axis1", "ax1");
+    compound_fn.addChild(axis1X);
+    compound_fn.addChild(axis1Y);
+    compound_fn.addChild(axis1Z);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis1);
+
+    axis2X = numeric_fn.create("axis2X", "a2x", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis2X);
+
+    axis2Y = numeric_fn.create("axis2Y", "a2y", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis2Y);
+
+    axis2Z = numeric_fn.create("axis2Z", "a2z", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis2Z);
+
+    axis2 = compound_fn.create("axis2", "ax2");
+    compound_fn.addChild(axis2X);
+    compound_fn.addChild(axis2Y);
+    compound_fn.addChild(axis2Z);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(axis2);
+
+    outputX = numeric_fn.create("outputX", "oux", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(false);
+    numeric_fn.setKeyable(false);
+    numeric_fn.setWritable(false);
+    addAttribute(outputX);
+
+    outputY = numeric_fn.create("outputY", "ouy", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(false);
+    numeric_fn.setKeyable(false);
+    numeric_fn.setWritable(false);
+    addAttribute(outputY);
+
+    outputZ = numeric_fn.create("outputZ", "ouz", MFnNumericData::kDouble, 0.0);
+    numeric_fn.setStorable(false);
+    numeric_fn.setKeyable(false);
+    numeric_fn.setWritable(false);
+    addAttribute(outputZ);
+
+    output = compound_fn.create("output", "out");
+    compound_fn.addChild(outputX);
+    compound_fn.addChild(outputY);
+    compound_fn.addChild(outputZ);
+    compound_fn.setStorable(false);
+    compound_fn.setKeyable(false);
+    compound_fn.setWritable(false);
+    addAttribute(output);
+
+    attributeAffects(weight, output);
+    attributeAffects(axis1, output);
+    attributeAffects(axis2, output);
+
+    return MS::kSuccess;
+}
+
+
+MStatus PiperBlendAxis::compute(const MPlug &plug, MDataBlock &data)
+{
+    if (plug == output or plug == outputX or plug == outputY or plug == outputZ)
+    {
+        double weight_value = data.inputValue(weight).asDouble();
+        MVector first_axis_value = data.inputValue(axis1).asVector();
+        MVector second_axis_value = data.inputValue(axis2).asVector();
+
+        MVector output_value;
+        output_value.x = lerp(first_axis_value.x, second_axis_value.x, weight_value);
+        output_value.y = lerp(first_axis_value.y, second_axis_value.y, weight_value);
+        output_value.z = lerp(first_axis_value.z, second_axis_value.z, weight_value);
+
+        data.outputValue(output).set(output_value);
+        data.outputValue(output).setClean();
+    }
+
+    return MS::kSuccess;
 }

@@ -11,6 +11,7 @@ import piper.mayapy.rig.control as control
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.pipe.paths as paths
 
+from . import key
 from . import resolution
 
 
@@ -72,37 +73,7 @@ def referenceRig(path):
     return references
 
 
-def getAllKeys(controls=None, attr=None):
-    """
-    Gets all the keys that all the given controls have.
-
-    Args:
-        controls (Iterable): controls to check for keys.
-
-        attr (string): If given, gets only the keys where the given attr is keyed.
-
-    Returns:
-        (dictionary): Keyframes as key, controls as values.
-    """
-    keys = {}
-
-    if not controls:
-        controls = control.getAll()
-
-    for ctrl in controls:
-        keys_to_get = ctrl.attr(attr) if attr else ctrl
-        ctrl_keys = set(pm.keyframe(keys_to_get, q=True))
-        for key in ctrl_keys:
-
-            if key not in keys:
-                keys[key] = set()
-
-            keys[key].add(ctrl)
-
-    return keys
-
-
-def _validateScale(transform, key, failed, display=pm.warning):
+def _validateScale(transform, keyframe, failed, display=pm.warning):
     """
     Validates the scale of the given transform on the given key and adds it to a dictionary with "scale" as key, and
     a set as its value.
@@ -110,7 +81,7 @@ def _validateScale(transform, key, failed, display=pm.warning):
     Args:
         transform (pm.nodetypes.Transform): Transform to validate uniform scale.
 
-        key (float or int): Keyframe to check for uniform scale.
+        keyframe (float or int): Keyframe to check for uniform scale.
 
         failed (dictionary): Must have a "scale" key with a set as its value to add possible transform to.
 
@@ -124,8 +95,40 @@ def _validateScale(transform, key, failed, display=pm.warning):
 
     failed['scale'].add(transform)
     text = '{0} has non-uniform scale on frame {1}'
-    display(text.format(transform.name(), str(key)))
+    display(text.format(transform.name(), str(keyframe)))
     return False
+
+
+def isUniformlyScaled(transform, start=None, end=None, resume=True):
+    """
+    Gets whether the given transform is uniformly scaled or not across all keyframes.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to check for uniform scale.
+
+        start (int): Frame to start checking for uniform scale.
+
+        end (int): Frame  to end check for uniform scale.
+
+        resume(boolean): If True, will resume the refreshing the dependency graph when finished with checking scale.
+
+    Returns:
+        (boolean): True if uniformly scaled across all keyframes.
+    """
+    pm.refresh(suspend=True)
+    is_uniformly_scaled = True
+    current_time = pm.currentTime()
+
+    for keyframe in range(start, end):
+        pm.currentTime(keyframe)
+
+        if not xform.isUniformlyScaled(transform):
+            is_uniformly_scaled = False
+            break
+
+    pm.currentTime(current_time)
+    pm.refresh(suspend=not resume)
+    return is_uniformly_scaled
 
 
 def health(namespaces=None, resume=True, scale_display=pm.warning):
@@ -148,12 +151,12 @@ def health(namespaces=None, resume=True, scale_display=pm.warning):
 
     current_time = pm.currentTime()
     controls = control.getAll(namespaces)
-    keys = getAllKeys(controls, 's')
+    keys = key.getAll(controls, 's')
     keys[0.0] = controls
 
-    for key, scaled_controls in keys.items():
-        pm.currentTime(key)
-        [_validateScale(ctrl, key, failed, scale_display) for ctrl in scaled_controls]
+    for keyframe, scaled_controls in keys.items():
+        pm.currentTime(keyframe)
+        [_validateScale(ctrl, keyframe, failed, scale_display) for ctrl in scaled_controls]
 
     pm.currentTime(current_time)
     pm.refresh(suspend=not resume)

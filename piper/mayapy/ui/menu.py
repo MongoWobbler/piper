@@ -24,6 +24,7 @@ import piper.mayapy.pipe.export as export
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
 import piper.mayapy.animation as animation
+import piper.mayapy.animation.key as key
 import piper.mayapy.animation.resolution as resolution
 
 from piper.mayapy.pipe.store import store
@@ -217,8 +218,13 @@ class MayaReferenceMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
+        # cannot build menu without art directory
+        art_directory = store.get(pcfg.art_directory)
+        if not art_directory:
+            return
+
         rig_suffixes = (pcfg.rig_suffix + '.mb', pcfg.rig_suffix + '.ma')
-        rigs = pcu.getAllFilesEndingWithWord(rig_suffixes, store.get(pcfg.art_directory))
+        rigs = pcu.getAllFilesEndingWithWord(rig_suffixes, art_directory)
         for rig in rigs:
             name = os.path.basename(os.path.abspath(rig + '/../..'))
             self.add(name, animation.referenceRig, rig)
@@ -236,6 +242,10 @@ class MayaAnimationMenu(MayaPiperMenu):
         self.addSeparator()
         self.add('Reference High-Poly', resolution.createHigh)
         self.add('Remove High-Poly', resolution.removeHigh)
+        self.addSeparator()
+        self.add('Toggle Auto/Stepped Tangents', key.toggleStepped)
+        self.add('Round Keyframes', key.roundAll)
+        self.add('Delete Decimal Keyframes On Curves', key.deleteDecimals)
         self.addSeparator()
         self.add('Health Check', animation.health)
 

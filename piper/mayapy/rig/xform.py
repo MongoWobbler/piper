@@ -7,6 +7,7 @@ import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
 import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
+import piper.mayapy.pipernode as pipernode
 
 
 def isUniformlyScaled(transform):
@@ -559,6 +560,34 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
     scale = [single_scale, single_scale, single_scale]
 
     return translation, rotation, scale, is_in_straight_line
+
+
+def squashStretch(source, output, attribute_name='s', axis='y'):
+    """
+    Hooks up given source attribute to given output node's given attribute_name with the reciprocal value to other axis.
+
+    Args:
+        source (pm.general.Attribute): Attribute that will drive squash and stretch behavior.
+
+        output (pm.nodetypes.DependNode): Node that source and its reciprocals will hook onto.
+
+        attribute_name (string): Name of compound attribute to connect to.
+
+        axis (string): Name of axis that will be driven one to one with given source.
+
+    Returns:
+        (pm.nodetypes.piperReciprocal): Reciprocal node created for squash and stretch values.
+    """
+    # connect driving axis
+    tri_axis = convert.axisToTriAxis(axis, absolute=True)
+    source >> output.attr(attribute_name + axis)
+
+    # connect other axis as reciprocals
+    reciprocal = pipernode.reciprocal(source)
+    reciprocal.output >> output.attr(attribute_name + tri_axis[1])
+    reciprocal.output >> output.attr(attribute_name + tri_axis[2])
+
+    return reciprocal
 
 
 def orientToTransform(driver, target, condition=True):

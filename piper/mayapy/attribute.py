@@ -297,25 +297,70 @@ def getSourcePlug(attribute):
     return attribute.connections(scn=True, p=True, d=False)[0] if attribute.isDestination() else None
 
 
-def getNextAvailableIndex(attribute):
+def getDestinationNode(attribute, node_type=''):
     """
-    Gets the next available index from given attribute.
-    Thanks to mGear for function:
-    https://github.com/mgear-dev/mgear_core/blob/20398a25c4cc81b4a5b285c3d041bd0eb5d97d10/scripts/mgear/core/attribute.py#L1100
+    Convenience method for getting the source plug attribute of given attribute.
 
     Args:
-        attribute (pm.general.Attribute): Attribute array to get next available index of.
+        attribute (pm.general.Attribute): Attribute to see if it's connected or not and get its source connection.
+
+        node_type (string): Type to filter node.
 
     Returns:
-        (int): First available attribute index.
+        (pm.general.Attribute): Attribute that is connected to drive given attribute.
     """
-    indexes = attribute.getNumElements()
-    if indexes == attribute.numConnectedElements():
-        return indexes
+    node = attribute.connections(scn=False, d=True, type=node_type) if attribute.isSource() else None
+    return node[0] if node else None
 
-    for i in range(indexes):
-        if not attribute.attr(attribute.elements()[i]).listConnections():
+
+def getDecomposeMatrix(attribute):
+    """
+    Gets the decompose matrix of the given attribute if exists, else creates one.
+
+    Args:
+        attribute (pm.general.Attribute): Matrix attribute that is connected or will be connected to a decompose matrix.
+
+    Returns:
+        (pm.nodetypes.DecomposeMatrix): Decompose matrix connected to given attribute.
+    """
+    decompose = getDestinationNode(attribute, 'decomposeMatrix')
+
+    if decompose:
+        return decompose
+
+    name = attribute.name().split(':')[-1].split('[')[0].replace('.', '_') + pcfg.decompose_matrix_suffix
+    decompose = pm.createNode('decomposeMatrix', name=name)
+    attribute >> decompose.inputMatrix
+    return decompose
+
+
+def getNextAvailableIndex(node, attribute_name, start_index=0):
+    """
+    Gets the first available index in which the given attribute is open.
+
+    Args:
+        node (pm.nodetypes.DependNode): Node to get index of attribute.
+
+        attribute_name (string): Name of attribute with "[{}]" so that index search can occur.
+
+        start_index (integer): index to start searching for the available attribute..
+
+    Returns:
+        (integer): First available attribute index.
+    """
+    i = start_index
+    max_iterations = 65535  # typical c++ unsigned int range
+
+    while i < max_iterations:
+        attribute = node.attr(attribute_name.format(str(i)))
+        plug = pm.connectionInfo(attribute, sfd=True)
+
+        if not plug:
             return i
+
+        i += 1
+
+    return 0
 
 
 def getNextAvailableIndexDefault(node, attribute_name, default, start_index=0):

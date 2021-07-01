@@ -29,6 +29,19 @@ def getTag(node):
     return tag[0]
 
 
+def getSet(name):
+    """
+    Convenience method for getting a control set if already exists, else creates ones with given name.
+
+    Args:
+        name (string): Name of control set to check for or make.
+
+    Returns:
+        (SelectionSet): Set that can hold nodes used for organizing outliner.
+    """
+    return pm.PyNode(name) if pm.objExists(name) else pm.sets(n=name)
+
+
 def tagAsControllerParent(child, parent):
     """
     Tags the given child as the child of the given parent in the controller tag.
@@ -43,7 +56,7 @@ def tagAsControllerParent(child, parent):
     """
     child_tag = getTag(child)
     parent_tag = getTag(parent)
-    index = attribute.getNextAvailableIndex(parent_tag.children)
+    index = attribute.getNextAvailableIndex(parent_tag, 'children[{}]')
     children_plug = parent_tag.attr('children[{}]'.format(str(index)))
 
     parent_tag.prepopulate >> child_tag.prepopulate
@@ -78,11 +91,11 @@ def getAllInnerControls():
     Returns:
         (set): All inner controls.
     """
-    exists = pm.objExists(pcfg.inner_controls) or pm.objExists('*:' + pcfg.inner_controls)
+    exists = pm.objExists(pcfg.inner_controls_set) or pm.objExists('*:' + pcfg.inner_controls_set)
     if not exists:
         return set()
 
-    control_sets = pm.ls(pcfg.inner_controls, recursive=True)
+    control_sets = pm.ls(pcfg.inner_controls_set, recursive=True)
     return {ctrl for control_set in control_sets for ctrl in control_set.members()}
 
 

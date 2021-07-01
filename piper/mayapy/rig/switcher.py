@@ -80,11 +80,12 @@ def getData(switcher_attribute, cast=False):
     """
     data = switcher_attribute.get()
 
-    if data:
-        data = data.split(', ')
-        return [pm.PyNode(node) for node in data] if cast else data
-    else:
+    if not data:
         return []
+
+    data = data.split(', ')
+    namespace = switcher_attribute.namespace()
+    return [pm.PyNode(namespace + node) for node in data] if cast else data
 
 
 def getAllData(transform):

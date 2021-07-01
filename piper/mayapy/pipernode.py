@@ -386,6 +386,7 @@ def createRig(name=''):
     """
     name = name if name else 'piperRig'
     piper_rig = create('piperRig', 'burnt orange', name=name)
+    piper_rig.addAttr(pcfg.message_root_control, at='message')
     piper_rig._.lock()
     attribute.nonKeyable(piper_rig.highPolyVisibility)
     attribute.lockAndHideCompound(piper_rig)

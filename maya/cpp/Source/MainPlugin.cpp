@@ -147,6 +147,17 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Swing Twist node.");
     }
 
+    // Blend Axis node
+    status = plugin_fn.registerNode(PiperBlendAxis::node_name,
+                                    PiperBlendAxis::type_ID,
+                                    PiperBlendAxis::creator,
+                                    PiperBlendAxis::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper Blend Axis node.");
+    }
+
     // Tension Node
     status = plugin_fn.registerNode(TensionNode::node_name,
                                     TensionNode::type_ID,
@@ -166,6 +177,7 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
     plugin_fn.deregisterNode(TensionNode::type_ID);
+    plugin_fn.deregisterNode(PiperBlendAxis::type_ID);
     plugin_fn.deregisterNode(SwingTwistNode::type_ID);
     plugin_fn.deregisterNode(PiperOrientMatrix::type_ID);
     plugin_fn.deregisterNode(PiperOneMinus::type_ID);

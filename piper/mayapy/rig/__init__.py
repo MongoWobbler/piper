@@ -24,6 +24,19 @@ from . import control
 from . import switcher
 
 
+def getRootControl(rig):
+    """
+    Gets the root control associated with the given rig.
+
+    Args:
+        rig (pm.nodetypes.piperRig): Rig node to get root control of.
+
+    Returns:
+        (pm.nodetypes.DependNode): Root control of rig.
+    """
+    return attribute.getDestinationNode(rig.attr(pcfg.message_root_control))
+
+
 def getMeshes():
     """
     Gets all the meshes inside all the piper skinned nodes in the scene.
@@ -140,9 +153,15 @@ class Rig(object):
         self.start_time = time.time()
         self.rig = rig
         self.auto_group = group
+
         self.group_stack = {}
-        self.controls = []
+        self.controls = {}
+        self.keep_colors = []
+        self.ik_controls = []
         self.inner_controls = []
+        self.root_control = None
+        self.body_base_control = None
+        self.namespace = pcfg.skeleton_namespace + ':'
 
         if path:
             self.prepare(path)
@@ -156,6 +175,21 @@ class Rig(object):
                 self.rig = rigs[0]
             else:
                 self.rig = rigs[0]
+
+    def __enter__(self):
+        """
+        Context manager enter method.
+
+        Returns:
+            (piper.mayapy.rig.Rig): Class that holds all methods for rigging.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Context manager exit method.
+        """
+        self.finish()
 
     def prepare(self, path=''):
         """
@@ -197,19 +231,57 @@ class Rig(object):
 
         return self.rig
 
-    def addControls(self, controls, inner=None):
+    def validateTransform(self, transform):
+        """
+        Validates the joint by casting to a PyNode with namespace if it's not already a PyNode with namespace.
+
+        Args:
+            transform (string or PyNode): Transform to validate to make sure its a PyNode with namespace.
+
+        Returns:
+            (PyNode): Given transform as a PyNode.
+        """
+        if not transform:
+            return transform
+
+        if isinstance(transform, pm.PyNode):
+            return transform
+
+        if not transform.startswith(self.namespace):
+            transform = self.namespace + transform
+
+        return pm.PyNode(transform)
+
+    def validateTransforms(self, transforms):
+        """
+        Convenience method for validating multiple transforms at once.
+
+        Args:
+            transforms (list): Transforms to validate to make sure they are PyNodes.
+
+        Returns:
+            (list): Transforms validated.
+        """
+        return [self.validateTransform(transform) for transform in transforms]
+
+    def addControls(self, controls, inner=None, name=''):
         """
         Adds controls to the self.controls stack to be added into the controls set
 
         Args:
-            controls (list or pm.nodetypes.Transform): Control(s) to be added to controls set.
+            controls (list): Control(s) to be added to controls set.
 
             inner (list): Inner controls to be added to inner controls list.
+
+            name (string): Name of control set.
         """
-        self.controls.extend(controls) if isinstance(controls, list) else self.controls.append(controls)
+        self.controls[name] = self.controls.get(name) + controls if self.controls.get(name) else controls
 
         if inner:
             self.inner_controls.extend(inner)
+
+        if name == 'IK':
+            self.ik_controls.append(controls[-1])
 
     def addToGroupStack(self, parent, children):
         """
@@ -261,23 +333,49 @@ class Rig(object):
         """
         Parents all the given children to their corresponding parent key in the group stack dictionary.
         """
-        [pm.parent(children, parent) for (parent, children) in self.group_stack.items()]
-        self.group_stack.clear()
+        for (parent, children) in self.group_stack.items():
+            children = [myu.getRootParent(child) for child in children]
+            pm.parent(children, parent)
+
+        self.group_stack = {}
 
     def runControlStack(self):
         """
         Adds all the controls in self.controls to the control set node.
         """
         pm.select(cl=True)
-        control_set = pm.PyNode(pcfg.control_set) if pm.objExists(pcfg.control_set) else pm.sets(n=pcfg.control_set)
-        inners = pm.PyNode(pcfg.inner_controls) if pm.objExists(pcfg.inner_controls) else pm.sets(n=pcfg.inner_controls)
-        self.controls.insert(0, inners)
+        control_members = []
+        movable_members = []
+        control_set = control.getSet(pcfg.control_set)
+        inners_set = control.getSet(pcfg.inner_controls_set)
+        movable_set = control.getSet(pcfg.movable_controls_set)
+        iks_set = control.getSet(pcfg.ik_controls_set)
 
-        inners.addMembers(self.inner_controls)
-        control_set.addMembers(self.controls)
+        for name, controls in self.controls.items():
 
-        self.controls.clear()
+            if not name:
+                control_members.extend(controls)
+                continue
+
+            module_set = control.getSet(name)
+            module_set.addMembers(controls)
+            control_members.append(module_set)
+
+        if self.body_base_control:
+            movable_members.append(self.body_base_control)
+
+        movable_members.append(iks_set)
+        control_members.append(inners_set)
+        control_members.append(movable_set)
+
+        iks_set.addMembers(self.ik_controls)
+        inners_set.addMembers(self.inner_controls)
+        movable_set.addMembers(movable_members)
+        control_set.addMembers(control_members)
+
+        self.controls = {}
         self.inner_controls.clear()
+        self.ik_controls.clear()
 
     def finish(self, colorize=True):
         """
@@ -297,6 +395,8 @@ class Rig(object):
         """
         Colors all the controls according to setting in piper_config.py
         """
+        controls = pcu.flatten(list(self.controls.values()))
+
         left_control = pcfg.left_suffix + pcfg.control_suffix
         left_banker = pcfg.left_suffix + pcfg.banker_suffix + pcfg.control_suffix
         left_reverse = pcfg.left_suffix + pcfg.reverse_suffix + pcfg.control_suffix
@@ -308,9 +408,11 @@ class Rig(object):
         left_suffixes = (left_control, left_banker, left_reverse)
         right_suffixes = (right_control, right_banker, right_reverse)
 
-        for ctrl in self.controls:
+        for ctrl in controls:
             ctrl_name = ctrl.name()
-            if ctrl_name.endswith(left_suffixes):
+            if ctrl in self.keep_colors:
+                continue
+            elif ctrl_name.endswith(left_suffixes):
                 curve.color(ctrl, pcfg.rig_colors['left'])
             elif ctrl_name.endswith(right_suffixes):
                 curve.color(ctrl, pcfg.rig_colors['right'])
@@ -348,15 +450,16 @@ class Rig(object):
             return
 
         group = None
+        parent_to_rig = transforms
+
         if name:
-            group_name = prefix + '_' + name + pcfg.group_suffix
+            group_name = prefix + '_' + name.capitalize() + pcfg.group_suffix
             if pm.objExists(group_name):
                 group = pm.PyNode(group_name)
             else:
                 group = pm.group(name=group_name, empty=True)
                 attribute.lockAndHideCompound(group)
 
-        parent_to_rig = transforms
         if group:
             self.addToGroupStack(group, transforms)
             parent_to_rig = [group]
@@ -416,8 +519,9 @@ class Rig(object):
         attribute.nonKeyableCompound(pivot_ctrl, ['r', 's'])
         pivot_ctrl.addAttr(pcfg.dynamic_pivot_rest, dt='string', k=False, h=True, s=True)
         pivot_ctrl.attr(pcfg.dynamic_pivot_rest).set(transform.name())
-        self.organize([pivot_ctrl], prefix=inspect.currentframe().f_code.co_name, name='')
-        self.addControls(pivot_ctrl)
+        function_name = inspect.currentframe().f_code.co_name
+        self.organize([pivot_ctrl], prefix=function_name, name='')
+        self.addControls([pivot_ctrl], name=function_name)
         return pivot_ctrl
 
     @staticmethod
@@ -473,14 +577,59 @@ class Rig(object):
 
         return axis, axis
 
+    def root(self, transform=pcfg.root_joint_name, name=pcfg.root_joint_name):
+        """
+        Creates a root control with a squash and stretch attribute.
+
+        Args:
+            transform (pm.nodetypes.Transform or string): Joint to create root control on.
+
+            name (string): Name to give group
+
+        Returns:
+            (list): Controls created in order from start to end.
+        """
+        # create the root control as a regular FK
+        transform = self.validateTransform(transform)
+        controls = self.FK(transform, name=name)
+        self.root_control = controls[1][0]
+
+        # create a group above root control that will be scaled and squash and stretch attribute
+        name_prefix = name.lower() + '_scale'
+        root_scale = pm.group(self.root_control, name=name_prefix + pcfg.group_suffix)
+        attribute.addSeparator(self.root_control)
+        self.root_control.addAttr(pcfg.squash_stretch_attribute, k=True, dv=1, min=0.001)
+        self.root_control.addAttr(pcfg.squash_stretch_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=0, smx=1)
+        attribute.nonKeyable(self.root_control.attr(pcfg.squash_stretch_weight_attribute))
+
+        # create blender
+        blender = pm.createNode('piperBlendAxis', name=name_prefix + '_BA')
+        self.root_control.attr(pcfg.squash_stretch_weight_attribute) >> blender.weight
+        blender.axis1.set(1, 1, 1)
+        blender.axis2.set(1, 1, 1)
+        blender.output >> root_scale.scale
+
+        # hook up squash and stretch
+        reciprocal = xform.squashStretch(self.root_control.attr(pcfg.squash_stretch_attribute), blender, 'a2')
+        transform.addAttr(pcfg.root_scale_up, k=True, dv=1)
+        transform.addAttr(pcfg.root_scale_sides, k=True, dv=1)
+        self.root_control.attr(pcfg.squash_stretch_attribute) >> transform.attr(pcfg.root_scale_up)
+        reciprocal.output >> transform.attr(pcfg.root_scale_sides)
+
+        # connect root and rig with message for easy look up
+        self.root_control.addAttr(pcfg.message_root_control, at='message')
+        self.rig.attr(pcfg.message_root_control) >> self.root_control.attr(pcfg.message_root_control)
+
+        return controls
+
     def FK(self, start, end='', parent=None, axis=None, shape='', sizes=None, connect=True, global_ctrl='', name=''):
         """
         Creates FK controls for the transform chain deduced by the start and end transforms.
 
         Args:
-            start (pm.nodetypes.Transform): Start of the chain to be driven by FK controls.
+            start (pm.nodetypes.Transform or string): Start of the chain to be driven by FK controls.
 
-            end (pm.nodetypes.Transform): End of the chain to be driven by FK controls.
+            end (pm.nodetypes.Transform or string): End of the chain to be driven by FK controls.
 
             parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
 
@@ -502,12 +651,16 @@ class Rig(object):
         if not shape:
             shape = curve.circle
 
+        if global_ctrl is '':
+            global_ctrl = self.root_control
+
         controls = []
         decomposes = []
         multiplies = []
         in_controls = []
         calc_axis = 'y'
         last_axis = axis
+        start, end = self.validateTransforms([start, end])
         transforms = xform.getChain(start, end)
         duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
 
@@ -556,7 +709,8 @@ class Rig(object):
                 inputs = [ctrl_parent.attr('s' + calc_axis), ctrl.outputScale]
 
                 if global_ctrl:
-                    inputs.append(global_ctrl.sy)
+                    decompose = attribute.getDecomposeMatrix(global_ctrl.worldMatrix[0])
+                    inputs.append(decompose.outputScaleY)
 
                 # connect all the stuff needed for volumetric scaling
                 multiply = pipernode.multiply(duplicate_parent, main_term, ctrl.volumetric, inputs)
@@ -575,8 +729,12 @@ class Rig(object):
             multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[1])
             controls[0].attr('s' + calc_axis) >> multiply_input
 
-        self.organize(controls + [duplicates[0]], prefix=inspect.currentframe().f_code.co_name, name=name)
-        self.addControls(controls, inner=in_controls)
+        if start.name(stripNamespace=True) == pcfg.body_base_joint_name:
+            self.body_base_control = controls[0]
+
+        function_name = inspect.currentframe().f_code.co_name
+        self.organize(controls + [duplicates[0]], prefix=function_name, name=name)
+        self.addControls(controls, inner=in_controls, name=function_name)
         return duplicates, controls, in_controls
 
     def IK(self, start, end, parent=None, shape=curve.ring, sizes=None, connect=True, global_ctrl='', name=''):
@@ -584,9 +742,9 @@ class Rig(object):
         Creates IK controls and IK RP solver and for the given start and end joints.
 
         Args:
-            start (pm.nodetypes.Joint): Start of the joint chain.
+            start (pm.nodetypes.Joint or string): Start of the joint chain.
 
-            end (pm.nodetypes.Joint): End of the joint chain.
+            end (pm.nodetypes.Joint or string): End of the joint chain.
 
             parent (pm.nodetypes.Transform): Parent of start control.
 
@@ -608,10 +766,14 @@ class Rig(object):
         start_ctrl = None
         scale_buffer = None
         controls = []
+        start, end = self.validateTransforms([start, end])
         transforms = xform.getChain(start, end)
         duplicates = xform.duplicateChain(transforms, prefix=pcfg.ik_prefix, color='purple', scale=0.5)
         mid = pcu.getMedian(transforms)
         mid_duplicate = pcu.getMedian(duplicates)
+
+        if global_ctrl is '':
+            global_ctrl = self.root_control
 
         if mid == start or mid == end:
             pm.error('Not enough joints given! {} is the mid joint?'.format(mid.name()))
@@ -728,8 +890,12 @@ class Rig(object):
             parent.worldMatrix >> parent_decompose.inputMatrix
             parent_decompose.attr('outputScale' + axis.upper()) >> piper_ik.globalScale
 
-        self.organize(nodes_to_organize, prefix=inspect.currentframe().f_code.co_name, name=name)
-        self.addControls(controls)
+        if start.name(stripNamespace=True) == pcfg.body_base_joint_name:
+            self.body_base_control = controls[0]
+
+        function_name = inspect.currentframe().f_code.co_name
+        self.organize(nodes_to_organize, prefix=function_name, name=name)
+        self.addControls(controls, name=function_name)
         return duplicates, controls, scale_buffer
 
     def FKIK(self, start, end, parent=None, fk_shape='', ik_shape='', proxy=True, global_ctrl='', name=''):
@@ -737,9 +903,10 @@ class Rig(object):
         Creates a FK and IK controls that drive the chain from start to end.
 
         Args:
-            start (pm.nodetypes.Joint): Start of the chain to be driven by FK controls.
+            start (pm.nodetypes.Joint or string): Start of the chain to be driven by FK controls.
 
-            end (pm.nodetypes.Joint): End of the chain to be driven by FK controls. If none given, will only drive start
+            end (pm.nodetypes.Joint or string): End of the chain to be driven by FK controls.
+            If none given, will only drive start
 
             parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
 
@@ -762,7 +929,11 @@ class Rig(object):
         if not ik_shape:
             ik_shape = curve.ring
 
+        if global_ctrl is '':
+            global_ctrl = self.root_control
+
         # create joint chains that is the same as the given start and end chain for FK and IK then create controls
+        start, end = self.validateTransforms([start, end])
         transforms = xform.getChain(start, end)
         sizes = [control.calculateSize(transform) for transform in transforms]
         fk_transforms, fk_ctrls, in_ctrls = self.FK(start, end, parent, '', fk_shape, sizes, False, global_ctrl, None)
@@ -789,9 +960,10 @@ class Rig(object):
             switcher_attribute >> og_transform.attr(ik_space)
 
         results = fk_transforms, ik_transforms, controls
+        function_name = inspect.currentframe().f_code.co_name
         nodes_to_organize = [fk_transforms[0], buffer] + fk_ctrls + [ik_ctrls[0], switcher_control]
-        self.organize(nodes_to_organize, prefix=inspect.currentframe().f_code.co_name, name=name)
-        self.addControls([switcher_control] + fk_ctrls + ik_ctrls, inner=in_ctrls)
+        self.organize(nodes_to_organize, prefix=function_name, name=name)
+        self.addControls([switcher_control], name=function_name)
 
         if not proxy:
             return results
@@ -809,16 +981,55 @@ class Rig(object):
 
         return results
 
-    def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, global_ctrl=None, name=''):
+    def extra(self, transform, name, parent=None, shape=curve.circle, axis='y', color='salmon', scale=1.0, spaces=None):
+        """
+        Creates extra control that doesn't drive the transform, but rather should be used with spaces and act as parent.
+
+        Args:
+            transform (pm.nodetypes.Transform or string): Transform to create control on.
+
+            name (string): Name to append to given transform name.
+
+            parent (pm.nodetypes.Transform): Transform to parent the control created onto.
+
+            shape (method): Creates the control curve.
+
+            axis (string): Orientation for control.
+
+            color (string): Color of curve.
+
+            scale (float): Scale to multiply by joint radius.
+
+            spaces (iterator or None): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
+
+        Returns:
+            (pm.nodetypes.Transform): Control created.
+        """
+        transform = self.validateTransform(transform)
+        name = transform.name(stripNamespace=True) + '_' + name
+        ctrl = control.create(transform, shape, name, axis, color, scale, parent=parent)
+        space.create(spaces, ctrl)
+        self.addControls([ctrl])
+
+        if not parent:
+            self.organize([ctrl], prefix=inspect.currentframe().f_code.co_name, name='')
+
+        # don't auto colorize if color is given
+        if color:
+            self.keep_colors.append(ctrl)
+
+        return ctrl
+
+    def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, global_ctrl='', name=''):
         """
         Creates the twist control that mimics twist of given target based on given weight.
 
         Args:
-            joint (pm.nodetypes.Transform): Joint to create FK control with twist attributes on.
+            joint (pm.nodetypes.Transform or string): Joint to create FK control with twist attributes on.
 
-            driver (pm.nodetypes.Transform): The "parent" for the given joint.
+            driver (pm.nodetypes.Transform or string): The "parent" for the given joint.
 
-            target(pm.nodetypes.Transform): Used to mimic twist.
+            target(pm.nodetypes.Transform or string): Used to mimic twist.
 
             axis (string or None): Axis to mimic twist of.
 
@@ -834,6 +1045,7 @@ class Rig(object):
             (list): Duplicate joint(s) as first index, control(s) as second index, and inner control(s) as third index.
         """
         # get distance variables before making FK controls.
+        joint, driver, target = self.validateTransforms([joint, driver, target])
         distance_percentage = 1
         if driver != target:
             total_distance = mayamath.getDistance(driver, target)
@@ -932,7 +1144,8 @@ class Rig(object):
 
             # validate that only one is made
             if len(pivot_track) != 1:
-                pm.error('Needed only ONE curve! {} curves made. Try to specify a side.'.format(str(len(pivot_track))))
+                text = 'Needed only ONE curve! {} curves made for the side: {}'.format(str(len(pivot_track)), str(side))
+                pm.error(text)
 
             pivot_track = pivot_track[0]
 
@@ -1047,7 +1260,7 @@ class Rig(object):
         control.tagAsControllerParent(ctrl, ik_control)
         nodes_to_organize = [reverse_group, normalized_pivot, normalized_track, pivot_track]
         self.findGroup(joint, nodes_to_organize)
-        self.addControls(ctrl)
+        self.addControls([ctrl], name=inspect.currentframe().f_code.co_name)
 
         return ctrl
 
@@ -1082,6 +1295,7 @@ class Rig(object):
             shape = curve.square
 
         # attempt to deduce axis if transform only has one child and axis is not given
+        transform = self.validateTransform(transform)
         if not axis and transform.getChildren() and len(transform.getChildren()) == 1:
             axis_vector = mayamath.getOrientAxis(transform, transform.getChildren()[0])
             axis = convert.axisToString(axis_vector)
@@ -1091,7 +1305,7 @@ class Rig(object):
         name = transform.name(stripNamespace=True) + pcfg.reverse_suffix
         driver_parent = driver.getParent()
         ctrl = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
-        self.addControls(ctrl)
+        self.addControls([ctrl], name=inspect.currentframe().f_code.co_name)
 
         name = ctrl.name(stripNamespace=True)
         pm.parent(driver, ctrl)
@@ -1151,7 +1365,7 @@ class Rig(object):
 
         return ctrl
 
-    def humanLeg(self, start, end, ball, side='', parent=None, global_ctrl=None, name=''):
+    def humanLeg(self, start, end, ball, side='', parent=None, global_ctrl='', name=''):
         """
         Convenience method for rigging a leg. FKIK chain, with banker, and reverse controls.
 
