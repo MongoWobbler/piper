@@ -2,6 +2,7 @@
 
 import os
 import abc
+import sys
 import json
 import shutil
 
@@ -19,12 +20,13 @@ import piper.mayapy.pipe.fbxpreset as fbxpreset
 import piper.mayapy.pipe.paths as paths
 
 
-# FBX and OBJ plugin needed to export.
+# FBX and OBJ plugin needed to export and assign ABC based on version
 plugin.load('fbxmaya')
 plugin.load('objExport')
+ABC = abc.ABC if sys.version_info >= (3, 4) else abc.ABCMeta('ABC', (), {})
 
 
-class Export(abc.ABC):
+class Export(ABC):
 
     def __init__(self):
         self.extension = None
