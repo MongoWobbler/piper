@@ -110,6 +110,7 @@ control_set = 'controls'
 inner_controls_set = 'inner'
 movable_controls_set = 'anchors'
 ik_controls_set = 'iks'
+maya_rig_suffixes = (rig_suffix + '.mb', rig_suffix + '.ma')
 rig_colors = {'middle': 'yellow',
               'middle_inner': 'salmon',
               'left': 'red',
@@ -145,6 +146,7 @@ message_root_control = 'msgRootControl'
 offset_suffix = '_offset'
 control_suffix = '_ctrl'
 separator_character = '_'
+temp_namespace = 'TEMP'
 
 # Parent Matrix
 parent_matrix_mult_suffix = 'ParentMatrix' + mult_matrix_suffix

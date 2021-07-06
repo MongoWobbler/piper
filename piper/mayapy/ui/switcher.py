@@ -189,7 +189,9 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         rigs = pm.ls(type='piperRig')
         state = not self.all_controls_button.isChecked()
+        pm.undoInfo(openChunk=True)
         [attr.set(state) for r in rigs for attr in r.listAttr(ud=True, v=True, k=True, st='*' + pcfg.visibility_suffix)]
+        pm.undoInfo(closeChunk=True)
 
     def onInnerControlsPressed(self):
         """
@@ -197,14 +199,18 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         controls = control.getAllInnerControls()
         state = not self.all_inner_button.isChecked()
+        pm.undoInfo(openChunk=True)
         [ctrl.visibility.set(state) for ctrl in controls]
+        pm.undoInfo(closeChunk=True)
 
     def onSelectedInnerPressed(self):
         """
         Toggles between showing/hiding selected controls' inner control.
         """
         state = not self.selected_inner_button.isChecked()
+        pm.undoInfo(openChunk=True)
         [ctrl.visibility.set(state) for ctrl in self.inners]
+        pm.undoInfo(closeChunk=True)
 
     def onJointsPressed(self):
         """
@@ -212,7 +218,9 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         joints = pm.ls(type='joint')
         state = not self.joints_button.isChecked()
+        pm.undoInfo(openChunk=True)
         [joint.visibility.set(state) for joint in joints]
+        pm.undoInfo(closeChunk=True)
 
     def onHideOnPlayPressed(self):
         """
@@ -220,13 +228,17 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         controls = control.getAll()
         state = self.hide_play_button.isChecked()
+        pm.undoInfo(openChunk=True)
         [ctrl.hideOnPlayback.set(state) for ctrl in controls]
+        pm.undoInfo(closeChunk=True)
 
     def onResetPressed(self):
         """
         Sets the selected controls to zero/bind pose. If no controls selected, zeroes out all controls in scene.
         """
+        pm.undoInfo(openChunk=True)
         rig.zeroOut()
+        pm.undoInfo(closeChunk=True)
 
     def onRigPressed(self):
         """

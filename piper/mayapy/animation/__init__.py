@@ -119,6 +119,12 @@ def isUniformlyScaled(transform, start=None, end=None, resume=True):
     is_uniformly_scaled = True
     current_time = pm.currentTime()
 
+    if start is None:
+        start = int(pm.playbackOptions(q=True, min=True))
+
+    if end is None:
+        end = int(pm.playbackOptions(q=True, max=True))
+
     for keyframe in range(start, end):
         pm.currentTime(keyframe)
 

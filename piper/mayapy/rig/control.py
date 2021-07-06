@@ -99,6 +99,47 @@ def getAllInnerControls():
     return {ctrl for control_set in control_sets for ctrl in control_set.members()}
 
 
+def replaceShapes(path, controls=None, remove=True):
+    """
+    Replaces all the the given control shapes with controls of the same name in the given path file.
+    If no controls given, will use selected. If none selected, will use all controls in the scene.
+
+    Args:
+        path (string): Path to Maya file to reference in to get new control shapes.
+
+        controls (list): Controls to replace shapes of.
+
+        remove (boolean): If True, will remove the reference after replacing the shapes.
+
+    Returns:
+        (list): New shapes created.
+    """
+    if not controls:
+        controls = pm.selected()
+
+    if not controls:
+        controls = getAll()
+
+    shapes = []
+    reference = pm.createReference(path, namespace=pcfg.temp_namespace)
+
+    for target in controls:
+        source_name = pcfg.temp_namespace + ':' + target.name()
+
+        if not pm.objExists(source_name):
+            continue
+
+        source = pm.PyNode(source_name)
+        replaced = curve.copy(source, target)
+        shapes.append(replaced)
+
+    if remove:
+        reference.remove()
+
+    pm.displayInfo('Replaced shapes from ' + path)
+    return shapes
+
+
 def calculateSize(joint, scale=1, use_skins=True, try_root=True):
     """
     Calculates the size a control should be based on verts affected bounds or joint radius.

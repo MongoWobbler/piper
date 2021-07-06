@@ -10,6 +10,30 @@ import piper.mayapy.plugin as plugin
 import piper.mayapy.convert as convert
 
 
+def copy(source, target):
+    """
+    Copies the given source curve shapes onto the given targets curve shapes.
+
+    Args:
+        source (pm.nodetypes.Transform or string): Control that will have its shapes copied from.
+
+        target (pm.nodetypes.Transform): Control that will have it's shapes copied onto.
+
+    Returns:
+        (list): New shapes created.
+    """
+    duplicate = pm.duplicate(source)[0]
+    source_shapes = duplicate.getShapes()
+    target_shapes = target.getShapes()
+
+    pm.delete(target_shapes)
+    pm.parent(source_shapes, target, r=1, s=1)
+    pm.delete(duplicate)
+
+    [shape.rename(target.name(stripNamespace=True) + 'Shape' + str(i + 1)) for i, shape in enumerate(source_shapes)]
+    return source_shapes
+
+
 def color(control, color_name):
     """
     Sets color of all the shapes that a given control has. See piper/mayapy/convert for all available colors.

@@ -136,8 +136,21 @@ def zeroOut(controls=None):
 
 
 class Rig(object):
+    """
+    Example:
+        from piper.mayapy.rig import Rig
 
-    def __init__(self, path='', rig=None, find=True, group=False):
+
+        with Rig() as rig:
+            root_ctrl = rig.root()[1][0]
+            pelvis_ctrl = rig.FK('pelvis', name='Pelvis', parent=root_ctrl)[1][0]
+            butt_ctrl = rig.extra('pelvis', 'butt', scale=1.05, spaces=[pelvis_ctrl, root_ctrl])
+
+            _, mouth_ctrls, _ = rig.FK('mouth', 'lips', parent=pelvis_ctrl, name='Mouth')
+            [rig.FK(joint, parent=pelvis_ctrl, axis='z', name='Eyes') for joint in ['eye_l', 'eye_r']]
+    """
+
+    def __init__(self, path='', rig=None, find=True, group=False, color=True, copy_controls=True):
         """
         Houses all rig scripts.
 
@@ -149,10 +162,17 @@ class Rig(object):
             find (boolean): Will attempt to find piperRig node in scene if no rig or path is given.
 
             group (boolean): If True, will automatically parent nodes into the groups and/or into rig node.
+
+            color (boolean): If True, will automatically color controls according to settings in piper_config.py
+
+            copy_controls (boolean): If True, will attempt to copy control shapes from existing rig on finish.
         """
         self.start_time = time.time()
         self.rig = rig
+        self.path = path
         self.auto_group = group
+        self.auto_color = color
+        self.copy_controls = copy_controls
 
         self.group_stack = {}
         self.controls = {}
@@ -202,6 +222,7 @@ class Rig(object):
             path = pm.sceneName()
 
         # getRelativeArt checks if scene is saved
+        self.path = path
         skeleton_path = paths.getRelativeArt(path=path)
         rig_name, _ = os.path.splitext(os.path.basename(skeleton_path))
         rig_name = rig_name.split(pcfg.skinned_mesh_prefix)[-1]
@@ -377,15 +398,20 @@ class Rig(object):
         self.inner_controls.clear()
         self.ik_controls.clear()
 
-    def finish(self, colorize=True):
+    def finish(self):
         """
-        Groups everything and creates the control set group.
+        Groups everything, creates the control set group, colorizes, copies control shapes, and displays time.
         """
-        if colorize:
+        if self.auto_color:
             self.colorize()
 
         self.runGroupStack()
         self.runControlStack()
+
+        if self.copy_controls and self.path:
+            pm.select(cl=True)
+            rig_path = paths.getRigPath(self.path)
+            control.replaceShapes(rig_path)
 
         end_time = time.time()
         total_time = round(end_time - self.start_time, 2)
@@ -1005,6 +1031,11 @@ class Rig(object):
         Returns:
             (pm.nodetypes.Transform): Control created.
         """
+        # allows for global scaling to work, otherwise parent under something that gets globally scaled
+        # or fix so that global scale gets multiplied onto created control if no parent given
+        if not parent:
+            parent = self.root_control
+
         transform = self.validateTransform(transform)
         name = transform.name(stripNamespace=True) + '_' + name
         ctrl = control.create(transform, shape, name, axis, color, scale, parent=parent)

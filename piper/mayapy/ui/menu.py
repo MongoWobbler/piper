@@ -8,12 +8,14 @@ import pymel.core as pm
 
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.mayapy.util as myu
 import piper.mayapy.rig as rig
 import piper.mayapy.rig.bone as bone
 import piper.mayapy.rig.skin as skin
 import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.curve as curve
 import piper.mayapy.rig.space as space
+import piper.mayapy.rig.control as control
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.clipper as myclipper
@@ -217,17 +219,29 @@ class MayaReferenceMenu(MayaPiperMenu):
         super(MayaReferenceMenu, self).__init__(title, *args, **kwargs)
         self.build()
 
+    @staticmethod
+    def referenceRig(path):
+        """
+        Convenience method for referecing a rig to replace control curves if ctrl held, else reference into scene.
+
+        Args:
+            path (string): Path to Maya file to reference.
+
+        Returns:
+            (pm.nodetypes.FileReference or list): Reference(s) created.
+        """
+        return control.replaceShapes(path) if myu.isCtrlHeld() else animation.referenceRig(path)
+
     def build(self):
         # cannot build menu without art directory
         art_directory = store.get(pcfg.art_directory)
         if not art_directory:
             return
 
-        rig_suffixes = (pcfg.rig_suffix + '.mb', pcfg.rig_suffix + '.ma')
-        rigs = pcu.getAllFilesEndingWithWord(rig_suffixes, art_directory)
+        rigs = pcu.getAllFilesEndingWithWord(pcfg.maya_rig_suffixes, art_directory)
         for rig in rigs:
             name = os.path.basename(os.path.abspath(rig + '/../..'))
-            self.add(name, animation.referenceRig, rig)
+            self.add(name, self.referenceRig, rig)
 
 
 class MayaAnimationMenu(MayaPiperMenu):

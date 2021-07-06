@@ -3,6 +3,7 @@
 import os
 import pymel.core as pm
 import piper_config as pcfg
+import piper.core.util as pcu
 from piper.mayapy.pipe.store import store
 
 
@@ -113,3 +114,18 @@ def getGameTextureExport(texture):
     export_path = os.path.join(game_directory, relative_directory).replace('\\', '/')
     export_path = export_path.replace(pcfg.art_textures_directory_name, pcfg.game_textures_directory_name)
     return export_path
+
+
+def getRigPath(path):
+    """
+    Gets the rig associated with the given path. Could return None if no rig found.
+
+    Args:
+        path (string): Starting path to search for rig. Could be directory or full file path.
+
+    Returns:
+        (string): Path to rig associated with given path.
+    """
+    directory = path if os.path.isdir(path) else os.path.dirname(path)
+    rigs = pcu.getAllFilesEndingWithWord(pcfg.maya_rig_suffixes, directory)
+    return rigs[0] if rigs else None

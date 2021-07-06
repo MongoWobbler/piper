@@ -256,7 +256,7 @@ class Export(ABC):
             # get root control, if root is uniformly scaled, then don't export attributes, else hook up stuff
             piper_rig = piper_rig[0]
             root_control = rig.getRootControl(piper_rig)
-            if not pcfg.export_root_scale_curves or animation.isUniformlyScaled(root):
+            if not pcfg.export_root_scale_curves or animation.isUniformlyScaled(root, int(start), int(end), False):
                 pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_up))
                 pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_sides))
             else:

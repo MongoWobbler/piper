@@ -65,7 +65,7 @@ class PiperMenu(QtWidgets.QMenu):
         return action
 
     def addMenuP(self, menu):
-        return self.addMenu(menu) if menu else None
+        return self.addMenu(menu) if menu and menu.actions else None
 
 
 class PiperSceneMenu(PiperMenu):
