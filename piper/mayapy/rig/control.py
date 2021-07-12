@@ -73,7 +73,7 @@ def getAll(namespaces=None):
         namespaces (Iterable): Names of namespace to append as prefix to the control set name.
 
     Returns:
-        (set): All controls.
+        (list): All controls sorted.
     """
     if namespaces:
         sets = [pm.PyNode(n + ':' + pcfg.control_set) for n in namespaces if pm.objExists(n + ':' + pcfg.control_set)]
@@ -81,6 +81,8 @@ def getAll(namespaces=None):
         sets = pm.ls(pcfg.control_set, recursive=True)
 
     controls = {ctrl for control_set in sets for ctrl in control_set.members(flatten=True)}
+    controls = list(controls)
+    controls.sort()
     return controls
 
 

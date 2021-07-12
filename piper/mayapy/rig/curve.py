@@ -676,6 +676,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
         (list): Curve(s) generated.
     """
     curves = []
+    side = side.lower()
 
     # get all/selected meshes
     meshes = myu.validateSelect(meshes, find='mesh', parent=True)
@@ -693,7 +694,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
 
         # for all the meshes that are close to 0, create poly plane that will be used to create edge cross section
         plane, _ = pm.polyPlane(axis=[0, 1, 0], sw=1, sh=1, sx=1, sy=1, w=2, h=2)
-        plane_name = plane.nodeName()
+        plane_name = plane.name()
         plane.ty.set(step)
 
         # move poly plane to desired side

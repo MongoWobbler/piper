@@ -91,6 +91,7 @@ mult_matrix_suffix = '_MM'
 compose_matrix_suffix = '_CM'
 decompose_matrix_suffix = '_DM'
 blend_matrix_suffix = '_BM'
+orient_matrix_suffix = '_OM'
 
 # Rig
 rig_suffix = 'Rig'

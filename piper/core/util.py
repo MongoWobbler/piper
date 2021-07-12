@@ -11,6 +11,7 @@ import platform
 import sysconfig
 import functools
 import subprocess
+import time
 import webbrowser
 import collections
 from weakref import proxy
@@ -116,6 +117,23 @@ def openWithOS(path):
     """
     path = os.path.normpath(path)
     os.startfile(path)
+
+
+def measureTime(method):
+    """
+    Decorator for measuring how long the given function took to execute.
+    Credit to: https://thenextweb.com/news/decorators-in-python-make-code-better-syndication
+
+    Args:
+        method (function): Function to measure time to execute.
+    """
+    def wrapper():
+        start_time = time.perf_counter()
+        method()
+        end_time = time.perf_counter()
+        print(method.__name__ + ' took ' + str(round((end_time - start_time), 3)) + ' seconds.')
+
+    return wrapper
 
 
 def writeJson(file_name, data):

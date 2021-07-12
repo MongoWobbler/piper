@@ -88,14 +88,14 @@ def getCurrent(transform):
     return None
 
 
-def create(spaces=None, transform=None, direct=False, warn=True):
+def create(transform=None, spaces=None, direct=False, warn=True):
     """
     Creates the given spaces on the given transform.
 
     Args:
-        spaces (iterator): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
-
         transform (pm.nodetypes.Transform): Transform to have ability to switch between given spaces.
+
+        spaces (iterator): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
 
         direct (boolean): If False, will plug output matrix into offsetParentMatrix, else direct connection.
 
@@ -111,6 +111,9 @@ def create(spaces=None, transform=None, direct=False, warn=True):
 
         if len(selected) < 2:
             pm.error('Not enough transforms selected!')
+
+    if spaces is None:
+        spaces = []
 
     orient_matrix = None
     space_attributes = []
@@ -132,11 +135,11 @@ def create(spaces=None, transform=None, direct=False, warn=True):
             matrix_blend.inputMatrix.set(offset_matrix)
 
         if direct:
-            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset_MM')
+            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset' + pcfg.mult_matrix_suffix)
             multiply.matrixIn[0].set(transform.matrix.get())
             matrix_blend.outputMatrix >> multiply.matrixIn[1]
 
-            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blend_DM')
+            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blend' + pcfg.decompose_matrix_suffix)
             multiply.matrixSum >> decompose.inputMatrix
             decompose.outputTranslate >> transform.translate
             decompose.outputRotate >> transform.rotate
@@ -175,7 +178,8 @@ def create(spaces=None, transform=None, direct=False, warn=True):
 
         # make multiply matrix node and hook it up
         if direct or parent:
-            multiply = pm.createNode('multMatrix', n='space_{}_To_{}_MM'.format(transform_name, space_name))
+            mult_name = 'space_{}_To_{}{}'.format(transform_name, space_name, pcfg.mult_matrix_suffix)
+            multiply = pm.createNode('multMatrix', n=mult_name)
             is_space_plugged = False
             inverse_matrix_plug = multiply.matrixIn[1]
 
@@ -196,7 +200,7 @@ def create(spaces=None, transform=None, direct=False, warn=True):
 
         # if has input matrix, then create an orient space
         if position:
-            orient_name = '{}_X_{}_OM'.format(transform_name, space_name)
+            orient_name = '{}_X_{}{}'.format(transform_name, space_name, pcfg.orient_matrix_suffix)
             orient_matrix = pipernode.createOrientMatrix(position, target_plug, name=orient_name)
             target_plug = orient_matrix.output
 

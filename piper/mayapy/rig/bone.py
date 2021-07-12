@@ -69,6 +69,17 @@ def assignBindAttributes(joints=None):
     pm.displayInfo('Finished assigning Piper joint attributes to ' + str(len(joints)) + ' joints.')
 
 
+def setSegmentScaleCompensateOff(joints=None):
+    """
+    Sets the segment scale compensate attribute of the given joints to False.
+
+    Args:
+        joints (list): Joints to set segment scale compensate to False.
+    """
+    joints = myu.validateSelect(joints, find='joint')
+    [joint.segmentScaleCompensate.set(False) for joint in joints]
+
+
 def _createAtPivot(transform, name='', i=None, component_prefix=None, joints=None):
     """
     Simple convenience method for creating a joint at the transform's pivot. Meant to be used by createAtPivot.
@@ -227,12 +238,12 @@ def health(parent_fail=pm.error,
         zero_vector = pm.dt.Vector(0, 0, 0)
         if not joint_orient.isEquivalent(zero_vector, tol=0.1):
             actionable['joint_orient'].append(joint)
-            joint_orient_fail(joint_name + ' has non-zero joint orient values.')
+            joint_orient_fail('The "' + joint_name + '" joint has non-zero joint orient values.')
 
         #  check if joint has segment scale compensate set to True or False (should be True)
         if joint.segmentScaleCompensate.get():
             actionable['segment_scale'].append(joint)
-            segment_scale_fail(joint_name + ' segment scale compensate is turned on!')
+            segment_scale_fail('The "' + joint_name + '" joint has segment scale compensate turned on!')
 
         # check if joint has preferred angle ONLY if joint is not an end joint
         if joint.getChildren(type='joint') and \

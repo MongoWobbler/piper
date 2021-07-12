@@ -194,6 +194,7 @@ class MayaBonesMenu(MayaPiperMenu):
         self.add('Assign Labels', bone.assignLabels)
         self.add('Assign Bind Attributes', bone.assignBindAttributes)
         self.add('Add Delete Attribute', attribute.addDelete)
+        self.add('Turn Off Segment Scale Compensate', bone.setSegmentScaleCompensateOff)
         self.addSeparator()
         self.add('Unbind', self.binder.unbind)
         self.add('Rebind', self.binder.rebind)

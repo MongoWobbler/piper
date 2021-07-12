@@ -354,7 +354,7 @@ class Rig(object):
         """
         Parents all the given children to their corresponding parent key in the group stack dictionary.
         """
-        for (parent, children) in self.group_stack.items():
+        for parent, children in self.group_stack.items():
             children = [myu.getRootParent(child) for child in children]
             pm.parent(children, parent)
 
@@ -395,8 +395,8 @@ class Rig(object):
         control_set.addMembers(control_members)
 
         self.controls = {}
-        self.inner_controls.clear()
-        self.ik_controls.clear()
+        self.inner_controls = []
+        self.ik_controls = []
 
     def finish(self):
         """
@@ -479,7 +479,7 @@ class Rig(object):
         parent_to_rig = transforms
 
         if name:
-            group_name = prefix + '_' + name.capitalize() + pcfg.group_suffix
+            group_name = prefix + '_' + name.capitalize().replace(' ', '_') + pcfg.group_suffix
             if pm.objExists(group_name):
                 group = pm.PyNode(group_name)
             else:
@@ -717,7 +717,7 @@ class Rig(object):
             spaces = filter(lambda node: not isinstance(node, (pm.nodetypes.PiperSkinnedMesh, type(None))), spaces)
 
             if spaces:
-                space.create(spaces, in_ctrl)
+                space.create(in_ctrl, spaces)
 
             if connect:
                 xform.parentMatrixConstraint(duplicate, transform)
@@ -892,7 +892,7 @@ class Rig(object):
         # parent pole vector to end control and create
         pm.parent(mid_ctrl, piper_ik)
         xform.toOffsetMatrix(mid_ctrl)
-        space.create([start_ctrl], mid_ctrl)
+        space.create(mid_ctrl, [start_ctrl])
         attribute.lockAndHideCompound(mid_ctrl, ['r'])
 
         # preferred angle connection
@@ -908,7 +908,7 @@ class Rig(object):
 
         # create spaces for piper ik
         spaces = filter(None, [parent, global_ctrl])
-        space.create(spaces, piper_ik)
+        space.create(piper_ik, spaces)
 
         # global scale comes from parent's world matrix scale
         if parent:
@@ -981,7 +981,7 @@ class Rig(object):
 
         # use spaces to drive original chain with fk and ik transforms and hook up switcher attributes
         for og_transform, fk_transform, ik_transform in zip(transforms, fk_transforms, ik_transforms):
-            world_space, fk_space, ik_space = space.create([fk_transform, ik_transform], og_transform, direct=True)
+            world_space, fk_space, ik_space = space.create(og_transform, [fk_transform, ik_transform], direct=True)
             og_transform.attr(fk_space).set(1)
             switcher_attribute >> og_transform.attr(ik_space)
 
@@ -1039,7 +1039,7 @@ class Rig(object):
         transform = self.validateTransform(transform)
         name = transform.name(stripNamespace=True) + '_' + name
         ctrl = control.create(transform, shape, name, axis, color, scale, parent=parent)
-        space.create(spaces, ctrl)
+        spaces = space.create(ctrl, spaces)
         self.addControls([ctrl])
 
         if not parent:
@@ -1049,7 +1049,7 @@ class Rig(object):
         if color:
             self.keep_colors.append(ctrl)
 
-        return ctrl
+        return ctrl, spaces
 
     def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, global_ctrl='', name=''):
         """
