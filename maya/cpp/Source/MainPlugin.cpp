@@ -158,6 +158,17 @@ MStatus initializePlugin(MObject obj)
         status.perror("Could not register Piper Blend Axis node.");
     }
 
+    // Safe Divide
+    status = plugin_fn.registerNode(PiperSafeDivide::node_name,
+                                    PiperSafeDivide::type_ID,
+                                    PiperSafeDivide::creator,
+                                    PiperSafeDivide::initialize);
+
+    if (status != MS::kSuccess)
+    {
+        status.perror("Could not register Piper Safe Divide node.");
+    }
+
     // Tension Node
     status = plugin_fn.registerNode(TensionNode::node_name,
                                     TensionNode::type_ID,
@@ -177,6 +188,7 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin_fn;
     plugin_fn.deregisterNode(TensionNode::type_ID);
+    plugin_fn.deregisterNode(PiperSafeDivide::type_ID);
     plugin_fn.deregisterNode(PiperBlendAxis::type_ID);
     plugin_fn.deregisterNode(SwingTwistNode::type_ID);
     plugin_fn.deregisterNode(PiperOrientMatrix::type_ID);

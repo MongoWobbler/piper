@@ -93,3 +93,18 @@ public:
     static MObject outputY;
     static MObject outputZ;
 };
+
+
+class PiperSafeDivide : public MPxNode
+{
+public:
+    static void* creator();
+    static MStatus initialize();
+    virtual MStatus compute(const MPlug& plug, MDataBlock& data);
+public:
+    static MTypeId type_ID;
+    static MString node_name;
+    static MObject input1;
+    static MObject input2;
+    static MObject output;
+};

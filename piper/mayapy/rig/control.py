@@ -6,6 +6,7 @@ import piper.core.pipermath as pipermath
 import piper.mayapy.util as myu
 import piper.mayapy.attribute as attribute
 
+from . import bone
 from . import xform
 from . import curve
 
@@ -86,19 +87,39 @@ def getAll(namespaces=None):
     return controls
 
 
-def getAllInnerControls():
+def getAllOfType(set_name):
     """
-    Gets all the inner controls found in scene.
+    Gets all the controls of the given set name found in scene.
 
     Returns:
         (set): All inner controls.
     """
-    exists = pm.objExists(pcfg.inner_controls_set) or pm.objExists('*:' + pcfg.inner_controls_set)
+    exists = pm.objExists(set_name) or pm.objExists('*:' + set_name)
     if not exists:
         return set()
 
-    control_sets = pm.ls(pcfg.inner_controls_set, recursive=True)
+    control_sets = pm.ls(set_name, recursive=True)
     return {ctrl for control_set in control_sets for ctrl in control_set.members()}
+
+
+def getAllInner():
+    """
+    Convenience method for finding all the inner controls found in scene.
+
+    Returns:
+        (set): All inner controls.
+    """
+    return getAllOfType(pcfg.inner_controls_set)
+
+
+def getAllBendy():
+    """
+    Convenience method for finding all the bendy controls found in scene.
+
+    Returns:
+        (set): All inner controls.
+    """
+    return getAllOfType(pcfg.bendy_control_set)
 
 
 def replaceShapes(path, controls=None, remove=True):
@@ -222,6 +243,7 @@ def create(transform,
            matrix_offset=True,
            parent=None,
            size=None,
+           joint=False,
            *args,
            **kwargs):
     """
@@ -246,6 +268,8 @@ def create(transform,
 
         size (list): If given, will use this as the size to set the scale of the control
 
+        joint (boolean): If True, will create the control as a joint instead of a regular transform.
+
         *args (Any): Used in shape method.
 
         **kwargs (Any): Used in shape method.
@@ -253,7 +277,9 @@ def create(transform,
     Returns:
         (pm.nodetypes.Transform): Control made.
     """
-    control = shape(name=name + pcfg.control_suffix, *args, **kwargs)
+    name = name + pcfg.control_suffix
+    kwargs['name'] = name
+    control = bone.createShaped(name, shape, *args, **kwargs) if joint else shape(*args, **kwargs)
     curve.color(control, color)
     pm.controller(control)
 

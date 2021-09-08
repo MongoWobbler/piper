@@ -49,7 +49,7 @@ def nonKeyable(attribute):
 
 def attributeCompound(transform, action, attributes=None, axes=None):
     """
-    Locks and hides several compound attributes with several axis.
+    Performs the given action on the given transform's given compound attributes with the given axis.
 
     Args:
         transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all of its the given axis.

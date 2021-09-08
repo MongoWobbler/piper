@@ -9,6 +9,31 @@ import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
 
 from . import xform
+from . import curve
+
+
+def assignShape(joints, shape=curve.circle, *args, **kwargs):
+    """
+    Assigns a shape for given joints.
+
+    Args:
+        joints (list): Joints to assign curve shape to.
+
+        shape (method): Creates the transform for the shapes desired for the joints
+    """
+    for joint in joints:
+        joint.drawStyle.set(2)
+        shape_transform = shape(*args, **kwargs)
+        pm.delete(shape_transform, ch=True)
+        joint_matrix = joint.worldMatrix.get()
+        pm.xform(shape_transform, ws=True, m=joint_matrix)
+
+        shapes = shape_transform.getShapes()
+        for i, ctrl_shape in enumerate(shapes):
+            pm.parent(ctrl_shape, joint, s=1, r=1)
+            pm.rename(ctrl_shape, '{}Shape'.format(joint))
+
+        pm.delete(shape_transform)
 
 
 def assignLabels(joints=None):
@@ -118,6 +143,10 @@ def _createAtPivot(transform, name='', i=None, component_prefix=None, joints=Non
 def createAtPivot(selected=None):
     """
     Creates a joint at the current manipulator pivot point.
+
+    If SHIFT held: will create joint for EVERY transform/vertex/edge/face selected.
+    If CTRL held: will orient joint to selected transform/vertex/edge/face selected.
+    If ALT held: will assign name to new joint(s) based on current transform/vertex/edge/face selection.
     """
     joints = []
     shift_held = myu.isShiftHeld()
@@ -127,7 +156,7 @@ def createAtPivot(selected=None):
 
     if shift_held:
         for transform in selected:
-            name = transform.nodeName() if alt_held else ''
+            name = transform.name() if alt_held else ''
             if isinstance(transform, pm.nodetypes.Transform):
                 joint, position, _ = _createAtPivot(transform, name, joints=joints)
                 xform.orientToTransform(transform, joint, ctrl_held)
@@ -149,7 +178,7 @@ def createAtPivot(selected=None):
 
     else:
         transform = selected[-1]
-        name = transform.nodeName() if alt_held else ''
+        name = transform.name() if alt_held else ''
         joint, position, _ = _createAtPivot(transform, name, joints=joints)
 
         if len(selected) == 1 and ctrl_held:
@@ -167,6 +196,23 @@ def createAtPivot(selected=None):
                 xform.orientToFace(joint, transform, position)
 
     return joints
+
+
+def createShaped(shape=curve.circle, name='joint1', *args, **kwargs):
+    """
+    Convenience method for creating a joint with a nurbs shapes.
+
+    Args:
+        name (string): Name to give joint.
+
+        shape (method): Creates the transform for the shapes desired for the joints
+
+    Returns:
+        (pm.nodetypes.Joint): Joint created.
+    """
+    joint = pm.joint(n=name)
+    assignShape([joint], shape=shape, *args, **kwargs)
+    return joint
 
 
 def health(parent_fail=pm.error,

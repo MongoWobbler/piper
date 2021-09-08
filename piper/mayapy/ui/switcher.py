@@ -35,12 +35,17 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         # all controls state
         rigs = pm.ls(type='piperRig')
-        states = [attr.get() for gig in rigs for attr in gig.listAttr(v=True, k=True, st='*' + pcfg.visibility_suffix)]
+        states = [attr.get() for r in rigs for attr in r.listAttr(v=True, k=True, st='*' + pcfg.visibility_suffix)]
         state = not all(states)
         self.all_controls_button.setChecked(state)
 
+        # all bendy controls state
+        bendy_controls = control.getAllBendy()
+        state = not all([ctrl.visibility.get() for ctrl in bendy_controls])
+        self.bendy_button.setChecked(state)
+
         # joints state
-        state = not all([joint.visibility.get() for joint in pm.ls(type='joint')])
+        state = not all([joint.visibility.get() for joint in pm.ls(type='joint') if joint not in bendy_controls])
         self.joints_button.setChecked(state)
 
         # hide/play state
@@ -49,7 +54,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         self.hide_play_button.setChecked(state)
 
         # inner controls state
-        controls = control.getAllInnerControls()
+        controls = control.getAllInner()
         state = not all([ctrl.visibility.get() for ctrl in controls])
         self.all_inner_button.setChecked(state)
         super(MayaSwitcher, self).restorePrevious()
@@ -100,7 +105,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
                     self.rests.add(child.attr(pcfg.dynamic_pivot_rest).get())
 
                 # adding inner controls for visibility toggle
-                if child_name.startswith(pcfg.fk_prefix) and child != node:
+                if pcfg.inner_suffix in child_name and child != node:
                     visibility = child.visibility.get()
                     inners_state.append(visibility)
                     self.inners.append(child)
@@ -197,7 +202,7 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         """
         Toggles between showing/hiding all inner controls.
         """
-        controls = control.getAllInnerControls()
+        controls = control.getAllInner()
         state = not self.all_inner_button.isChecked()
         pm.undoInfo(openChunk=True)
         [ctrl.visibility.set(state) for ctrl in controls]
@@ -212,11 +217,23 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         [ctrl.visibility.set(state) for ctrl in self.inners]
         pm.undoInfo(closeChunk=True)
 
+    def onBendyPressed(self):
+        """
+        Toggles between showing/hiding all bendy controls.
+        """
+        controls = control.getAllBendy()
+        state = not self.bendy_button.isChecked()
+        pm.undoInfo(openChunk=True)
+        [ctrl.visibility.set(state) for ctrl in controls]
+        pm.undoInfo(closeChunk=True)
+
     def onJointsPressed(self):
         """
         Toggles between showing/hiding all joints in scene.
         """
         joints = pm.ls(type='joint')
+        bendy_controls = control.getAllBendy()
+        joints = filter(lambda i: i not in bendy_controls, joints)
         state = not self.joints_button.isChecked()
         pm.undoInfo(openChunk=True)
         [joint.visibility.set(state) for joint in joints]

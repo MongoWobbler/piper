@@ -138,7 +138,7 @@ class Binder(object):
 
         for mesh in meshes:
             # get the skin of the mesh, if it doesnt exist then we don't need to store skin weights
-            mesh_name = mesh.nodeName()
+            mesh_name = mesh.name()
             skin = mesh.listHistory(type='skinCluster')
 
             if not skin:
@@ -146,9 +146,9 @@ class Binder(object):
 
             # get the info we need to rebind the mesh: skin name, max influences, and joints influencing mesh
             # stored as string in case object gets deleted and renamed after unbinding
-            skin = skin[0].nodeName()
+            skin = skin[0].name()
             max_influences = pm.skinCluster(mesh, q=True, mi=True)
-            joints = [joint.nodeName() for joint in pm.skinCluster(skin, q=True, influence=True)]
+            joints = [joint.name() for joint in pm.skinCluster(skin, q=True, influence=True)]
 
             if bind_pose:
                 returnToBindPose(joints)

@@ -135,9 +135,12 @@ def moveAll(*args, **kwargs):
     return control
 
 
-def sun(*args, **kwargs):
+def sun(inner=0.3, *args, **kwargs):
     """
     Creates sun-like shape, more like a soft gear shape.
+
+    Args:
+        inner (float): How far in the inner radius of the sun should be.
 
     Returns:
         (pm.nodetypes.Transform): Transform of sun shape created.
@@ -146,7 +149,7 @@ def sun(*args, **kwargs):
     pm.select((control + '.cv[1]'), (control + '.cv[3]'), (control + '.cv[5]'), (control + '.cv[7]'),
               (control + '.cv[9]'), (control + '.cv[11]'), (control + '.cv[13]'), (control + '.cv[15]'),
               (control + '.cv[17]'), (control + '.cv[19]'), r=True)
-    pm.scale(0.3, 0.3, 0.3, p=[0, 0, 0], r=True)
+    pm.scale(inner, inner, inner, p=[0, 0, 0], r=True)
     pm.makeIdentity(control, apply=True, t=1, r=1, s=1, n=0)
     pm.xform(control, cp=True)
     return control
@@ -184,6 +187,11 @@ def frame(*args, **kwargs):
 def plus(inner=.25, outer=1, *args, **kwargs):
     """
     Creates plus sign (MEDIC!) shape.
+
+    Args:
+        inner (float): Inner radius of plug sign shape.
+
+        outer (float): Outer radius of plus sign shape.
 
     Returns:
         (pm.nodetypes.Transform): Transform of plus shape created.

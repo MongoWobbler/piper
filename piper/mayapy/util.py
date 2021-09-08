@@ -299,6 +299,31 @@ def getManipulatorPosition(transform):
     return position
 
 
+def getIncrementalNodes(name, i='01', namespace=''):
+    """
+    Gets all the nodes with incrementing given i as part of their name. Must have "{}" to format given i.
+
+    Args:
+        name (string): Name of node with "{}" to replace for given i and to search for existence.
+
+        i (string): Digit format to incremental nodes to find with given i as the starting digit.
+
+        namespace (string): Namespace to append to name we are searching for.
+
+    Returns:
+        (list): Nodes found with given format.
+    """
+    nodes = []
+    node_to_validate = namespace + name.format(i)
+
+    while pm.objExists(node_to_validate):
+        nodes.append(node_to_validate)
+        i = '{:0>{}}'.format(str(int(i) + 1), len(i))
+        node_to_validate = namespace + name.format(i)
+
+    return nodes
+
+
 def getConstrainedTargets(driver, constraint_type='parentConstraint'):
     """
     Gets all the transforms the given driver is driving through the giving constraint type.

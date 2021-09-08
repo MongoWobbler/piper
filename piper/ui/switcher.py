@@ -32,6 +32,7 @@ class Switcher(QtWidgets.QDialog):
         self.all_controls_button = None
         self.all_inner_button = None
         self.selected_inner_button = None
+        self.bendy_button = None
         self.joints_button = None
         self.hide_play_button = None
         self.build()
@@ -131,6 +132,7 @@ class Switcher(QtWidgets.QDialog):
         self.all_controls_button = self.createButton('allControls', buttons_layout, self.onAllControlsPressed)
         self.all_inner_button = self.createButton('innerControls', buttons_layout, self.onInnerControlsPressed)
         self.selected_inner_button = self.createButton('selectedInner', buttons_layout, self.onSelectedInnerPressed)
+        self.bendy_button = self.createButton('bendyControls', buttons_layout, self.onBendyPressed)
         self.joints_button = self.createButton('joints', buttons_layout, self.onJointsPressed)
         self.hide_play_button = self.createButton('hideOnPlay', buttons_layout, self.onHideOnPlayPressed)
         self.createButton('reset', buttons_layout, self.onResetPressed, checkable=False)
@@ -261,6 +263,12 @@ class Switcher(QtWidgets.QDialog):
         pass
 
     def onSelectedInnerPressed(self):
+        """
+        App dependent.
+        """
+        pass
+
+    def onBendyPressed(self):
         """
         App dependent.
         """

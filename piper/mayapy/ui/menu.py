@@ -23,6 +23,7 @@ import piper.mayapy.ui.switcher as myswitcher
 import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
+import piper.mayapy.pipe.paths as paths
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
 import piper.mayapy.animation as animation
@@ -242,6 +243,7 @@ class MayaReferenceMenu(MayaPiperMenu):
         rigs = pcu.getAllFilesEndingWithWord(pcfg.maya_rig_suffixes, art_directory)
         for rig in rigs:
             name = os.path.basename(os.path.abspath(rig + '/../..'))
+            rig = paths.getRelativeArt(rig)
             self.add(name, self.referenceRig, rig)
 
 

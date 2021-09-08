@@ -35,7 +35,7 @@ def toOffsetMatrix(transform):
     mayamath.zeroOut(transform)
 
 
-def parent(transforms, world=False):
+def parent(transforms=None, world=False):
     """
     Parents transforms to the last given transform and gets rid of joint orient values if transform is a joint.
 
@@ -127,6 +127,25 @@ def duplicateChain(chain, prefix='new_', color='default', scale=1.0):
             duplicate.radius.set(duplicate.radius.get() * scale)
 
     return new_chain
+
+
+def getOrigShape(transform):
+    """
+    Creates the Orig Shape used by deformers.
+
+    Args:
+        transform (pm.nodetypes.Transform): Transform to create orig shape of.
+
+    Returns:
+        (pm.nodetypes.Mesh): Shape created.
+    """
+    shape = pm.deformableShape(transform, og=True)
+    shape = list(filter(None, shape))
+
+    if shape:
+        return shape[0]
+
+    return pm.deformableShape(transform, cog=True)[0].node()
 
 
 def mirrorTranslate(transforms=None, axis=pcfg.default_mirror_axis, swap=None, duplicate=True):
@@ -446,6 +465,60 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
         attribute.addDrivenMessage(driver, target)
 
     return output
+
+
+def aimConstraint(target, up, driven):
+    """
+    Creates an aim constraint with the given driven transform aiming at the given target transform.
+
+    Args:
+        target (pm.nodetypes.Transform): Transform to aim at.
+
+        up (pm.nodetypes.Transform): Transform to aim the up axis to.
+
+        driven (pm.nodetypes.Transform): Transform that will be rotated to aim at the given target.
+
+    Returns:
+        (pm.nodetypes.AimMatrix): Aim matrix node used to aim given driven at given target.
+    """
+    offset_plug = attribute.getSourcePlug(driven.offsetParentMatrix)
+    parent_plug = offset_plug if offset_plug else driven.parentMatrix
+
+    driven_name = driven.name(stripNamespace=True)
+    driven_compose = pm.createNode('composeMatrix', n=driven_name + '_T' + pcfg.compose_matrix_suffix)
+    driven.translate >> driven_compose.inputTranslate
+
+    mult_matrix = pm.createNode('multMatrix', n=driven_name + '_parent' + pcfg.mult_matrix_suffix)
+    driven_compose.outputMatrix >> mult_matrix.matrixIn[0]
+    parent_plug >> mult_matrix.matrixIn[1]
+
+    aim_matrix_name = driven_name + '_TO_' + target.name(stripNamespace=True) + pcfg.aim_matrix_suffix
+    aim_matrix = pm.createNode('aimMatrix', n=aim_matrix_name)
+    mult_matrix.matrixSum >> aim_matrix.inputMatrix
+
+    aim_axis = mayamath.getOrientAxis(driven, target)
+    up_axis = mayamath.getOrientAxis(driven, up)
+
+    aim_matrix.secondaryMode.set(1)
+    aim_matrix.primaryInputAxis.set(aim_axis)
+    aim_matrix.secondaryInputAxis.set(up_axis)
+    target.worldMatrix >> aim_matrix.primaryTargetMatrix
+    up.worldMatrix >> aim_matrix.secondaryTargetMatrix
+
+    attribute.addSeparator(driven)
+    driven.addAttr(pcfg.bendy_aim_attribute, k=True, dv=1, hsx=True, hsn=True, smn=0, smx=1)
+
+    if offset_plug:
+        blend_matrix = pm.createNode('blendMatrix', n=driven + pcfg.aim_matrix_suffix + pcfg.blend_matrix_suffix)
+        offset_plug >> blend_matrix.inputMatrix
+        aim_matrix.outputMatrix >> blend_matrix.target[0].targetMatrix
+        driven.attr(pcfg.bendy_aim_attribute) >> blend_matrix.target[0].weight
+        blend_matrix.outputMatrix >> driven.offsetParentMatrix
+    else:
+        driven.attr(pcfg.bendy_aim_attribute) >> aim_matrix.envelope
+        aim_matrix.outputMatrix >> driven.offsetParentMatrix
+
+    return aim_matrix
 
 
 def poleVectorMatrixConstraint(ik_handle, control):

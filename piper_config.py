@@ -92,6 +92,7 @@ compose_matrix_suffix = '_CM'
 decompose_matrix_suffix = '_DM'
 blend_matrix_suffix = '_BM'
 orient_matrix_suffix = '_OM'
+aim_matrix_suffix = '_AM'
 
 # Rig
 rig_suffix = 'Rig'
@@ -112,12 +113,20 @@ inner_controls_set = 'inner'
 movable_controls_set = 'anchors'
 ik_controls_set = 'iks'
 maya_rig_suffixes = (rig_suffix + '.mb', rig_suffix + '.ma')
-rig_colors = {'middle': 'yellow',
-              'middle_inner': 'salmon',
-              'left': 'red',
-              'left_inner': 'magenta',
-              'right': 'blue',
-              'right_inner': 'light blue'}
+
+# Rig Colors
+middle_color = 'yellow'
+middle_inner_color = 'salmon'
+middle_bendy_color = 'salmon'
+middle_inner_bendy_color = 'pink'
+left_color = 'red'
+left_inner_color = 'magenta'
+left_bendy_color = 'magenta'
+left_inner_bendy_color = 'light brown'
+right_color = 'blue'
+right_inner_color = 'light blue'
+right_bendy_color = 'light blue'
+right_inner_bendy_color = 'baby blue'
 
 # Export
 fbx_default_version = 2018
@@ -194,6 +203,12 @@ switcher_attributes = [switcher_transforms, switcher_fk, switcher_ik, switcher_r
 twist_blend_suffix = '_twist' + blend_matrix_suffix
 twist_weight_attribute = 'twistWeight'
 twist_blend_weight_attribute = 'distanceWeight'
+
+# Bendy
+bendy_suffix = '_bendy'
+bendy_control_set = 'bendy'
+bendy_aim_attribute = 'aimWeight'
+bendy_locator_suffix = '_driven'
 
 # Textures
 art_textures_directory_name = '/Textures'

@@ -79,6 +79,43 @@ def multiply(transform, main_term=None, weight=None, inputs=None):
     return multiply_node
 
 
+def divide(dividend=1.0, divisor=1.0, result_input=None):
+    """
+    Creates a node that divides the given dividend by the given divisor.
+
+    Args:
+        dividend (pm.general.Attribute or float): Number that will be divided.
+
+        divisor (pm.general.Attribute or float): Number that will perform the division.
+        
+        result_input (pm.general.Attribute): Attribute to plug in division output into.
+
+    Returns:
+        (pm.nodetypes.piperSafeDivide): Division node created.
+    """
+    divide_node = pm.createNode('piperSafeDivide')
+
+    if isinstance(dividend, pm.general.Attribute):
+        dividend_name = dividend.name().split(':')[-1].replace('.', '_')
+        dividend >> divide_node.input1
+    else:
+        dividend_name = str(dividend)
+        divide_node.input1.set(dividend)
+
+    if isinstance(divisor, pm.general.Attribute):
+        divisor_name = divisor.name().split(':')[-1].replace('.', '_')
+        divisor >> divide_node.input2
+    else:
+        divisor_name = str(divisor)
+        divide_node.input2.set(divisor)
+
+    if result_input:
+        divide_node.output >> result_input
+
+    divide_node.rename(dividend_name + '_DIV_' + divisor_name)
+    return divide_node
+
+
 def inputOutput(node_type, source=None, output=None):
     """
     Creates a node that has an input and output attribute based on given node type.

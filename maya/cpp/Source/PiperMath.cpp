@@ -451,3 +451,59 @@ MStatus PiperBlendAxis::compute(const MPlug &plug, MDataBlock &data)
 
     return MS::kSuccess;
 }
+
+
+// Piper Safe Divide
+MTypeId PiperSafeDivide::type_ID(0x0013714D);
+MString PiperSafeDivide::node_name("piperSafeDivide");
+MObject PiperSafeDivide::input1;
+MObject PiperSafeDivide::input2;
+MObject PiperSafeDivide::output;
+
+
+void* PiperSafeDivide::creator()
+{
+    return new PiperSafeDivide();
+}
+
+
+MStatus PiperSafeDivide::initialize()
+{
+    MFnNumericAttribute numeric_fn;
+
+    input1 = numeric_fn.create("input1", "in1", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(input1);
+
+    input2 = numeric_fn.create("input2", "in2", MFnNumericData::kDouble, 1);
+    numeric_fn.setStorable(true);
+    numeric_fn.setKeyable(true);
+    addAttribute(input2);
+
+    output = numeric_fn.create("output", "out", MFnNumericData::kDouble, 0);
+    numeric_fn.setStorable(false);
+    numeric_fn.setKeyable(false);
+    numeric_fn.setWritable(false);
+    addAttribute(output);
+
+    attributeAffects(input1, output);
+    attributeAffects(input2, output);
+
+    return MS::kSuccess;
+}
+
+
+MStatus PiperSafeDivide::compute(const MPlug &plug, MDataBlock &data)
+{
+    if (plug == output)
+    {
+        double input1_value = data.inputValue(input1).asDouble();
+        double input2_value = data.inputValue(input2).asDouble();
+        double output_value = safeDivide(input1_value, input2_value);
+        data.outputValue(output).set(output_value);
+        data.outputValue(output).setClean();
+    }
+
+    return MS::kSuccess;
+}

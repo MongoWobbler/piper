@@ -150,7 +150,7 @@ class Rig(object):
             [rig.FK(joint, parent=pelvis_ctrl, axis='z', name='Eyes') for joint in ['eye_l', 'eye_r']]
     """
 
-    def __init__(self, path='', rig=None, find=True, group=False, color=True, copy_controls=True):
+    def __init__(self, path='', rig=None, find=False, group=False, color=True, copy_controls=True):
         """
         Houses all rig scripts.
 
@@ -179,22 +179,24 @@ class Rig(object):
         self.keep_colors = []
         self.ik_controls = []
         self.inner_controls = []
+        self.bendy_controls = []
+        self.inner_bendy_controls = []
         self.root_control = None
         self.body_base_control = None
         self.namespace = pcfg.skeleton_namespace + ':'
 
-        if path:
-            self.prepare(path)
-        elif find and not rig:
+        if find and not rig:
             rigs = pm.ls(type='piperRig')
 
             if not rigs:
-                pm.warning('No rigs found!')
+                pm.error('No rigs found!')
             elif len(rigs) > 1:
                 pm.warning('Found ' + str(len(rigs)) + ' rigs! Using ' + rigs[0].name())
                 self.rig = rigs[0]
             else:
                 self.rig = rigs[0]
+        else:
+            self.prepare(path)
 
     def __enter__(self):
         """
@@ -252,15 +254,17 @@ class Rig(object):
 
         return self.rig
 
-    def validateTransform(self, transform):
+    def validateTransform(self, transform, i='01'):
         """
         Validates the joint by casting to a PyNode with namespace if it's not already a PyNode with namespace.
 
         Args:
             transform (string or PyNode): Transform to validate to make sure its a PyNode with namespace.
 
+            i (string): Digit format to incremental nodes to find with given i as the starting digit.
+
         Returns:
-            (PyNode): Given transform as a PyNode.
+            (PyNode or list): Given transform as a PyNode.
         """
         if not transform:
             return transform
@@ -271,19 +275,29 @@ class Rig(object):
         if not transform.startswith(self.namespace):
             transform = self.namespace + transform
 
+        if transform.find('{}') >= 0:
+            return [pm.PyNode(node) for node in myu.getIncrementalNodes(transform, i)]
+
         return pm.PyNode(transform)
 
-    def validateTransforms(self, transforms):
+    def validateTransforms(self, transforms, i='01'):
         """
         Convenience method for validating multiple transforms at once.
 
         Args:
             transforms (list): Transforms to validate to make sure they are PyNodes.
 
+            i (string): Digit format to incremental nodes to find with given i as the starting digit.
+
         Returns:
             (list): Transforms validated.
         """
-        return [self.validateTransform(transform) for transform in transforms]
+        nodes = []
+        for transform in transforms:
+            transform = self.validateTransform(transform, i=i)
+            nodes.extend(transform) if isinstance(transform, list) else nodes.append(transform)
+
+        return nodes
 
     def addControls(self, controls, inner=None, name=''):
         """
@@ -300,6 +314,12 @@ class Rig(object):
 
         if inner:
             self.inner_controls.extend(inner)
+
+            if name == 'bendy':
+                self.inner_bendy_controls.extend(inner)
+
+        if name == 'bendy':
+            self.bendy_controls.extend(controls)
 
         if name == 'IK':
             self.ik_controls.append(controls[-1])
@@ -390,7 +410,7 @@ class Rig(object):
         control_members.append(movable_set)
 
         iks_set.addMembers(self.ik_controls)
-        inners_set.addMembers(self.inner_controls)
+        inners_set.addMembers(self.inner_controls + self.inner_bendy_controls)
         movable_set.addMembers(movable_members)
         control_set.addMembers(control_members)
 
@@ -411,11 +431,41 @@ class Rig(object):
         if self.copy_controls and self.path:
             pm.select(cl=True)
             rig_path = paths.getRigPath(self.path)
-            control.replaceShapes(rig_path)
+
+            if rig_path:
+                control.replaceShapes(rig_path)
 
         end_time = time.time()
         total_time = round(end_time - self.start_time, 2)
         pm.displayInfo(self.rig.name() + '\'s rig is finished. Time = ' + str(total_time) + ' seconds.')
+
+    def _color(self, controls, left_suffix, right_suffix, left_color, right_color, middle_color):
+        """
+        Sets the colors of the given controls that end with the given prefixes the given left, right, and middle colors.
+
+        Args:
+            controls (list): Controls to set colors of.
+
+            left_suffix (string or Tuple): Suffix that ctrl must end with for color to be set to left color.
+
+            right_suffix (string or Tuple): Suffix that ctrl must end with for color to be set to right color.
+
+            left_color (string): Name of color for controls ending with left suffix.
+
+            right_color (string): Name of color for controls ending with right suffix.
+
+            middle_color (string): Name of color for controls NOT ending with either right OR left suffix.
+        """
+        for ctrl in controls:
+            ctrl_name = ctrl.name()
+            if ctrl in self.keep_colors:
+                continue
+            elif ctrl_name.endswith(left_suffix):
+                curve.color(ctrl, left_color)
+            elif ctrl_name.endswith(right_suffix):
+                curve.color(ctrl, right_color)
+            else:
+                curve.color(ctrl, middle_color)
 
     def colorize(self):
         """
@@ -433,29 +483,23 @@ class Rig(object):
 
         left_suffixes = (left_control, left_banker, left_reverse)
         right_suffixes = (right_control, right_banker, right_reverse)
-
-        for ctrl in controls:
-            ctrl_name = ctrl.name()
-            if ctrl in self.keep_colors:
-                continue
-            elif ctrl_name.endswith(left_suffixes):
-                curve.color(ctrl, pcfg.rig_colors['left'])
-            elif ctrl_name.endswith(right_suffixes):
-                curve.color(ctrl, pcfg.rig_colors['right'])
-            else:
-                curve.color(ctrl, pcfg.rig_colors['middle'])
+        self._color(controls, left_suffixes, right_suffixes,
+                    pcfg.left_color, pcfg.right_color, pcfg.middle_color)
 
         left_suffix = pcfg.left_suffix + pcfg.inner_suffix + pcfg.control_suffix
         right_suffix = pcfg.right_suffix + pcfg.inner_suffix + pcfg.control_suffix
+        self._color(self.inner_controls, left_suffix, right_suffix,
+                    pcfg.left_inner_color, pcfg.right_inner_color, pcfg.middle_inner_color)
 
-        for ctrl in self.inner_controls:
-            ctrl_name = ctrl.name()
-            if ctrl_name.endswith(left_suffix):
-                curve.color(ctrl, pcfg.rig_colors['left_inner'])
-            elif ctrl_name.endswith(right_suffix):
-                curve.color(ctrl, pcfg.rig_colors['right_inner'])
-            else:
-                curve.color(ctrl, pcfg.rig_colors['middle_inner'])
+        left_suffix = pcfg.left_suffix + pcfg.bendy_suffix + pcfg.control_suffix
+        right_suffix = pcfg.right_suffix + pcfg.bendy_suffix + pcfg.control_suffix
+        self._color(self.bendy_controls, left_suffix, right_suffix,
+                    pcfg.left_bendy_color, pcfg.right_bendy_color, pcfg.middle_bendy_color)
+
+        left_suffix = pcfg.left_suffix + pcfg.inner_suffix + pcfg.bendy_suffix + pcfg.control_suffix
+        right_suffix = pcfg.right_suffix + pcfg.inner_suffix + pcfg.bendy_suffix + pcfg.control_suffix
+        self._color(self.inner_bendy_controls, left_suffix, right_suffix,
+                    pcfg.left_inner_bendy_color, pcfg.right_inner_bendy_color, pcfg.middle_inner_bendy_color)
 
     def organize(self, transforms, prefix=None, name=None):
         """
@@ -479,6 +523,7 @@ class Rig(object):
         parent_to_rig = transforms
 
         if name:
+            prefix = prefix[:0] + prefix[0].capitalize() + prefix[1:]
             group_name = prefix + '_' + name.capitalize().replace(' ', '_') + pcfg.group_suffix
             if pm.objExists(group_name):
                 group = pm.PyNode(group_name)
@@ -1040,6 +1085,7 @@ class Rig(object):
         name = transform.name(stripNamespace=True) + '_' + name
         ctrl = control.create(transform, shape, name, axis, color, scale, parent=parent)
         spaces = space.create(ctrl, spaces)
+        space.switch(ctrl, spaces[-1], r=False, o=False, s=False)
         self.addControls([ctrl])
 
         if not parent:
@@ -1120,6 +1166,196 @@ class Rig(object):
         ctrl.attr(pcfg.twist_weight_attribute) >> twist_node.twist
 
         return duplicates, controls, in_ctrl
+
+    def bendy(self, joints, ctrl_parent=None, shape=curve.sun, i='01', name=''):
+        """
+        Creates controls for each given joint that will be used as part of a nurbs surface to drive given joints.
+
+        Args:
+            joints (list): Joints to create controls for. Must have at least three joints!
+
+            ctrl_parent (pm.nodetypes.DependNode): Node to tag as control parent for pick-walking.
+
+            shape (method): Used to create curve or visual representation of bendy control.
+
+            i (string): Format and first digit to search for middle element in given joints.
+
+            name (str or None): Name to give group that will house all bendy components.
+
+        Returns:
+            (list): Controls of bendy chain.
+        """
+        joint_length = len(joints)
+        if joint_length < 3:
+            pm.error('Not enough joints!')
+
+        locators = []
+        controls = []
+        inner_controls = []
+        control_existed = []
+        controls_to_organize = []
+        joints = self.validateTransforms(joints, i=i)
+        start_joint = joints[0]
+        end_joint = joints[-1]
+        end_bind_joint = convert.toBind(end_joint)
+        prefix = joints[1].name(stripNamespace=True)
+
+        start_position = pm.xform(start_joint, q=True, ws=True, t=True)
+        end_position = pm.xform(end_joint, q=True, ws=True, t=True)
+        start_position = convert.toVector(start_position)
+        end_position = convert.toVector(end_position)
+
+        surface_position = (start_position + end_position) / 2
+        surface_rotation = pm.xform(start_joint, q=True, ws=True, ro=True)
+        surface_length = mayamath.getDistance(start_position, end_position)
+        surface_direction = mayamath.getDirection(start_position, end_position)
+        axis = mayamath.getOrientAxis(start_joint, end_joint)
+        axis_label = convert.axisToString(axis)
+        absolute_axis_label = axis_label.lstrip('n')
+        up_axis_label = convert.axisToTriAxis(axis)[-1]
+        up_axis = convert.axisToVector(up_axis_label)
+        up_axis = convert.toVector(up_axis)
+
+        # if axis is negative, rotate nurbs surface 180 degrees so that UVs end up going down the correct direction
+        if convert.axisToString(axis).startswith('n'):
+            axis_index = convert.axisToIndex(up_axis_label)
+            surface_rotation[axis_index] = surface_rotation[axis_index] + 180
+
+        up_position = start_position + (surface_direction * (surface_length / 2)) + (up_axis * (surface_length / 2))
+        up_locator = pm.spaceLocator(n=prefix + '_up_locator')
+        up_locator.t.set(up_position)
+        up_locator.visibility.set(False)
+        xform.offsetConstraint(start_joint, up_locator, offset=True)
+
+        surface_name = prefix + '_surface'
+        surface, nurbs_plane = pm.nurbsPlane(ax=up_axis, lr=surface_length, v=joint_length - 1, ch=True, n=surface_name)
+        pm.rebuildSurface(surface, rpo=True, ch=True, end=1, kr=0, kc=False, su=1, du=1, sv=joint_length - 1, dir=0)
+        surface_shape = surface.getShape()
+
+        surface.t.set(surface_position)
+        surface.r.set(surface_rotation)
+
+        original_shape = xform.getOrigShape(surface)
+        uv_pin = pm.createNode('uvPin', name=prefix + '_uvPin')
+        original_shape.local >> uv_pin.originalGeometry
+        surface.worldSpace >> uv_pin.deformedGeometry
+
+        for i, joint in enumerate(joints):
+
+            joint_name = joint.name(stripNamespace=True)
+            dividend = convert.toBind(joint).attr(pcfg.length_attribute)
+            divisor = end_bind_joint.attr(pcfg.length_attribute)
+            decimal_distance = pipernode.divide(dividend, divisor).output
+
+            ctrl_name = joint_name + pcfg.bendy_suffix
+            ctrl_exists = pm.objExists(ctrl_name + pcfg.control_suffix)
+            control_existed.append(ctrl_exists)
+
+            if ctrl_exists:
+                ctrl = pm.PyNode(ctrl_name + pcfg.control_suffix)
+                controls.append(ctrl)
+                continue
+            else:
+                ctrl = control.create(joint, shape, ctrl_name, axis_label, joint=True, scale=0.9, inner=.9)
+                pm.setAttr(ctrl.radius, cb=False)
+                controls.append(ctrl)
+                controls_to_organize.append(ctrl)
+
+            if joint == joints[0]:
+                xform.offsetConstraint(joint, ctrl)
+            elif joint == joints[-1]:
+                blend_matrix = pm.createNode('blendMatrix', n=joint_name + pcfg.blend_matrix_suffix)
+                start_joint.worldMatrix >> blend_matrix.inputMatrix
+                end_joint.worldMatrix >> blend_matrix.target[0].targetMatrix
+                blend_matrix.target[0].useRotate.set(0)
+                blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
+            else:
+                si = str(i)
+                locator = pm.spaceLocator(n=joint_name + pcfg.bendy_locator_suffix)
+                uv_pin.attr('outputMatrix[{}]'.format(si)) >> locator.offsetParentMatrix
+                uv_pin.attr('coordinate[{}].coordinateU'.format(si)).set(0.5)
+                decimal_distance >> uv_pin.attr('coordinate[{}].coordinateV'.format(si))
+
+                pm.select(cl=True)
+                xform.parentMatrixConstraint(locator, joint, offset=True)
+
+                blend_matrix = pm.createNode('blendMatrix', n=joint_name + pcfg.blend_matrix_suffix)
+                start_joint.worldMatrix >> blend_matrix.inputMatrix
+                end_joint.worldMatrix >> blend_matrix.target[0].targetMatrix
+                decimal_distance >> blend_matrix.target[0].weight
+                blend_matrix.target[0].useRotate.set(0)
+                blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
+
+                # inner control
+                inner_name = joint_name + pcfg.inner_suffix + pcfg.bendy_suffix
+                size = control.calculateSize(joint)
+                in_ctrl = control.create(locator, curve.plus, inner_name, axis_label,
+                                         scale=.85, parent=ctrl, size=size, inner=.02)
+                inner_controls.append(in_ctrl)
+
+                # global and control scale hooked up to locator that drives joint
+                joint_parent = joint.getParent()
+                decompose_matrix = attribute.getDecomposeMatrix(joint_parent.worldMatrix)
+                parent_scale = decompose_matrix.attr('outputScale' + absolute_axis_label.upper())
+                ctrl_scale = ctrl.attr('s' + absolute_axis_label)
+                in_ctrl_scale = in_ctrl.attr('s' + absolute_axis_label)
+                piper_mult = pipernode.multiply(locator, inputs=[parent_scale, ctrl_scale, in_ctrl_scale])
+
+                # multiplying inner control's translate by scale to compensate for any parent scaling
+                scale_mult = pm.createNode('multiplyDivide', n=ctrl_name + pcfg.bendy_locator_suffix + 'scaleMultiply')
+                piper_mult.output >> scale_mult.input1
+                in_ctrl.t >> scale_mult.input2
+                scale_mult.output >> locator.t
+                in_ctrl.r >> locator.r
+
+                locator.visibility.set(False)
+                locators.append(locator)
+
+            if i != 0:
+                ctrl_parent = controls[i - 1]
+                pm.reorder(ctrl, r=(i - 1) * -1)
+
+                if not control_existed[i - 1]:
+                    xform.aimConstraint(ctrl, up_locator, controls[i - 1])
+
+            if ctrl_parent:
+                control.tagAsControllerParent(ctrl, ctrl_parent)
+
+        pm.select(controls, surface)
+        skin = pm.skinCluster(tsb=True, bm=0, sm=0, nw=1, wd=0, mi=4, omi=True)
+
+        # paint the skin weights so that they are set to 1
+        uvs = {pm.PyNode(joint): {'position': convert.toVector(joint), 'cvs': []} for joint in controls}
+        u_amount = surface_shape.numCVsInU()
+        v_amount = surface_shape.numCVsInV()
+
+        for u in range(u_amount):
+            for v in range(v_amount):
+
+                closest_joint = None
+                closest_distance = 0
+                cv_position = surface_shape.getCV(u, v, space='world')
+
+                for i, joint in enumerate(uvs):
+                    distance = mayamath.getDistance(cv_position, uvs[joint]['position'])
+
+                    if i == 0 or distance < closest_distance:
+                        closest_distance = distance
+                        closest_joint = joint
+
+                uvs[closest_joint]['cvs'].append(surface.name() + '.cv[{}][{}]'.format(str(u), str(v)))
+
+        for joint in uvs:
+            pm.select(uvs[joint]['cvs'])
+            pm.skinPercent(skin, nrm=True, tv=(joint, 1))
+
+        surface.visibility.set(False)
+        pm.select(cl=True)
+
+        function_name = inspect.currentframe().f_code.co_name
+        self.organize(controls_to_organize + locators + [surface, up_locator], prefix=function_name, name=name)
+        self.addControls(controls_to_organize, inner=inner_controls, name=function_name)
+        return controls
 
     def banker(self, joint, ik_control, pivot_track=None, side='', use_track_shape=True):
         """

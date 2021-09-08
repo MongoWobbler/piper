@@ -5,6 +5,9 @@
 #include <math.h>
 
 
+#define SMALL_NUMBER 0.001
+
+
 inline MVector getPosition(const MMatrix & matrix) { return MVector(matrix[3][0], matrix[3][1], matrix[3][2]); }
 
 inline double getDistance(const MVector &start, const MVector &end) { return (end - start).length(); }
@@ -41,4 +44,15 @@ inline T reciprocal(T val)
 
     // reciprocal
     return T(1.0) / val;
+}
+
+template <typename T>
+inline T safeDivide(T &a, T b)
+{
+    if (b == 0)
+    {
+        b = SMALL_NUMBER;
+    }
+
+    return a / b;
 }
