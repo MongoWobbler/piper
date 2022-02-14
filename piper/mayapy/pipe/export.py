@@ -108,6 +108,9 @@ class Export(ABC):
         shader = graphics.PiperShader()
         textures = shader.getTextures()
 
+        if not textures:
+            return
+
         for texture in textures:
             export_path = paths.getGameTextureExport(texture)
             pcu.validateDirectory(os.path.dirname(export_path))
@@ -345,7 +348,7 @@ class Export(ABC):
 
         if len(exports) > 0:
             size = sum([pcu.getFileSize(export_path, string=False) for export_path in exports])
-            text = 'Finished exporting {} file(s) for a total of {} MB '.format(str(len(exports)), str(size))
+            text = 'Finished exporting {} file(s) for a total of {} MB '.format(str(len(exports)), str(round(size, 2)))
             display = pm.displayInfo
 
             if self.animation_errors:

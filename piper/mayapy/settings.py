@@ -5,6 +5,7 @@ import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
+import piper.mayapy.pipernode as pipernode
 from piper.mayapy.pipe.store import store
 
 
@@ -78,6 +79,23 @@ def loadRender():
     pm.modelEditor('modelPanel4', e=True, vtn=pcfg.maya_default_tone_map)
 
 
+def reloadPiperReferences():
+    """
+    Used to reload any sub-references of a Piper Rig reference that is not part of the BIND namespace.
+    Mostly used for a 2022 bug where a few piper rigs don't finish loading their references correctly.
+    """
+    rigs = pipernode.get('piperRig')
+
+    for rig in rigs:
+        namespace = rig.namespace()
+
+        if not namespace:
+            continue
+
+        ref = pm.FileReference(namespace=namespace)
+        [sub_ref.load() for namespace, sub_ref in ref.subReferences().items() if pcfg.bind_namespace not in namespace]
+
+
 def hotkeys():
     """
     Creates hotkeys that make use of piper scripts.
@@ -105,7 +123,7 @@ def hotkeys():
 
 def onNewSceneOpened(*args):
     """
-    Called when a new scene is opened, usually through a callback.
+    Called when a new scene is opened, usually through a callback registed on startup.
     """
     if store.get(pcfg.use_piper_units):
         loadDefaults()
@@ -114,9 +132,16 @@ def onNewSceneOpened(*args):
         loadRender()
 
 
+def onSceneOpened(*args):
+    """
+    Called AFTER a scene is opened and all references have been loaded, usually through a callback registed on startup.
+    """
+    pm.evalDeferred(reloadPiperReferences, lp=True)
+
+
 def startup():
     """
-    To called when Maya starts up.
+    To be called when Maya starts up.
     """
     global callbacks
 
@@ -132,4 +157,7 @@ def startup():
     setStartupProject()
 
     callback = om.MEventMessage.addEventCallback('NewSceneOpened', onNewSceneOpened)
+    callbacks.append(callback)
+
+    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneOpened)
     callbacks.append(callback)

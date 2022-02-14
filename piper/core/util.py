@@ -45,9 +45,14 @@ def validateDirectory(directory):
 
     Args:
         directory (string): Directory to create.
+
+    Returns:
+        (string): Directory created if it did not already exist.
     """
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+    return directory
 
 
 def getSide(name):

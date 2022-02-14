@@ -438,10 +438,22 @@ def createAnimation():
     Returns:
         (pm.nodetypes.piperAnimation): Animation node created.
     """
+    piper_animations = []
     scene_name = pm.sceneName().namebase
-    name = scene_name if scene_name else 'piperAnimation'
-    piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + name)
-    attribute.lockAndHideCompound(piper_animation)
+    base_name = scene_name if scene_name else 'piperAnimation'
     rigs = get('piperRig', ignore='piperAnimation')
-    pm.parent(rigs[0], piper_animation) if len(rigs) == 1 else pm.warning('{} rigs found!'.format(str(len(rigs))))
-    return piper_animation
+
+    if not rigs:
+        pm.warning('No rigs found!')
+        piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + base_name)
+        attribute.lockAndHideCompound(piper_animation)
+        return [piper_animation]
+
+    for rig in rigs:
+        name = pcfg.animation_prefix + base_name + '_' + rig.name(stripNamespace=True)
+        piper_animation = create('piperAnimation', 'dark green', name=name)
+        attribute.lockAndHideCompound(piper_animation)
+        pm.parent(rig, piper_animation)
+        piper_animations.append(piper_animation)
+
+    return piper_animations
