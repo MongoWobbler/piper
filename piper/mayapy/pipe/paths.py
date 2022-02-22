@@ -34,7 +34,8 @@ def getRelativeArt(path='', name=''):
         old_name, extension = os.path.splitext(os.path.basename(path))
         path = os.path.join(directory, name + extension)
 
-    return path.lstrip(art_directory)
+    relative_art = os.path.relpath(path, art_directory)
+    return relative_art.replace('\\', '/')
 
 
 def getSelfExport(name=''):
@@ -84,7 +85,7 @@ def getGameExport(name=''):
 
         # gets the relative path using the art directory
         if scene_path.startswith(art_directory):
-            relative_directory = source_directory.lstrip(art_directory)
+            relative_directory = os.path.relpath(source_directory, art_directory)
         else:
             pm.warning(scene_path + ' is not in art directory! Returning game directory root.')
 
@@ -107,7 +108,7 @@ def getGameTextureExport(texture):
     game_directory = store.get(pcfg.game_directory)
 
     if texture.startswith(art_directory):
-        relative_directory = texture.lstrip(art_directory)
+        relative_directory = os.path.relpath(texture, art_directory)
     else:
         pm.warning(texture + ' is not in art directory! Returning game directory root.')
 
