@@ -4,6 +4,7 @@ import maya.OpenMaya as om
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.mayapy.util as myu
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipernode as pipernode
 from piper.mayapy.pipe.store import store
@@ -79,6 +80,7 @@ def loadRender():
     pm.modelEditor('modelPanel4', e=True, vtn=pcfg.maya_default_tone_map)
 
 
+@myu.saveSelection
 def reloadPiperReferences():
     """
     Used to reload any sub-references of a Piper Rig reference that is not part of the BIND namespace.

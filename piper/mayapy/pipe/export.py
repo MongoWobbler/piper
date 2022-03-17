@@ -256,16 +256,17 @@ class Export(ABC):
             duplicates = root_duplicate.getChildren(ad=True, type='joint')
             duplicates.append(root_duplicate)
 
-            # get root control, if root is uniformly scaled, then don't export attributes, else hook up stuff
+            # get root control to turn off squash stretch attribute temporarily for proper export scale values
             piper_rig = piper_rig[0]
             root_control = rig.getRootControl(piper_rig)
-            if not pcfg.export_root_scale_curves or animation.isUniformlyScaled(root, int(start), int(end), False):
-                pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_up))
-                pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_sides))
-            else:
+
+            # only exporting sides curve since up can be re-created by taking inverse of side curve value
+            pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_up))
+            if pcfg.export_root_scale_curves:
                 root_control.attr(pcfg.squash_stretch_weight_attribute).set(0)
-                root.attr(pcfg.root_scale_up) >> root_duplicate.attr(pcfg.root_scale_up)
                 root.attr(pcfg.root_scale_sides) >> root_duplicate.attr(pcfg.root_scale_sides)
+            else:
+                pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_sides))
 
             # delete unwanted attributes
             for joint, duplicate in zip(joints, duplicates):
@@ -287,7 +288,7 @@ class Export(ABC):
             data = json.loads(data) if data else {}  # json.loads fails with empty string
 
             if not data:
-                data = {'': {'start': start, 'end': end}}
+                data = {'': {'export': True, 'start': start, 'end': end}}
 
             for clip_name, clip_data in data.items():
                 starts.append(clip_data['start'])
@@ -299,6 +300,11 @@ class Export(ABC):
 
             # export each clip
             for clip_name, clip_data in data.items():
+
+                # if export is not checked, then continue with other clips
+                if not clip_data.get('export'):
+                    continue
+
                 pm.playbackOptions(min=clip_data['start'], max=clip_data['end'])
                 export_name = anim_name + '_' + clip_name if clip_name else anim_name
                 export_path = self.export_method(export_name, self.animation_settings)  # export happens here

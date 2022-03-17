@@ -3,6 +3,7 @@
 import json
 
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+import maya.OpenMaya as om
 import pymel.core as pm
 
 from piper.ui.widget import manager
@@ -14,6 +15,7 @@ class MayaClipper(MayaQWidgetDockableMixin, Clipper):
     def __init__(self, *args, **kwargs):
         super(MayaClipper, self).__init__(*args, **kwargs)
         manager.register(self)
+        self.callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.refresh)
 
     def getAnimations(self):
         """
@@ -39,6 +41,7 @@ class MayaClipper(MayaQWidgetDockableMixin, Clipper):
         """
         Writes data found in the AnimClip widgets into the associated nodes clipData attribute as parsed dictionaries.
         """
+        clip_count = 0
         for widget in self.anim_widgets:
             data = widget.getData()
 
@@ -46,11 +49,15 @@ class MayaClipper(MayaQWidgetDockableMixin, Clipper):
                 piper_animation = pm.PyNode(animation_name)
                 parsed_data = json.dumps(clip_data)
                 piper_animation.clipData.set(parsed_data)
+                clip_count += len(clip_data)
+
+        pm.displayInfo('Saved {} clips.'.format(str(clip_count)))
 
     def dockCloseEventTriggered(self):
         """
         Happens when clipper window closes, useful to unregister clipper for widget window manager.
         """
+        om.MEventMessage.removeCallback(self.callback)
         manager.unregister(self)
         super(MayaClipper, self).dockCloseEventTriggered()
 

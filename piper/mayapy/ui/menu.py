@@ -20,6 +20,7 @@ import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.clipper as myclipper
 import piper.mayapy.ui.switcher as myswitcher
+import piper.mayapy.ui.vert_selector as myvert_selector
 import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
@@ -196,6 +197,10 @@ class MayaBonesMenu(MayaPiperMenu):
         self.add('Assign Bind Attributes', bone.assignBindAttributes)
         self.add('Add Delete Attribute', attribute.addDelete)
         self.add('Turn Off Segment Scale Compensate', bone.setSegmentScaleCompensateOff)
+        self.add('Return to Bind Pose', skin.returnToBindPose)
+        self.addSeparator()
+        self.add('Select Fractionally Weighted Verts', skin.selectWeightedVerts)
+        self.add('Select Weighted Verts', myvert_selector.show)
         self.addSeparator()
         self.add('Unbind', self.binder.unbind)
         self.add('Rebind', self.binder.rebind)

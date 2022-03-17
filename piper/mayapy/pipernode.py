@@ -450,7 +450,7 @@ def createAnimation():
         return [piper_animation]
 
     for rig in rigs:
-        name = pcfg.animation_prefix + base_name + '_' + rig.name(stripNamespace=True)
+        name = pcfg.animation_prefix + base_name
         piper_animation = create('piperAnimation', 'dark green', name=name)
         attribute.lockAndHideCompound(piper_animation)
         pm.parent(rig, piper_animation)

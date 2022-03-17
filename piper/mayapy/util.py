@@ -104,6 +104,22 @@ def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, di
     return nodes
 
 
+def saveSelection(method):
+    """
+    Decorator for saving selection but clearing it out when calling function.
+
+    Args:
+        method (function): Function to save selection when called.
+    """
+    def wrapper():
+        selection = pm.selected()
+        pm.select(cl=True)
+        method()
+        pm.select(selection)
+
+    return wrapper
+
+
 def getRootParent(node):
     """
     Gets the top most parent of the given node. Note, it could be self.
@@ -198,6 +214,25 @@ def getAllParents(start):
         node = parent
         yield parent
         parent = node.getParent()
+
+
+def getSingleChildren(start):
+    """
+    Gets all the children nodes that only have one child as well.
+
+    Args:
+        start (PyNode): node to start getting the child nodes that won't branch out.
+
+    Returns:
+        (generator): Generator of all nodes with only one child node,
+        Last item in list may be empty or have multiple children.
+    """
+    children = start.getChildren()
+
+    while len(children) == 1:
+        child = children[0]
+        yield child
+        children = child.getChildren()
 
 
 def hasMeshes(node):

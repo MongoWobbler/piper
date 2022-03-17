@@ -8,6 +8,58 @@ import piper.mayapy.util as myu
 import maya.internal.nodes.proximitywrap.node_interface as node_interface
 
 
+def selectInfluencingVerts(joints=None):
+    """
+    Gets all the vertices that the given or selected joints are influencing.
+
+    Args:
+        joints (list): Joints that will be influencing vertices.
+
+    Returns:
+        (list): Verts selected.
+    """
+    joints = myu.validateSelect(joints, find='joint', minimum=1)
+    pm.select(cl=True)
+    [pm.skinCluster(skin, siv=joint, ats=True, e=True) for joint in joints for skin in joint.future(type='skinCluster')]
+    verts = pm.selected()
+    return verts
+
+
+def selectWeightedVerts(joints=None, operator='< ', threshold=1.0):
+    """
+    Selects all the vertices of the given or selected joints that have a weight below or greater the given threshold
+    based on the given operator.
+
+    Args:
+        joints (list): Joints to get influencing vertices from.
+
+        operator (string): Name of operator to perform on verts to filter them out (less, greater, equal, etc).
+
+        threshold (float): If vert has less than threshold and its influenced by a given joint, then it'll be selected.
+
+    Returns:
+        (list): Verts selected.
+    """
+    joints = myu.validateSelect(joints, find='joint', minimum=1)
+    pm.select(cl=True)
+    verts = []
+
+    for joint in joints:
+        skins = joint.future(type='skinCluster')
+
+        for skin in skins:
+            pm.skinCluster(skin, siv=joint, ats=False, e=True)
+            weighted_verts = pm.ls(selection=True, flatten=True)
+
+            for vert in weighted_verts:
+                weight = pm.skinPercent(skin, vert, transform=joint, q=True)
+                if pcu.operators[operator](weight, threshold):
+                    verts.append(vert)
+
+    pm.select(verts)
+    return verts
+
+
 def returnToBindPose(joints=None):
     """
     Returns the associated bindPoses of the given joints to the pose when they were originally bound.

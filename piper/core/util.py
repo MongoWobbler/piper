@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import json
+import time
 import getpass
 import inspect
 import operator
@@ -11,11 +12,18 @@ import platform
 import sysconfig
 import functools
 import subprocess
-import time
 import webbrowser
 import collections
 from weakref import proxy
 import piper_config as pcfg
+
+
+operators = {'< ': operator.lt,
+             '<=': operator.le,
+             '==': operator.eq,
+             '!=': operator.ne,
+             '>=': operator.ge,
+             '> ': operator.gt}
 
 
 def getCurrentPath():

@@ -3,7 +3,7 @@
 import os
 import sys
 from PySide2 import QtWidgets, QtGui
-from piper.ui.widget import manager
+from piper.ui.widget import SecondaryAction, setTips, manager
 import piper.core.util as pcu
 
 
@@ -27,7 +27,7 @@ class PiperMenu(QtWidgets.QMenu):
         Convenience method for adding a new item to the menu.
 
         Args:
-            name (string): Name for the item to have on the menu
+            name (string): Name for the item to have on the menu.
 
             on_pressed (method): This will be called when the item is pressed.
 
@@ -42,19 +42,57 @@ class PiperMenu(QtWidgets.QMenu):
         name = name.decode('utf-8') if sys.version.startswith('2') else name
         action = QtWidgets.QAction(name, self)
         action.triggered.connect(wrapper)
-
-        # getting the documentation from the function
-        documentation = on_pressed.__doc__
-        method = on_pressed.__module__ + '.' + on_pressed.__name__
-        status_tip = method + ': ' + documentation.split('Args:')[0].split('Returns:')[0] if documentation else method
-
-        action.setToolTip(documentation)
-        action.setStatusTip(status_tip)
+        setTips(on_pressed, action)
         self.addAction(action)
         self.actions.append(action)
         return action
 
+    def addSecondary(self, name, on_pressed, on_option, *args, **kwargs):
+        """
+        Adds an action item to the menu with a option box.
+
+        Args:
+            name (string): Name for the item to have on the menu.
+
+            on_pressed (method): This will be called when the item is pressed.
+
+            on_option (method): This will be called when the option box is pressed.
+
+        Returns:
+            (piper.ui.widget.SecondaryAction): Action item added.
+        """
+
+        def pressed_wrapper():
+            self.onBeforePressed()
+            on_pressed(*args, **kwargs)
+            self.onAfterPressed(on_pressed)
+
+        def option_wrapper():
+            self.onBeforePressed()
+            on_option(*args, **kwargs)
+            self.onAfterPressed(on_pressed)
+
+        name = name.decode('utf-8') if sys.version.startswith('2') else name
+        action = SecondaryAction(name, pressed_wrapper, option_wrapper, on_pressed, on_option, self)
+        self.addAction(action)
+        self.actions.append(action)
+
+        return action
+
     def addCheckbox(self, name, state, on_pressed):
+        """
+        Convenience method for adding a checkbox item to the menu.
+
+        Args:
+            name (string): Name for the checkbox item to have on the menu.
+
+            state (boolean): Initial state of checkbox.
+
+            on_pressed (method): This will be called when the item is pressed.
+
+        Returns:
+            (QtWidgets.QAction): Action item added.
+        """
         name = name.decode('utf-8') if sys.version.startswith('2') else name
         action = QtWidgets.QAction(name, self)
         action.setCheckable(True)
@@ -65,6 +103,15 @@ class PiperMenu(QtWidgets.QMenu):
         return action
 
     def addMenuP(self, menu):
+        """
+        Convenience method for adding sub-menus.
+
+        Args:
+            menu (QtWidgets.QMenu): Menu to add as submenu to self.
+
+        Returns:
+            (QtWidgets.QMenu): Menu added.
+        """
         return self.addMenu(menu) if menu and menu.actions else None
 
 

@@ -1,7 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
 import copy
-from PySide2 import QtWidgets
+from PySide2 import QtWidgets, QtCore
 import piper.ui.widget as widget
 
 
@@ -32,7 +32,7 @@ class Clipper(QtWidgets.QDialog):
 
         self.main_layout.addLayout(button_layout)
 
-    def refresh(self):
+    def refresh(self, *args):
         """
         Refreshes the clipper widget with all the animation nodes in scene and their data.
         """
@@ -88,7 +88,7 @@ class AnimClip(QtWidgets.QWidget):
         self.table = QtWidgets.QTableWidget(1, 3)
         self.table.setHorizontalHeaderLabels(self.column_labels)
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.table.setShowGrid(False)
+        self.table.setShowGrid(True)
 
         main_layout.addWidget(self.table, 1, 0)
 
@@ -120,7 +120,13 @@ class AnimClip(QtWidgets.QWidget):
         Adds a row line to the table widget to the row after the one selected.
         """
         current_row = self.table.currentIndex().row()
-        self.table.insertRow(current_row + 1)
+        new_row = current_row + 1
+        self.table.insertRow(new_row)
+
+        clip_item = QtWidgets.QTableWidgetItem()
+        clip_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable)
+        clip_item.setCheckState(QtCore.Qt.Checked)
+        self.table.setItem(new_row, 0, clip_item)
 
     def onRemoveLinePressed(self):
         """
@@ -148,15 +154,16 @@ class AnimClip(QtWidgets.QWidget):
         data = copy.deepcopy(self.default_data)
 
         for row in range(self.table.rowCount()):
-            clip_name = self.table.item(row, 0)
+            clip_item = self.table.item(row, 0)
             start = self.table.item(row, 1)
             end = self.table.item(row, 2)
 
-            if clip_name and start and end:
-                clip_name = clip_name.text()
+            if clip_item and start and end:
+                should_export = clip_item.checkState() == QtCore.Qt.Checked
+                clip_name = clip_item.text()
                 start = int(start.text())
                 end = int(end.text())
-                data[self.animation_name][clip_name] = {'start': start, 'end': end}
+                data[self.animation_name][clip_name] = {'export': should_export, 'start': start, 'end': end}
 
         return data
 
@@ -169,7 +176,12 @@ class AnimClip(QtWidgets.QWidget):
         """
         self.table.setRowCount(len(clip_data))
         for i, (clip_name, data) in enumerate(clip_data.items()):
-            clip_name_item = QtWidgets.QTableWidgetItem(clip_name)
+            state = QtCore.Qt.Checked if data.get('export') else QtCore.Qt.Unchecked
+            clip_item = QtWidgets.QTableWidgetItem(clip_name)
+            clip_item.setText(clip_name)
+            clip_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable)
+            clip_item.setCheckState(state)
+
             start_item = QtWidgets.QTableWidgetItem(str(data['start']))
             end_item = QtWidgets.QTableWidgetItem(str(data['end']))
-            [self.table.setItem(i, n, item) for n, item in enumerate([clip_name_item, start_item, end_item])]
+            [self.table.setItem(i, n, item) for n, item in enumerate([clip_item, start_item, end_item])]

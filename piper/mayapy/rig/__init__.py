@@ -633,6 +633,7 @@ class Rig(object):
             (string): Axis calculated from orientation of current iteration and next iteration.
         """
         axis = last_axis
+        axis_vector = None
 
         if not duplicates:
             duplicates = transforms
@@ -642,8 +643,19 @@ class Rig(object):
             axis = convert.axisToString(axis_vector)
 
         # attempt to deduce axis if transform only has one child and axis is not given
-        elif len(transforms) == 1 and transforms[0].getChildren() and len(transforms[0].getChildren()) == 1:
-            axis_vector = mayamath.getOrientAxis(transforms[0], transforms[0].getChildren()[0])
+        children = myu.getSingleChildren(transforms[0])
+        if children and len(transforms) == 1:
+
+            # iterate through all the children until we find something we can aim at
+            for child in children:
+                axis_vector = mayamath.getOrientAxis(transforms[0], child)
+
+                if axis_vector:
+                    break
+
+            if not axis_vector:
+                pm.error('All joints are stacked on top of each other! Please specify axis.')
+
             axis = convert.axisToString(axis_vector)
 
         return axis, axis
@@ -693,7 +705,7 @@ class Rig(object):
 
         return controls
 
-    def FK(self, start, end='', parent=None, axis=None, shape='', sizes=None, connect=True, global_ctrl='', name=''):
+    def FK(self, start, end='', parent=None, axis=None, shape='', sizes=None, connect=True, offset=None, name=''):
         """
         Creates FK controls for the transform chain deduced by the start and end transforms.
 
@@ -702,7 +714,8 @@ class Rig(object):
 
             end (pm.nodetypes.Transform or string): End of the chain to be driven by FK controls.
 
-            parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
+            parent (pm.nodetypes.Transform or string): If given, will drive the start control
+            through a parent matrix constraint.
 
             axis (string): Only used if no end joint given for shape's axis to match rotations.
 
@@ -712,7 +725,8 @@ class Rig(object):
 
             connect (bool): If True, connects the duplicate FK chain to the given start/end transforms to be driven.
 
-            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
+            offset (pm.nodetypes.Transform or string): If given, will run an offset constraint on the parent control.
+            (Used for chains after IK so that the chains don't scale up with IK stretching)
 
             name (str or None): Name to give group that will house all FK components.
 
@@ -722,16 +736,14 @@ class Rig(object):
         if not shape:
             shape = curve.circle
 
-        if global_ctrl is '':
-            global_ctrl = self.root_control
-
         controls = []
         decomposes = []
         multiplies = []
         in_controls = []
         calc_axis = 'y'
         last_axis = axis
-        start, end = self.validateTransforms([start, end])
+        global_ctrl = self.root_control
+        start, end, parent, offset = self.validateTransforms([start, end, parent, offset])
         transforms = xform.getChain(start, end)
         duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
 
@@ -788,27 +800,39 @@ class Rig(object):
                 multiplies.append(multiply)
 
         # edge cases for scaling
-        if parent and len(transforms) > 1 and parent != global_ctrl:
+        transforms_length = len(transforms)
+        if parent and transforms_length > 1 and parent != global_ctrl:
             multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[0])
             parent.attr('s' + calc_axis) >> multiply_input
 
-            if len(transforms) > 2 and controls[1] != controls[-1]:
+            if transforms_length > 2 and controls[1] != controls[-1]:
                 multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[1])
                 parent.attr('s' + calc_axis) >> multiply_input
 
-        if len(transforms) > 2:
+        if transforms_length > 2:
             multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[1])
             controls[0].attr('s' + calc_axis) >> multiply_input
 
         if start.name(stripNamespace=True) == pcfg.body_base_joint_name:
             self.body_base_control = controls[0]
 
+        # used for chains after IK
+        if offset:
+            xform.offsetConstraint(offset, controls[0], offset=True)
+
+            # single FK after IK gets plugged directly and does not need scaling resolved
+            if transforms_length > 1:
+                decompose = attribute.getDecomposeMatrix(offset.worldMatrix[0])
+                for multiply in multiplies:
+                    multiply_input = attribute.getNextAvailableMultiplyInput(multiply)
+                    decompose.outputScaleY >> multiply_input
+
         function_name = inspect.currentframe().f_code.co_name
         self.organize(controls + [duplicates[0]], prefix=function_name, name=name)
         self.addControls(controls, inner=in_controls, name=function_name)
         return duplicates, controls, in_controls
 
-    def IK(self, start, end, parent=None, shape=curve.ring, sizes=None, connect=True, global_ctrl='', name=''):
+    def IK(self, start, end, parent=None, shape=curve.ring, sizes=None, connect=True, name=''):
         """
         Creates IK controls and IK RP solver and for the given start and end joints.
 
@@ -825,8 +849,6 @@ class Rig(object):
 
             connect (bool): If True, connects the duplicate FK chain to the given start/end transforms to be driven.
 
-            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
-
             name (str or None): Name to give group that will house all IK components.
 
         Returns:
@@ -838,13 +860,11 @@ class Rig(object):
         scale_buffer = None
         controls = []
         start, end = self.validateTransforms([start, end])
+        global_ctrl = self.root_control
         transforms = xform.getChain(start, end)
         duplicates = xform.duplicateChain(transforms, prefix=pcfg.ik_prefix, color='purple', scale=0.5)
         mid = pcu.getMedian(transforms)
         mid_duplicate = pcu.getMedian(duplicates)
-
-        if global_ctrl is '':
-            global_ctrl = self.root_control
 
         if mid == start or mid == end:
             pm.error('Not enough joints given! {} is the mid joint?'.format(mid.name()))
@@ -969,7 +989,7 @@ class Rig(object):
         self.addControls(controls, name=function_name)
         return duplicates, controls, scale_buffer
 
-    def FKIK(self, start, end, parent=None, fk_shape='', ik_shape='', proxy=True, global_ctrl='', name=''):
+    def FKIK(self, start, end, parent=None, fk_shape='', ik_shape='', proxy=True, name=''):
         """
         Creates a FK and IK controls that drive the chain from start to end.
 
@@ -987,8 +1007,6 @@ class Rig(object):
 
             proxy (boolean): If True, adds a proxy FK_IK attribute to all controls.
 
-            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
-
             name (str or None): Name to give group that will house all FKIK components.
 
         Returns:
@@ -1000,15 +1018,12 @@ class Rig(object):
         if not ik_shape:
             ik_shape = curve.ring
 
-        if global_ctrl is '':
-            global_ctrl = self.root_control
-
         # create joint chains that is the same as the given start and end chain for FK and IK then create controls
         start, end = self.validateTransforms([start, end])
         transforms = xform.getChain(start, end)
         sizes = [control.calculateSize(transform) for transform in transforms]
-        fk_transforms, fk_ctrls, in_ctrls = self.FK(start, end, parent, '', fk_shape, sizes, False, global_ctrl, None)
-        ik_transforms, ik_ctrls, buffer = self.IK(start, end, parent, ik_shape, sizes, False, global_ctrl, None)
+        fk_transforms, fk_ctrls, in_ctrls = self.FK(start, end, parent, '', fk_shape, sizes, False, '', None)
+        ik_transforms, ik_ctrls, buffer = self.IK(start, end, parent, ik_shape, sizes, False, None)
         controls = fk_ctrls + in_ctrls + ik_ctrls
 
         # create the switcher control and add the transforms, fk, and iks to its attribute to store it
@@ -1097,7 +1112,7 @@ class Rig(object):
 
         return ctrl, spaces
 
-    def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, global_ctrl='', name=''):
+    def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, name=''):
         """
         Creates the twist control that mimics twist of given target based on given weight.
 
@@ -1113,8 +1128,6 @@ class Rig(object):
             blended (boolean): If True, will blend translate of joint between given driver and target.
 
             weight (float): Amount of twist joint will mimic from given target.
-
-            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
 
             name (str or None): Name to give group that will house all twist components.
 
@@ -1136,7 +1149,7 @@ class Rig(object):
 
         # create FK control
         parent = None if blended else driver
-        duplicates, controls, in_ctrl = self.FK(joint, parent=parent, axis=axis, global_ctrl=global_ctrl, name=name)
+        duplicates, controls, in_ctrl = self.FK(joint, parent=parent, axis=axis, name=name)
         ctrl = controls[0]
         attribute.addSeparator(ctrl)
 
@@ -1632,35 +1645,35 @@ class Rig(object):
 
         return ctrl
 
-    def humanLeg(self, start, end, ball, side='', parent=None, global_ctrl='', name=''):
+    def humanLeg(self, start, end, ball, side='', parent=None, name=''):
         """
         Convenience method for rigging a leg. FKIK chain, with banker, and reverse controls.
 
         Args:
-            start (pm.nodetypes.Joint): Start of the chain to be driven by FK controls.
+            start (pm.nodetypes.Joint or string): Start of the chain to be driven by FK controls.
 
-            end (pm.nodetypes.Joint): End of the chain to be driven by FK controls. If none given, will only drive start
+            end (pm.nodetypes.Joint or string): End of the chain to be driven by FK controls.
+            If none given, will only drive start
 
-            ball (pm.nodetypes.Transform): Transform that will be driven by FK chain and reversed.
+            ball (pm.nodetypes.Transform or string): Transform that will be driven by FK chain and reversed.
 
             side (string): Side to create banker control on.
 
             parent (pm.nodetypes.Transform): If given, will drive the start control through parent matrix constraint.
-
-            global_ctrl (pm.nodetypes.Transform): If given, will use this to drive global scale of piperIK control.
 
             name (str or None): Name to give group that will house all IK components.
 
         Returns:
             (list): Nodes created.
         """
-        fk_transforms, ik_transforms, ctrls = self.FKIK(start, end, parent=parent, global_ctrl=global_ctrl, name=name)
+        start, end = self.validateTransforms([start, end])
+        fk_transforms, ik_transforms, ctrls = self.FKIK(start, end, parent=parent, name=name)
 
         banker = self.banker(ik_transforms[-1], ctrls[-1], side=side)
-        ball_joint, ball_control, ball_inner = self.FK(ball, name=name)
-        xform.offsetConstraint(end, ball_control[0], offset=True)
+        ball_joint, ball_control, ball_inner = self.FK(ball, offset=end, name=name)
         ik_handle = ctrls[-1].connections(skipConversionNodes=True, type='ikHandle')[0]
         reverse_ctrl = self.reverse(ik_handle, ik_transforms[-1], ball_control[0], ball, ctrls[0])
         control.tagAsControllerParent(reverse_ctrl, banker)
+        ctrls[0].attr(pcfg.fk_ik_attribute).set(1)  # set to IK since that is what most human legs are set to.
 
         return [fk_transforms, ik_transforms, ctrls], [ball_joint, ball_control, ball_inner], [banker, reverse_ctrl]
