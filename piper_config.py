@@ -65,6 +65,7 @@ maya_unwanted_plugins = ['xgenToolkit',
 hotkey_set_name = 'PiperKeySet'
 maya_default_time = 'ntsc'
 maya_default_length = 'cm'
+maya_workspace_control_suffix = 'WorkspaceControl'
 
 # Maya graphics
 maya_default_rendering_api = 'DirectX11'

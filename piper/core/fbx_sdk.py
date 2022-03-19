@@ -120,7 +120,7 @@ def loadScene(manager, scene, file_path):
 class PiperFBX(object):
     """
     This is a helper FBX class useful in accessing and modifying the FBX Scene Documentation for the FBX SDK
-    http://help.autodesk.com/view/FBX/2015/ENU/?guid=__cpp_ref_index_html
+    https://help.autodesk.com/view/FBX/2015/ENU/?guid=__cpp_ref_index_html
 
     Thanks to Randall for writing most of this class.
     https://gist.github.com/Meatplowz/8f408912cf554f2d11085fb68b62d3a3
@@ -222,7 +222,7 @@ class PiperFBX(object):
 
     def getClassNodes(self, class_id):
         """
-        Get nodes in the scene with the given classid
+        Get nodes in the scene with the given class id
 
         geometry_nodes = fbx_file.getClassNodes( fbx.FbxGeometry.ClassId )
         """
@@ -316,7 +316,7 @@ class PiperFBX(object):
         """
         Remove a property from an Fbx node
 
-        remove_property = fbx_file.remove_property(node, 'UDP3DSMAX')
+        remove_property = fbx_file.remove_property(node, 'PropertyNameHere')
         """
         node_property = self.getProperty(node, property_string)
         if node_property.IsValid():

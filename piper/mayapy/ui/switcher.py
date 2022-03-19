@@ -1,6 +1,7 @@
 #  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
 
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+import shiboken2
+
 import maya.OpenMaya as om
 import pymel.core as pm
 
@@ -9,6 +10,7 @@ import piper.core.util as pcu
 from piper.ui.widget import manager
 from piper.ui.switcher import Switcher
 from piper.mayapy.pipe.store import store
+from piper.mayapy.ui.widget import Controller
 import piper.mayapy.rig as rig
 import piper.mayapy.rig.space as space
 import piper.mayapy.rig.control as control
@@ -16,11 +18,19 @@ import piper.mayapy.rig.switcher as switcher
 import piper.mayapy.pipernode as pipernode
 
 
-class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
+class MayaSwitcher(Switcher):
+
+    label = 'Switcher'
+    instance = None  # useful to be singleton while window is open
+    ui_name = label.replace(' ', '')  # same as label, but without spaces
+    create_command = 'import {0}; {0}.show()'.format(__name__)
+    closed_command = 'import {0}; {0}.unregister()'.format(__name__)
 
     def __init__(self, maya_store=None, *args, **kwargs):
         super(MayaSwitcher, self).__init__(dcc_store=maya_store, *args, **kwargs)
         manager.register(self)
+        self.setObjectName(self.__class__.ui_name)
+        self.controller = None
         self.callback = om.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
         self.selected = None
         self.inners = []
@@ -28,6 +38,19 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         self.rests = []
 
         self.onSelectionChanged()  # called to load/update switcher on startup
+
+    def showInMaya(self):
+        """
+        Creates the controller to handle Maya integration with this class' widget. This replaces widget.show
+        """
+        self.controller = Controller(self.__class__.ui_name)
+
+        if self.controller.exists():
+            self.controller.restore(self)
+        else:
+            self.controller.create(self.label, self, ui_script=self.create_command, close_script=self.closed_command)
+
+        self.controller.setVisible(True)
 
     def restorePrevious(self):
         """
@@ -264,12 +287,40 @@ class MayaSwitcher(MayaQWidgetDockableMixin, Switcher):
         rigs = pipernode.get('piperRig')
         pm.select(rigs)
 
-    def dockCloseEventTriggered(self):
-        self.onClosedPressed()
-        manager.unregister(self)
-        om.MMessage.removeCallback(self.callback)
-        super(MayaSwitcher, self).dockCloseEventTriggered()
+    def close(self, *args, **kwargs):
+        """
+        Overriding close method to use the controller class function instead.
 
+        Returns:
+            (string): Name of workspace control closed.
+        """
+        self.controller.close()
+
+
+def get():
+    """
+    Gets the instance to the widget since it is meant to be a singleton.
+
+    Returns:
+        (MayaSwitcher): Widget created.
+    """
+    MayaSwitcher.instance = MayaSwitcher(maya_store=store) if MayaSwitcher.instance is None else MayaSwitcher.instance
+    return MayaSwitcher.instance
+
+
+def unregister():
+    """
+    Unregisters widget from the widget manager.
+    """
+    if MayaSwitcher.instance is None:
+        return
+
+    MayaSwitcher.instance.onClosedPressed()
+    om.MMessage.removeCallback(MayaSwitcher.instance.callback)
+    manager.unregister(MayaSwitcher.instance)
+    shiboken2.delete(MayaSwitcher.instance)
+    MayaSwitcher.instance = None
+    
 
 def show():
     """
@@ -278,6 +329,6 @@ def show():
     Returns:
         (MayaSwitcher): QtWidget being shown.
     """
-    gui = MayaSwitcher(maya_store=store)
-    gui.show(dockable=True)
-    return gui
+    instance = get()
+    instance.showInMaya()
+    return instance

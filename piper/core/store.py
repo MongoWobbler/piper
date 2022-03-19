@@ -120,6 +120,25 @@ class Store(object):
             self.getSettings()
 
         self._settings[variable] = value
+        self.writeSettings()
+
+    def update(self, data):
+        """
+        Updates the settings dictionary with the given data dictionary.
+
+        Args:
+            data (dictionary): Dictionary that adds to current settings.
+        """
+        if not self._settings:
+            self.getSettings()
+
+        self._settings.update(data)
+        self.writeSettings()
+
+    def writeSettings(self):
+        """
+        Convenience method for writing settings to disk file.
+        """
         pcu.writeJson(self.getPath(), self._settings)
 
 
