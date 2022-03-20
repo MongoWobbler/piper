@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import sys
@@ -11,4 +11,9 @@ if piper_directory not in sys.path:
 
 
 def piperTools():
-    pass
+    """
+    Used to load piper stuff.
+    """
+    import piper.core.vendor
+
+    piper.core.vendor.addPaths()  # sets up vendor paths for dcc

@@ -1,10 +1,9 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
-
-import shiboken2
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import maya.OpenMaya as om
 import pymel.core as pm
 
+from Qt import QtCompat
 import piper_config as pcfg
 import piper.core.util as pcu
 from piper.ui.widget import manager
@@ -318,7 +317,7 @@ def unregister():
     MayaSwitcher.instance.onClosedPressed()
     om.MMessage.removeCallback(MayaSwitcher.instance.callback)
     manager.unregister(MayaSwitcher.instance)
-    shiboken2.delete(MayaSwitcher.instance)
+    QtCompat.delete(MayaSwitcher.instance)
     MayaSwitcher.instance = None
     
 

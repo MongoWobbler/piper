@@ -1,8 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import sys
-from PySide2 import QtWidgets, QtGui
+from Qt import QtWidgets, QtGui
 from piper.ui.widget import SecondaryAction, setTips, manager
 import piper.core.util as pcu
 

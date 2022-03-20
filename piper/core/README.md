@@ -7,8 +7,6 @@
 **Build Command(s):**
 ```  
 cd piper  
-pyinstaller "build_piper_installer.py" --console --onefile --name piper_installer
+pyinstaller "build_piper_installer.py" --clean --distpath "./" --console --onefile --name piper_installer
 ```
-
-**NOTE:**  
-Make sure to move piper_installer.exe out of the "dist" directory it builds in, and into the parent directory, piper.
+Alternatively, run build_piper_installer.bat that comes in the piper directory :)

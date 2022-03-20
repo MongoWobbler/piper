@@ -1,6 +1,6 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from Qt import QtWidgets, QtCore, QtGui
 
 
 BOX_ICON = [

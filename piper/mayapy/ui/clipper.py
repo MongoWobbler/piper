@@ -1,11 +1,11 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import json
-import shiboken2
 
 import maya.OpenMaya as om
 import pymel.core as pm
 
+from Qt import QtCompat
 from piper.ui.widget import manager
 from piper.ui.clipper import Clipper
 from piper.mayapy.ui.widget import Controller
@@ -105,7 +105,7 @@ def unregister():
 
     om.MEventMessage.removeCallback(MayaClipper.instance.callback)
     manager.unregister(MayaClipper.instance)
-    shiboken2.delete(MayaClipper.instance)
+    QtCompat.delete(MayaClipper.instance)
     MayaClipper.instance = None
 
 

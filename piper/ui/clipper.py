@@ -1,7 +1,7 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import copy
-from PySide2 import QtWidgets, QtCore
+from Qt import QtWidgets, QtCore
 import piper.ui.widget as widget
 
 

@@ -1,8 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 
-from PySide2 import QtWidgets
+from Qt import QtWidgets
 
 import pymel.core as pm
 

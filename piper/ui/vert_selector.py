@@ -1,7 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 from functools import partial
-from PySide2 import QtWidgets
+from Qt import QtWidgets
 import piper.core.util as pcu
 import piper.ui.widget as widget
 

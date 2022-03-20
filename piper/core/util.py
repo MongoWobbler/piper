@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import re
@@ -47,6 +47,19 @@ def getPiperDirectory():
     return os.environ['PIPER_DIR']
 
 
+def listFullDirectory(directory):
+    """
+    Convenience method for getting the full path from listing a directory.
+
+    Args:
+        directory (string): Directory to list paths from.
+
+    Returns:
+        (list): Full path of files and directories in given directory.
+    """
+    return [os.path.join(directory, path) for path in os.listdir(directory)]
+
+
 def validateDirectory(directory):
     """
     Creates the given directory if it does not already exist.
@@ -86,20 +99,20 @@ def getApp():
     Gets the application that is running the current python script.
 
     Returns:
-        (string): Maya or Houdini.
+        (string): Maya, Houdini, UnrealEngine, or 3dsMax.
     """
     path = sysconfig.get_path('scripts')
 
     if 'Maya' in path:
-        return 'Maya'
+        return pcfg.maya_name
     elif 'HOUDIN' in path:
-        return 'Houdini'
+        return pcfg.houdini_name
     elif 'UnrealEnginePython' in path:
-        return 'UE4'
-    elif '3dx' in path and 'Max' in path:
-        return '3dxMax'
+        return pcfg.unreal_name
+    elif '3ds' in path and 'Max' in path:
+        return pcfg.max_3ds_name
     else:
-        raise ValueError('Current compatible software is Maya or Houdini')
+        raise ValueError('No compatible software found in ' + path + '. Please see piper_config for compatible DCCs.')
 
 
 def getFileSize(path, accuracy=3, string=True):

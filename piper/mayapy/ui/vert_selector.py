@@ -1,8 +1,8 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import shiboken2
 import pymel.core as pm
 
+from Qt import QtCompat
 from piper.ui.vert_selector import VertSelector
 from piper.ui.widget import manager
 from piper.mayapy.ui.widget import Controller
@@ -94,7 +94,7 @@ def unregister():
         return
 
     manager.unregister(MayaVertSelector.instance)
-    shiboken2.delete(MayaVertSelector.instance)
+    QtCompat.delete(MayaVertSelector.instance)
     MayaVertSelector.instance = None
 
 

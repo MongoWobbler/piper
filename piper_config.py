@@ -1,7 +1,14 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 # Documentation
 documentation_link = 'https://github.com/MongoWobbler/piper'
+
+# Digital Content Creation (DCC) names
+maya_name = 'Maya'
+houdini_name = 'Houdini'
+unreal_name = 'UnrealEngine'
+max_3ds_name = '3dsMax'
+dcc_agnostic_name = 'agnostic'
 
 # Maths
 axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
@@ -10,6 +17,14 @@ axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
 left_suffix = '_l'
 right_suffix = '_r'
 default_mirror_axis = 'x'
+
+# vendors
+vendors = {dcc_agnostic_name: ['Qt'],
+           maya_name: ['fbx'],
+           houdini_name: [],
+           unreal_name: [],
+           max_3ds_name: []
+           }
 
 # Store
 art_directory = 'art_directory'

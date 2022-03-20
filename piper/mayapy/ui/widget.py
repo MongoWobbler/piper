@@ -1,9 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import sys
 
-from PySide2 import QtWidgets, QtCore
-from shiboken2 import wrapInstance, getCppPointer
+from Qt import QtWidgets, QtCore, QtCompat
 
 import maya.OpenMayaUI as omui
 import pymel.core as pm
@@ -32,7 +31,7 @@ def getMainWindow():
         return main_window
 
     main_window_ptr = omui.MQtUtil.mainWindow()
-    main_window = wrapInstance(long(main_window_ptr), QtWidgets.QWidget)
+    main_window = QtCompat.wrapInstance(long(main_window_ptr), QtWidgets.QWidget)
     return main_window
 
 
@@ -116,7 +115,7 @@ class Controller(object):
         self.widget.setAttribute(QtCore.Qt.WA_DontCreateNativeAncestors)
 
         workspace_control_ptr = long(omui.MQtUtil.findControl(self.name))
-        widget_ptr = long(getCppPointer(self.widget)[0])
+        widget_ptr = QtCompat.getCppPointer(self.widget)
 
         omui.MQtUtil.addWidgetToMayaLayout(widget_ptr, workspace_control_ptr)
 

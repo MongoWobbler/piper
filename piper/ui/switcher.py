@@ -1,8 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from Qt import QtWidgets, QtCore, QtGui
 
 import piper_config as pcfg
 import piper.core.util as pcu
@@ -90,7 +90,7 @@ class Switcher(QtWidgets.QDialog):
         widget = QtWidgets.QListWidget()
         widget.itemClicked.connect(on_pressed)
         widget.setFocusPolicy(QtCore.Qt.NoFocus)
-        layout.addWidget(widget, alignment=QtGui.Qt.AlignTop)
+        layout.addWidget(widget, alignment=QtCore.Qt.AlignTop)
         return widget
 
     @staticmethod
@@ -112,7 +112,7 @@ class Switcher(QtWidgets.QDialog):
         """
         box = QtWidgets.QCheckBox(name)
         box.setChecked(checked)
-        layout.addWidget(box, alignment=QtGui.Qt.AlignJustify)
+        layout.addWidget(box, alignment=QtCore.Qt.AlignJustify)
 
         if on_pressed:
             box.stateChanged.connect(on_pressed)
