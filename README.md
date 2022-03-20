@@ -6,8 +6,7 @@ Tools are biased towards Maya and UE4.
 
 [Follow production status by clicking this link](https://github.com/MongoWobbler/piper/projects/1)
 
-***
-## Usage  
+## Installing  
 
 Run **piper_installer.exe** to add files that allow the user's currently installed Digital Content Creation (DCC) packages to know about piper.
 See, **Building the Piper Installer** below if piper_installer.exe is missing.
@@ -20,7 +19,6 @@ Maya:
 Houdini:
  - USER/Documents/houdiniVERSION/packages/piper.json
   
-***
 ## Building the Piper Installer
 
 **Requires:**  
@@ -29,7 +27,6 @@ Houdini:
 
 Run [build_piper_installer.bat](https://github.com/MongoWobbler/piper/blob/master/build_piper_installer.bat) to generate piper_installer.exe
 
-***
 ## Cloning Repository
 
 If cloning repo, make sure to initiate and update submodules found in piper/vendor after cloning. Example below
@@ -44,8 +41,6 @@ Alternatively, clone, initiate, and update the repo and its submodules all in on
 git clone --recurse-submodules -j8 https://github.com/MongoWobbler/piper.git
 ```
 
-
-***
 ## Notes
 
 Currently, only supporting Windows, and piper's Maya tools require Maya version 2022+.
