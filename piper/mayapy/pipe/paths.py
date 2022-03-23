@@ -25,6 +25,7 @@ def getRelativeArt(path='', name=''):
     if not path:
         pm.error('Scene is not saved! ')
 
+    path = path.replace('\\', '/')
     art_directory = store.get(pcfg.art_directory)
     if not path.startswith(art_directory):
         pm.error(path + ' is not in the art directory: ' + art_directory)

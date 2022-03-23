@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import time
@@ -1010,7 +1010,7 @@ class Rig(object):
             name (str or None): Name to give group that will house all FKIK components.
 
         Returns:
-            (list): Two lists, FK and IK controls created in order from start to end respectively.
+            (list): Three lists, FK transforms, IK transforms, and controls created in order from start to end.
         """
         if not fk_shape:
             fk_shape = curve.circle
@@ -1038,6 +1038,9 @@ class Rig(object):
         one_minus = pipernode.oneMinus(source=switcher_attribute)
         [one_minus.output >> fk.lodVisibility for fk in fk_ctrls + in_ctrls]
         [switcher_attribute >> ik.lodVisibility for ik in ik_ctrls]
+
+        # having to force graph evaluation in order for spaces to work correctly
+        myu.evaluateGraph()
 
         # use spaces to drive original chain with fk and ik transforms and hook up switcher attributes
         for og_transform, fk_transform, ik_transform in zip(transforms, fk_transforms, ik_transforms):
@@ -1089,7 +1092,7 @@ class Rig(object):
             spaces (iterator or None): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
 
         Returns:
-            (pm.nodetypes.Transform): Control created.
+            (list): Control created as first index, and list of spaces as second index.
         """
         # allows for global scaling to work, otherwise parent under something that gets globally scaled
         # or fix so that global scale gets multiplied onto created control if no parent given

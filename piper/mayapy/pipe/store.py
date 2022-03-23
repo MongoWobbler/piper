@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
 from piper.core.store import Store
@@ -34,3 +34,4 @@ def create():
 
 
 store = create()
+Store.instance = store

@@ -34,6 +34,7 @@ export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
 unload_unwanted = 'unload_unwanted_plugins'
 use_piper_render = 'use_tone_map'
+previous_widgets = 'previous_widgets'  # used when reloading, to re-open any previously opened widgets.
 switcher_update_box = 'switcher_update_box'
 switcher_key_box = 'switcher_key_box'
 switcher_match_box = 'switcher_match_box'
@@ -49,6 +50,7 @@ store_defaults = {art_directory: None,
                   unload_unwanted: True,
                   export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
                   hdr_image_path: '',
+                  previous_widgets: [],
                   switcher_update_box: True,
                   switcher_key_box: True,
                   switcher_match_box: False,

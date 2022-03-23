@@ -21,7 +21,7 @@ class MayaClipper(Clipper):
 
     def __init__(self, *args, **kwargs):
         super(MayaClipper, self).__init__(*args, **kwargs)
-        manager.register(self)
+        manager.register(self, self.create_command)
         self.callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.refresh)
         self.setObjectName(self.__class__.ui_name)
         self.controller = None

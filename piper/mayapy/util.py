@@ -1,7 +1,9 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import maya.OpenMaya as om
 import pymel.core as pm
+
+import piper.core.util as pcu
 
 
 def isShiftHeld():
@@ -47,6 +49,17 @@ def freezeTransformations(transform, history=True):
 
     if history:
         pm.delete(transform, ch=True)
+
+
+def evaluateGraph():
+    """
+    Forces the Maya's graph to evaluate by refreshing the UI and changing the current time. Useful for when scripts
+    run differently when you run them piece by piece, and when you run them all at once since some nodes may need
+    to be evaluated before other nodes can be created and plugged in.
+    """
+    pm.refresh(force=True)
+    current_time = pm.currentTime()
+    pm.currentTime(current_time, update=True)
 
 
 def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, display=pm.error):
@@ -104,18 +117,22 @@ def validateSelect(nodes=None, minimum=0, maximum=0, find=None, parent=False, di
     return nodes
 
 
-def saveSelection(method):
+@pcu.parametrized
+def saveSelection(method, clear=False):
     """
     Decorator for saving selection but clearing it out when calling function.
 
     Args:
         method (function): Function to save selection when called.
+
+        clear (boolean): If True, will clear selection before calling function.
     """
-    def wrapper():
+    def wrapper(*args, **kwargs):
         selection = pm.selected()
-        pm.select(cl=True)
-        method()
+        pm.select(cl=clear)
+        result = method(*args, **kwargs)
         pm.select(selection)
+        return result
 
     return wrapper
 

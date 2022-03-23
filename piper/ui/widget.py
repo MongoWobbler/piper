@@ -2,6 +2,9 @@
 
 from Qt import QtWidgets, QtCore, QtGui
 
+import piper_config as pcfg
+import piper.core.store as store
+
 
 BOX_ICON = [
     '16 16 4 1',
@@ -39,17 +42,19 @@ class _Manager(object):
         Holds all open Piper PySide GUIs. Useful for closing all of them in case of reload.
         """
         super(_Manager, self).__init__(*args, **kwargs)
-        self.widgets = set()
+        self.widgets = {}
         self.is_looping = False
 
-    def register(self, widget):
+    def register(self, widget, create_command):
         """
         Adds a widget to the manager's list.
 
         Args:
             widget (QtWidget): Widget to register
+
+            create_command (string): Command used to create and show widget.
         """
-        self.widgets.add(widget)
+        self.widgets[widget] = create_command
 
     def unregister(self, widget):
         """
@@ -59,15 +64,24 @@ class _Manager(object):
             widget (QtWidget): Widget to remove from manager.
         """
         if not self.is_looping:
-            self.widgets.remove(widget)
+            self.widgets.pop(widget)
 
-    def closeAll(self):
+    def closeAll(self, store_previous=True):
         """
         Calls the close method on all widgets currently held by manager and unregisters them.
+
+        Args:
+            store_previous (boolean): If True, will store the opened widgets into the settings.
         """
         self.is_looping = True
+
+        if store_previous:
+            commands = list(self.widgets.values())
+            settings = store.get()
+            settings.set(pcfg.previous_widgets, commands)
+
         [widget.close() for widget in self.widgets]
-        self.widgets = set()
+        self.widgets = {}
         self.is_looping = False
 
 

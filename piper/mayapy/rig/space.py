@@ -1,8 +1,9 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
+import piper.mayapy.util as myu
 import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
 import piper.mayapy.pipernode as pipernode
@@ -88,6 +89,7 @@ def getCurrent(transform):
     return None
 
 
+@myu.saveSelection()
 def create(transform=None, spaces=None, direct=False, warn=True):
     """
     Creates the given spaces on the given transform.

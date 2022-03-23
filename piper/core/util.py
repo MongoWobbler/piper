@@ -145,6 +145,37 @@ def openWithOS(path):
     os.startfile(path)
 
 
+def parametrized(decorator):
+    """
+    A decorator for decorators that allows decorators to have parameters.
+
+    Args:
+        decorator (method): Decorator that will allows parameters.
+
+    Returns:
+        (method): Decorator parametrized.
+
+    Examples:
+        @parametrized
+        def multiply(method, n=2):
+            def wrapper(*args, **kwargs):
+                return n * method(*args, **kwargs)
+            return wrapper
+
+        @multiply(n=3)
+        def function(a):
+            return 10 + a
+
+        print(function(3))  #  multiply method takes kwarg of 3, so (10 + 3) * 3 = 39
+        >>> 39
+    """
+    def layer(*args, **kwargs):
+        def replicated(method):
+            return decorator(method, *args, **kwargs)
+        return replicated
+    return layer
+
+
 def measureTime(method):
     """
     Decorator for measuring how long the given function took to execute.
@@ -153,11 +184,12 @@ def measureTime(method):
     Args:
         method (function): Function to measure time to execute.
     """
-    def wrapper():
+    def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
-        method()
+        result = method(*args, **kwargs)
         end_time = time.perf_counter()
         print(method.__name__ + ' took ' + str(round((end_time - start_time), 3)) + ' seconds.')
+        return result
 
     return wrapper
 

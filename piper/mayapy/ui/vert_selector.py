@@ -23,7 +23,7 @@ class MayaVertSelector(VertSelector):
 
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
-        manager.register(self)
+        manager.register(self, self.create_command)
 
     def showInMaya(self):
         """

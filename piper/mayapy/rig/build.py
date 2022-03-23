@@ -69,9 +69,9 @@ def mooer(path=''):
         rig.banker(left_leg_iks[-1], left_leg_ctrls[-1], side='back left')
 
 
-def wooer(path=''):
+def waooer(path=''):
     """
-    Build script for a wooer character.
+    Build script for a waooer character.
 
     Args:
         path (string): Path to skeletal mesh maya file with skeletal mesh node holding joints, skins, and mesh.
@@ -79,13 +79,20 @@ def wooer(path=''):
     with Rig(path=path) as rig:
         root_ctrl = rig.root()[1][0]
         pelvis_ctrl = rig.FK('pelvis', name='Pelvis', axis='y', parent=root_ctrl)[1][0]
-        butt_ctrl = rig.extra('pelvis', 'butt', scale=1.05, spaces=[pelvis_ctrl])[0]
+        butt_ctrl, butt_spaces = rig.extra('pelvis', 'butt', scale=1.05, spaces=[pelvis_ctrl])
+        space.switch(butt_ctrl, butt_spaces[-1])
 
         _, tail_ctrls, _ = rig.FK('tail_01', 'tail_07', parent=pelvis_ctrl, name='Tail')
         rig.FK('flipper_01_l', 'flipper_03_l', parent=tail_ctrls[-1], name='Tail')
         rig.FK('flipper_01_r', 'flipper_03_r', parent=tail_ctrls[-1], name='Tail')
 
-        [rig.FKIK(start, end, parent=butt_ctrl, name=name) for start, end, name in [['upperarm_r', 'hand_r', 'Right Arm'], ['upperarm_l', 'hand_l', 'Left Arm']]]
+        left_arm_ctrls = rig.FKIK('upperarm_l', 'hand_l', parent=butt_ctrl, name='Left Arm')[-1]
+        elbow_spaces = space.create(left_arm_ctrls[2], [pelvis_ctrl])
+        space.switch(left_arm_ctrls[2], elbow_spaces[0])
+
+        right_arm_ctrls = rig.FKIK('upperarm_r', 'hand_r', parent=butt_ctrl, name='Right Arm')[-1]
+        elbow_spaces = space.create(right_arm_ctrls[2], [pelvis_ctrl])
+        space.switch(right_arm_ctrls[2], elbow_spaces[0])
 
         rig.FK('nose', parent=pelvis_ctrl, axis='z', name='Nose')
         _, jaw_ctrls, _ = [rig.FK(joint, parent=pelvis_ctrl, axis='y', name='Mouth') for joint in ['jaw', 'mouth_r', 'mouth_l', 'mouth_top_r', 'mouth_top_l', 'mouth_top']][0]
@@ -95,7 +102,7 @@ def wooer(path=''):
 
 def johnnyJupiter(path=''):
     """
-    Build script for a Johnny Jupiter character.
+    Build script for a johnny jupiter character.
 
     Args:
         path (string): Path to skeletal mesh maya file with skeletal mesh node holding joints, skins, and mesh.
@@ -104,6 +111,8 @@ def johnnyJupiter(path=''):
         root_ctrl = rig.root()[1][0]
         _, spine_ctrls, _ = rig.FK('pelvis', 'head', parent=root_ctrl, name='Spine')
         butt_ctrl = rig.extra('pelvis', 'butt', scale=1.05, spaces=[spine_ctrls[0]])[0]
+        head_space = space.create(spine_ctrls[-1], [spine_ctrls[0]])
+        space.switch(spine_ctrls[-1], head_space[-1], t=False, r=True, o=True, s=True)
 
         _, right_clavicle_ctrl, _ = rig.FK('clavicle_r', name='Right_Arm', parent=spine_ctrls[3])
         _, left_clavicle_ctrl, _ = rig.FK('clavicle_l', name='Left Arm', parent=spine_ctrls[3])
@@ -131,6 +140,8 @@ def johnnyJupiter(path=''):
         [rig.FK(start, end, offset='hand_l', name='Left Fingers') for start, end in [['index_01_l', 'index_02_l'], ['middle_01_l', 'middle_02_l'], ['pinky_01_l', 'pinky_02_l'], ['thumb_01_l', 'thumb_03_l']]]
 
         backpack_ctrl = rig.FK('backpack', parent=spine_ctrls[3], axis='z', name='Backpack')[1][0]
+        backspace_space = space.create(backpack_ctrl, [spine_ctrls[0]])
+        space.switch(backpack_ctrl, backspace_space[-1], t=False, r=True, o=True, s=True)
         _, right_tubes, _ = rig.FK('tube_01_r', 'tube_07_r', parent=backpack_ctrl, name='Backpack')
         _, left_tubes, _ = rig.FK('tube_01_l', 'tube_07_l', parent=backpack_ctrl, name='Backpack')
 
@@ -138,16 +149,19 @@ def johnnyJupiter(path=''):
         rig.FK('hair_01', 'hair_03', parent=spine_ctrls[-1], name='Face')
 
         helmet_ctrl = rig.FK('helmet', axis='z', parent=spine_ctrls[-1], name='Face')[1][0]
+
         helmet_space = space.create(right_tubes[-1], [helmet_ctrl])
         space.switch(right_tubes[-1], helmet_space[-1])
+        right_tubes[-1].volumetric.set(0)
 
         helmet_space = space.create(left_tubes[-1], [helmet_ctrl])
         space.switch(left_tubes[-1], helmet_space[-1])
+        left_tubes[-1].volumetric.set(0)
 
 
 def sticker(path=''):
     """
-    Build script for a Sticker character.
+    Build script for a sticker character.
 
     Args:
         path (string): Path to skeletal mesh maya file with skeletal mesh node holding joints, skins, and mesh.

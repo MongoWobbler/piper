@@ -1,8 +1,10 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import maya.OpenMaya as om
 import pymel.core as pm
+
 import piper_config as pcfg
+import piper.ui
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.plugin as plugin
@@ -80,7 +82,7 @@ def loadRender():
     pm.modelEditor('modelPanel4', e=True, vtn=pcfg.maya_default_tone_map)
 
 
-@myu.saveSelection
+@myu.saveSelection(clear=True)
 def reloadPiperReferences():
     """
     Used to reload any sub-references of a Piper Rig reference that is not part of the BIND namespace.
@@ -163,3 +165,5 @@ def startup():
 
     callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneOpened)
     callbacks.append(callback)
+
+    piper.ui.openPrevious()

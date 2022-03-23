@@ -27,7 +27,7 @@ class MayaSwitcher(Switcher):
 
     def __init__(self, maya_store=None, *args, **kwargs):
         super(MayaSwitcher, self).__init__(dcc_store=maya_store, *args, **kwargs)
-        manager.register(self)
+        manager.register(self, self.create_command)
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
         self.callback = om.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
@@ -258,8 +258,14 @@ class MayaSwitcher(Switcher):
         joints = filter(lambda i: i not in bendy_controls, joints)
         state = not self.joints_button.isChecked()
         pm.undoInfo(openChunk=True)
-        [joint.visibility.set(state) for joint in joints]
+        for joint in joints:
+            joint.visibility.set(state)
+            joint.hiddenInOutliner.set(not state)
         pm.undoInfo(closeChunk=True)
+
+        # refreshes any opened outliner editors in order to hide joints
+        editors = pm.lsUI(editors=True)
+        [pm.outlinerEditor(ed, e=True, refresh=True) for ed in editors if pm.outlinerEditor(ed, exists=True)]
 
     def onHideOnPlayPressed(self):
         """
