@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
 import piper_config as pcfg
@@ -279,7 +279,7 @@ def create(transform,
     """
     name = name + pcfg.control_suffix
     kwargs['name'] = name
-    control = bone.createShaped(name, shape, *args, **kwargs) if joint else shape(*args, **kwargs)
+    control = bone.createShaped(shape, *args, **kwargs) if joint else shape(*args, **kwargs)
     curve.color(control, color)
     pm.controller(control)
 

@@ -323,7 +323,7 @@ def swapText(text, first=pcfg.left_suffix, second=pcfg.right_suffix):
     Returns:
         (string): Text with strings swapped if they were found. Else same text as before.
     """
-    return re.sub(r'{}|{}'.format(first, second), lambda w: first if w.group() == second else second, text)
+    return re.sub(r'{a}|{b}'.format(a=first, b=second), lambda w: first if w.group() == second else second, text)
 
 
 def flatten(laundry):

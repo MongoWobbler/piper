@@ -15,6 +15,7 @@ import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.ui.window as uiwindow
+from piper.mayapy.mirror import _mirror, _ignoreMirror
 
 from . import bone
 from . import xform
@@ -146,11 +147,11 @@ class Rig(object):
             pelvis_ctrl = rig.FK('pelvis', name='Pelvis', parent=root_ctrl)[1][0]
             butt_ctrl = rig.extra('pelvis', 'butt', scale=1.05, spaces=[pelvis_ctrl, root_ctrl])
 
-            _, mouth_ctrls, _ = rig.FK('mouth', 'lips', parent=pelvis_ctrl, name='Mouth')
+            _, right_leg_ctrls, _ = rig.FK('thigh_r', 'foot_r', parent=butt_ctrl, name='Right Leg')
             [rig.FK(joint, parent=pelvis_ctrl, axis='z', name='Eyes') for joint in ['eye_l', 'eye_r']]
     """
 
-    def __init__(self, path='', rig=None, find=False, group=False, color=True, copy_controls=True):
+    def __init__(self, path='', rig=None, find=False, group=False, color=True, copy_controls=True, mirror=False):
         """
         Houses all rig scripts.
 
@@ -166,6 +167,8 @@ class Rig(object):
             color (boolean): If True, will automatically color controls according to settings in piper_config.py
 
             copy_controls (boolean): If True, will attempt to copy control shapes from existing rig on finish.
+
+            mirror (boolean): If True, will attempt to mirror any commands that have mirror suffix conventions.
         """
         self.start_time = time.time()
         self.rig = rig
@@ -173,6 +176,7 @@ class Rig(object):
         self.auto_group = group
         self.auto_color = color
         self.copy_controls = copy_controls
+        self.is_mirroring = mirror
 
         self.group_stack = {}
         self.controls = {}
@@ -272,10 +276,13 @@ class Rig(object):
         if isinstance(transform, pm.PyNode):
             return transform
 
-        if not transform.startswith(self.namespace):
-            transform = self.namespace + transform
+        needs_formatting = transform.find('{}') >= 0
 
-        if transform.find('{}') >= 0:
+        if not transform.startswith(self.namespace) and not transform.endswith(pcfg.control_suffix):
+            spaced = self.namespace + transform
+            transform = spaced if pm.objExists(spaced) or needs_formatting else transform
+
+        if needs_formatting:
             return [pm.PyNode(node) for node in myu.getIncrementalNodes(transform, i)]
 
         return pm.PyNode(transform)
@@ -292,6 +299,9 @@ class Rig(object):
         Returns:
             (list): Transforms validated.
         """
+        if transforms is None:
+            return []
+
         nodes = []
         for transform in transforms:
             transform = self.validateTransform(transform, i=i)
@@ -660,6 +670,54 @@ class Rig(object):
 
         return axis, axis
 
+    @_mirror
+    def createSpace(self, transform=None, spaces=None, direct=False, warn=True):
+        """
+        Wrapper around space.create but with mirror functionality.
+        Creates the given spaces on the given transform.
+
+        Args:
+            transform (pm.nodetypes.Transform): Transform to have ability to switch between given spaces.
+
+            spaces (iterator): A bunch of pm.nodetypes.Transform(s) that will drive the given transform.
+
+            direct (boolean): If False, will plug output matrix into offsetParentMatrix, else direct connection.
+
+            warn (boolean): If True, will warn about existing spaces on given transform that clash with given spaces.
+
+        Returns:
+              (list): Name of space attribute(s) made.
+        """
+        transform = self.validateTransform(transform)
+        spaces = self.validateTransforms(spaces)
+        return space.create(transform=transform, spaces=spaces, direct=direct, warn=warn)
+
+    @_mirror
+    def switchSpace(self, transform, new_space=None, t=True, r=True, o=False, s=True, key=False):
+        """
+        Wrapper around space.switch but with mirror functionality.
+        Switches the given transform to the given new_space maintaining the world transform of the given transform.
+        Choose to switch driving translate, rotate, or scale attributes on or off too.
+
+        Args:
+            transform (pm.nodetypes.Transform):
+
+            new_space (string or None): Name of space attribute to switch to.
+
+            t (boolean): If True, space will affect translate values.
+
+            r (boolean): If True, space will affect rotate values.
+
+            o (boolean): If True, space will affect orient values.
+
+            s (boolean): If True, space will affect scale values.
+
+            key (boolean): If True, will set a key at the previous frame on the transform.
+        """
+        transform = self.validateTransform(transform)
+        return space.switch(transform, new_space=new_space, t=t, r=r, o=o, s=s, key=key)
+
+    @_ignoreMirror
     def root(self, transform=pcfg.root_joint_name, name=pcfg.root_joint_name):
         """
         Creates a root control with a squash and stretch attribute.
@@ -705,6 +763,7 @@ class Rig(object):
 
         return controls
 
+    @_mirror
     def FK(self, start, end='', parent=None, axis=None, shape='', sizes=None, connect=True, offset=None, name=''):
         """
         Creates FK controls for the transform chain deduced by the start and end transforms.
@@ -832,7 +891,8 @@ class Rig(object):
         self.addControls(controls, inner=in_controls, name=function_name)
         return duplicates, controls, in_controls
 
-    def IK(self, start, end, parent=None, shape=curve.ring, sizes=None, connect=True, name=''):
+    @_mirror
+    def IK(self, start, end, parent=None, shape=curve.ring, sizes=None, connect=True, spaces=None, name=''):
         """
         Creates IK controls and IK RP solver and for the given start and end joints.
 
@@ -849,6 +909,8 @@ class Rig(object):
 
             connect (bool): If True, connects the duplicate FK chain to the given start/end transforms to be driven.
 
+            spaces (list): List of spaces to create on the end control.
+
             name (str or None): Name to give group that will house all IK components.
 
         Returns:
@@ -858,8 +920,9 @@ class Rig(object):
         mid_ctrl = None
         start_ctrl = None
         scale_buffer = None
+        spaces = [] if spaces is None else spaces
         controls = []
-        start, end = self.validateTransforms([start, end])
+        start, end, parent = self.validateTransforms([start, end, parent])
         global_ctrl = self.root_control
         transforms = xform.getChain(start, end)
         duplicates = xform.duplicateChain(transforms, prefix=pcfg.ik_prefix, color='purple', scale=0.5)
@@ -972,7 +1035,7 @@ class Rig(object):
             nodes_to_organize = [controls[0], scale_buffer]
 
         # create spaces for piper ik
-        spaces = filter(None, [parent, global_ctrl])
+        spaces = filter(None, [parent, global_ctrl] + spaces)
         space.create(piper_ik, spaces)
 
         # global scale comes from parent's world matrix scale
@@ -989,7 +1052,8 @@ class Rig(object):
         self.addControls(controls, name=function_name)
         return duplicates, controls, scale_buffer
 
-    def FKIK(self, start, end, parent=None, fk_shape='', ik_shape='', proxy=True, name=''):
+    @_mirror
+    def FKIK(self, start, end, parent=None, fk_shape='', ik_shape='', proxy=True, spaces=None, name=''):
         """
         Creates a FK and IK controls that drive the chain from start to end.
 
@@ -1007,6 +1071,8 @@ class Rig(object):
 
             proxy (boolean): If True, adds a proxy FK_IK attribute to all controls.
 
+            spaces (list): List of spaces to create on the IK end control.
+
             name (str or None): Name to give group that will house all FKIK components.
 
         Returns:
@@ -1023,7 +1089,7 @@ class Rig(object):
         transforms = xform.getChain(start, end)
         sizes = [control.calculateSize(transform) for transform in transforms]
         fk_transforms, fk_ctrls, in_ctrls = self.FK(start, end, parent, '', fk_shape, sizes, False, '', None)
-        ik_transforms, ik_ctrls, buffer = self.IK(start, end, parent, ik_shape, sizes, False, None)
+        ik_transforms, ik_ctrls, buffer = self.IK(start, end, parent, ik_shape, sizes, False, spaces, None)
         controls = fk_ctrls + in_ctrls + ik_ctrls
 
         # create the switcher control and add the transforms, fk, and iks to its attribute to store it
@@ -1070,6 +1136,7 @@ class Rig(object):
 
         return results
 
+    @_mirror
     def extra(self, transform, name, parent=None, shape=curve.circle, axis='y', color='salmon', scale=1.0, spaces=None):
         """
         Creates extra control that doesn't drive the transform, but rather should be used with spaces and act as parent.
@@ -1099,7 +1166,7 @@ class Rig(object):
         if not parent:
             parent = self.root_control
 
-        transform = self.validateTransform(transform)
+        transform, parent = self.validateTransforms([transform, parent])
         name = transform.name(stripNamespace=True) + '_' + name
         ctrl = control.create(transform, shape, name, axis, color, scale, parent=parent)
         spaces = space.create(ctrl, spaces)
@@ -1115,6 +1182,7 @@ class Rig(object):
 
         return ctrl, spaces
 
+    @_mirror
     def twist(self, joint, driver, target, axis=None, blended=True, weight=0.5, name=''):
         """
         Creates the twist control that mimics twist of given target based on given weight.
@@ -1137,8 +1205,9 @@ class Rig(object):
         Returns:
             (list): Duplicate joint(s) as first index, control(s) as second index, and inner control(s) as third index.
         """
-        # get distance variables before making FK controls.
         joint, driver, target = self.validateTransforms([joint, driver, target])
+
+        # get distance variables before making FK controls.
         distance_percentage = 1
         if driver != target:
             total_distance = mayamath.getDistance(driver, target)
@@ -1183,6 +1252,7 @@ class Rig(object):
 
         return duplicates, controls, in_ctrl
 
+    @_mirror
     def bendy(self, joints, ctrl_parent=None, shape=curve.sun, i='01', name=''):
         """
         Creates controls for each given joint that will be used as part of a nurbs surface to drive given joints.
@@ -1190,7 +1260,7 @@ class Rig(object):
         Args:
             joints (list): Joints to create controls for. Must have at least three joints!
 
-            ctrl_parent (pm.nodetypes.DependNode): Node to tag as control parent for pick-walking.
+            ctrl_parent (pm.nodetypes.DependNode or string): Node to tag as control parent for pick-walking.
 
             shape (method): Used to create curve or visual representation of bendy control.
 
@@ -1211,6 +1281,7 @@ class Rig(object):
         control_existed = []
         controls_to_organize = []
         joints = self.validateTransforms(joints, i=i)
+        ctrl_parent = self.validateTransform(ctrl_parent)
         start_joint = joints[0]
         end_joint = joints[-1]
         end_bind_joint = convert.toBind(end_joint)
@@ -1373,17 +1444,19 @@ class Rig(object):
         self.addControls(controls_to_organize, inner=inner_controls, name=function_name)
         return controls
 
+    @_mirror
     def banker(self, joint, ik_control, pivot_track=None, side='', use_track_shape=True):
         """
         Creates a reverse foot control that changes pivot based on curve shape and control rotation input.
         Useful for banking.
 
         Args:
-            joint (pm.nodetypes.Joint): Joint that will be driven by the reverse module and IK handle.
+            joint (pm.nodetypes.Joint or string): Joint that will be driven by the reverse module and IK handle.
 
-            ik_control (pm.nodetypes.Transform): Control that drives the IK Handle.
+            ik_control (pm.nodetypes.Transform or string): Control that drives the IK Handle.
 
-            pivot_track (pm.nodetypes.Transform): NurbsCurve shape as child that will act as the track for the pivot.
+            pivot_track (pm.nodetypes.Transform or string): NurbsCurve shape as child that will act as the
+            track for the pivot.
 
             side (string or None): Side to generate cross section
 
@@ -1392,6 +1465,7 @@ class Rig(object):
         Returns:
             (pm.nodetypes.Transform): Control that moves the reverse foot pivot.
         """
+        joint, ik_control, pivot_track = self.validateTransforms([joint, ik_control, pivot_track])
         joint_name = joint.name()
         axis = mayamath.getOrientAxis(joint.getParent(), joint)
         axes = convert.axisToTriAxis(axis)
@@ -1547,6 +1621,7 @@ class Rig(object):
 
         return ctrl
 
+    @_mirror
     def reverse(self, driver, target, driven_negate=None, transform=None, switcher_ctrl=None, shape=None, axis=None):
         """
         Creates a control that offsets the given target through rotation (usually foot roll reverse rig).
@@ -1577,8 +1652,14 @@ class Rig(object):
         if not shape:
             shape = curve.square
 
+        # validation madness yay
+        driver, target, driven_negate, transform, switcher_ctrl = self.validateTransforms([driver,
+                                                                                           target,
+                                                                                           driven_negate,
+                                                                                           transform,
+                                                                                           switcher_ctrl])
+
         # attempt to deduce axis if transform only has one child and axis is not given
-        transform = self.validateTransform(transform)
         if not axis and transform.getChildren() and len(transform.getChildren()) == 1:
             axis_vector = mayamath.getOrientAxis(transform, transform.getChildren()[0])
             axis = convert.axisToString(axis_vector)
@@ -1648,6 +1729,7 @@ class Rig(object):
 
         return ctrl
 
+    @_mirror
     def humanLeg(self, start, end, ball, side='', parent=None, name=''):
         """
         Convenience method for rigging a leg. FKIK chain, with banker, and reverse controls.
@@ -1669,9 +1751,7 @@ class Rig(object):
         Returns:
             (list): Nodes created.
         """
-        start, end = self.validateTransforms([start, end])
         fk_transforms, ik_transforms, ctrls = self.FKIK(start, end, parent=parent, name=name)
-
         banker = self.banker(ik_transforms[-1], ctrls[-1], side=side)
         ball_joint, ball_control, ball_inner = self.FK(ball, offset=end, name=name)
         ik_handle = ctrls[-1].connections(skipConversionNodes=True, type='ikHandle')[0]

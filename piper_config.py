@@ -16,6 +16,8 @@ axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
 # Sides
 left_suffix = '_l'
 right_suffix = '_r'
+left_name = 'Left '
+right_name = 'Right '
 default_mirror_axis = 'x'
 
 # vendors
