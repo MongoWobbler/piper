@@ -79,13 +79,6 @@ def mirror(method, *args, **kwargs):
 
     success = any(found_sides)  # if any sides are found, then mirror
 
-    print(method.__name__)
-    print(args)
-    print(kwargs)
-    print('Will mirror??? ' + str(success))
-    print(new_args)
-    print(new_kwargs)
-
     # run the method with mirrored args and kwargs
     if success:
         method(*new_args, **new_kwargs)
