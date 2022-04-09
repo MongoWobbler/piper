@@ -13,7 +13,7 @@ def _validateMirrorArg(arg, success):
     Args:
         arg (any): Can only mirror strings, PyNodes, and lists.
 
-        success (list): List with a single bool in it to let calling function know if mirror was sucessful or not.
+        success (list): List with a single bool in it to let calling function know if mirror was successful or not.
 
     Returns:
         (any): Given arg mirrored if possible, if not, then original arg.
@@ -101,10 +101,9 @@ def _mirror(method):
 
         self.is_mirroring = False  # must turn off mirroring so that other functions inside method don't get mirrored.
         args = list(args)
-        args.insert(0, self)
+        args.insert(0, self)  # inserting the class' instance into the first arg so decorator works
 
         results = mirror(method, *args, **kwargs)
-        # results = method(self, *args, **kwargs)  # execute original function
 
         self.is_mirroring = True
         return results

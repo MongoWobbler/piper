@@ -4,6 +4,7 @@ import pymel.core as pm
 
 from piper.mayapy.rig import Rig
 from piper.mayapy.mirror import mirror
+from . import curve
 from . import space
 
 
@@ -135,9 +136,14 @@ def johnnyJupiter(path=''):
         _, left_tubes, _ = rig.FK('tube_01_l', 'tube_07_l', parent=backpack_ctrl, name='Backpack')
 
         # face
-        face_joints = ['ear_l', 'mouth', 'nose', 'eye_l', 'eyebrow_out_l', 'eyebrow_mid_l', 'eyebrow_in_l']
+        face_joints = ['ear_l', 'mouth', 'nose', 'eye_l']
         [rig.FK(joint, axis='z', parent=spine_ctrls[-1], name='Face') for joint in face_joints]
         rig.FK('hair_01', 'hair_03', parent=spine_ctrls[-1], name='Face')
+
+        # eyebrows
+        eyebrow_joints = ['eyebrow_out_l', 'eyebrow_mid_l', 'eyebrow_in_l']
+        ctrl = rig.FK('eyebrow_l', parent=spine_ctrls[-1], shape=curve.square, axis='z', name='Left Eyebrow')[1][0]
+        [rig.FK(joint, axis='z', parent=ctrl, name='Left Eyebrow') for joint in eyebrow_joints]
 
         # helmet
         helmet_ctrl = rig.FK('helmet', axis='z', parent=spine_ctrls[-1], name='Face')[1][0]

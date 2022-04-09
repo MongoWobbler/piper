@@ -135,6 +135,28 @@ def separator(layout=None, *args, **kwargs):
     return line
 
 
+def getUserInput(title, description, parent=None, password=False):
+    """
+    Asks the user for input, displays a dialog box for user to type in input.
+
+    Args:
+        title (string): Window title for dialog box.
+
+        description (string): Description of what to ask user.
+
+        parent (QtWidget): Parent of QInputDialog.
+
+        password (boolean): If True, will hide characters that user types.
+
+    Returns:
+        (string or boolean): If pressed OK, and user typed something in, return True, else False.
+    """
+    input_dialog = QtWidgets.QInputDialog(parent=parent)
+    line_type = QtWidgets.QLineEdit.Password if password else QtWidgets.QLineEdit.Normal
+    answer, pressed_ok = input_dialog.getText(input_dialog, title, description, line_type)
+    return str(answer) if answer and pressed_ok else False
+
+
 class SecondaryAction(QtWidgets.QWidgetAction):
 
     def __init__(self, name, main_wrapped, secondary_wrapped, main_action, secondary_action, *args, **kwargs):

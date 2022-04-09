@@ -14,12 +14,19 @@ class PiperMenu(QtWidgets.QMenu):
         self.setTearOffEnabled(True)
         self.setToolTipsVisible(True)
         self.icon = QtGui.QIcon(os.path.join(pcu.getPiperDirectory(), 'icons', 'piper.png'))
+        self.parent_menu = None
         self.actions = []  # stores QWidgets so that they are not garbage collected
 
     def onBeforePressed(self):
         pass
 
     def onAfterPressed(self, method):
+        pass
+
+    def afterAdded(self):
+        """
+        Gets called after menu is added to a PiperMenu through the addMenuP function. Meant to be overridden.
+        """
         pass
 
     def add(self, name, on_pressed, *args, **kwargs):
@@ -112,7 +119,13 @@ class PiperMenu(QtWidgets.QMenu):
         Returns:
             (QtWidgets.QMenu): Menu added.
         """
-        return self.addMenu(menu) if menu and menu.actions else None
+        if not menu or not menu.actions:
+            return None
+
+        result = self.addMenu(menu)
+        menu.parent_menu = self
+        menu.afterAdded()
+        return result
 
 
 class PiperSceneMenu(PiperMenu):
@@ -163,6 +176,32 @@ class PiperSceneMenu(PiperMenu):
         pcu.openDocumentation()
 
 
+class PiperPerforceMenu(PiperMenu):
+
+    def __init__(self, title='Perforce', *args, **kwargs):
+        super(PiperPerforceMenu, self).__init__(title, *args, **kwargs)
+        self.build()
+
+    def build(self):
+        self.add('Add/Checkout Scene', self.addScene)
+        self.addCheckbox('Add Scene After Saving', self.addSceneAfterSaving(), self.onAddSceneAfterSavingPressed)
+
+    def addScene(self):
+        pass
+
+    def addSceneAfterSaving(self):
+        """
+        App dependent.
+
+        Returns:
+            (boolean): Setting stored in store.
+        """
+        return False
+
+    def onAddSceneAfterSavingPressed(self, state):
+        pass
+
+
 class PiperExportMenu(PiperMenu):
 
     def __init__(self, title='Export', *args, **kwargs):
@@ -203,6 +242,7 @@ class _PiperMainMenu(PiperMenu):
         # NOTE: PiperMainMenu needs its submenus defined in the DCC and its build() called by the DCC.
         super(_PiperMainMenu, self).__init__(title, *args, **kwargs)
         self.scene_menu = None
+        self.perforce_menu = None
         self.nodes_menu = None
         self.export_menu = None
         self.curves_menu = None
@@ -216,6 +256,7 @@ class _PiperMainMenu(PiperMenu):
 
     def build(self):
         self.addMenuP(self.scene_menu)
+        self.addMenuP(self.perforce_menu)
         self.addMenuP(self.nodes_menu)
         self.addMenuP(self.export_menu)
         self.addMenuP(self.curves_menu)

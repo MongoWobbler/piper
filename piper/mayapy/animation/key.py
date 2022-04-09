@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
 import piper.mayapy.rig.control as control
@@ -41,16 +41,16 @@ def toggleStepped():
     key_in = pm.keyTangent(q=True, g=True, itt=True)[0]
     key_out = pm.keyTangent(q=True, g=True, ott=True)[0]
 
-    if key_in == 'auto' and key_out == 'auto':
+    if key_in == 'autoease' and key_out == 'autoease':
         pm.keyTangent(g=True, itt='clamped')
         pm.keyTangent(g=True, ott='step')
         pm.displayInfo('In stepped key tangents')
     elif key_in == 'clamped' and key_out == 'step':
-        pm.keyTangent(g=True, itt='auto')
-        pm.keyTangent(g=True, ott='auto')
+        pm.keyTangent(g=True, itt='autoease')
+        pm.keyTangent(g=True, ott='autoease')
         pm.displayInfo('In auto key tangents')
     else:
-        pm.error('Default in Tangents are not both auto or clamped/stepped')
+        pm.error('Default in Tangents are not both autoease or clamped/stepped')
 
 
 def deleteDecimals():

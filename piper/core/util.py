@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import time
+import stat
 import getpass
 import inspect
 import operator
@@ -76,6 +77,16 @@ def validateDirectory(directory):
     return directory
 
 
+def clearReadOnlyFlag(path):
+    """
+    Clears the read only flag of the given file path.
+
+    Args:
+        path (string): Name of file to clear read only flag of.
+    """
+    os.chmod(path, stat.S_IWUSR | stat.S_IREAD)
+
+
 def getSide(name):
     """
     Gets the full name of the side associated with the given name suffix.
@@ -142,7 +153,7 @@ def openWithOS(path):
         path (string): Path to open.
     """
     path = os.path.normpath(path)
-    os.startfile(path)
+    subprocess.Popen(r'explorer /select,"{}"'.format(path))
 
 
 def parametrized(decorator):

@@ -85,10 +85,11 @@ class AnimClip(QtWidgets.QWidget):
         label = QtWidgets.QLabel(self.animation_name)
         main_layout.addWidget(label, 0, 0)
 
-        self.table = QtWidgets.QTableWidget(1, 3)
+        self.table = QtWidgets.QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels(self.column_labels)
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.table.setShowGrid(True)
+        self.onAddLinePressed()  # creating first line
 
         main_layout.addWidget(self.table, 1, 0)
 

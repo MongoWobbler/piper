@@ -25,6 +25,7 @@ import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipe.paths as paths
+import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
 import piper.mayapy.animation as animation
@@ -32,7 +33,7 @@ import piper.mayapy.animation.key as key
 import piper.mayapy.animation.resolution as resolution
 
 from piper.mayapy.pipe.store import store
-from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperExportMenu, getPiperMainMenu
+from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperPerforceMenu, PiperExportMenu, getPiperMainMenu
 
 
 class MayaPiperMenu(PiperMenu):
@@ -118,6 +119,28 @@ class MayaSceneMenu(PiperSceneMenu):
 
         path = node.referenceFile().path
         pm.openFile(path, force=True)
+
+
+class MayaPerforceMenu(PiperPerforceMenu):
+
+    def afterAdded(self):
+        state = store.get(pcfg.use_perforce)
+        self.menuAction().setVisible(state)
+
+    def addScene(self):
+        perforce.makeAvailable()
+
+    def addSceneAfterSaving(self):
+        """
+        App dependent.
+
+        Returns:
+            (boolean): Setting stored in store.
+        """
+        return store.get(pcfg.p4_add_after_save)
+
+    def onAddSceneAfterSavingPressed(self, state):
+        store.set(pcfg.p4_add_after_save, state)
 
 
 class MayaExportMenu(PiperExportMenu):
@@ -290,6 +313,8 @@ class MayaSettingsMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
+        self.addCheckbox('Use Perforce', store.get(pcfg.use_perforce), self.onUsePerforcePressed)
+        self.addSeparator()
         self.addCheckbox('Use Piper Units', store.get(pcfg.use_piper_units), self.onUseUnitsPressed)
         self.addCheckbox('Use Piper Render', store.get(pcfg.use_piper_render), self.onUseRenderPressed)
         self.addCheckbox('Export In Ascii', store.get(pcfg.export_ascii), self.onExportInAsciiPressed)
@@ -300,6 +325,16 @@ class MayaSettingsMenu(MayaPiperMenu):
 
         self.addSeparator()
         self.add('Uninstall Piper', self.uninstall)
+
+    def onUsePerforcePressed(self, state):
+        """
+        Sets whether perforce should be used before saving scene.
+
+        Args:
+            state (boolean): Whether to use perforce or not.
+        """
+        store.set(pcfg.use_perforce, state)
+        self.parent_menu.perforce_menu.menuAction().setVisible(state)
 
     @staticmethod
     def onUseUnitsPressed(state):
@@ -339,6 +374,7 @@ def create():
     piper_menu = getPiperMainMenu()
     piper_menu.on_before_reload = settings.removeCallbacks
     piper_menu.scene_menu = MayaSceneMenu()
+    piper_menu.perforce_menu = MayaPerforceMenu()
     piper_menu.nodes_menu = MayaNodesMenu()
     piper_menu.export_menu = MayaExportMenu()
     piper_menu.curves_menu = MayaCurvesMenu()

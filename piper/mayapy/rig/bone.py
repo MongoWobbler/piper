@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import copy
 import pymel.core as pm
@@ -140,18 +140,30 @@ def _createAtPivot(transform, name='', i=None, component_prefix=None, joints=Non
     return joint, position, component
 
 
-def createAtPivot(selected=None):
+def createAtPivot(selected=None, each=False, orient=False, name=False):
     """
     Creates a joint at the current manipulator pivot point.
 
     If SHIFT held: will create joint for EVERY transform/vertex/edge/face selected.
     If CTRL held: will orient joint to selected transform/vertex/edge/face selected.
     If ALT held: will assign name to new joint(s) based on current transform/vertex/edge/face selection.
+
+    Args:
+        selected (list):
+
+        each (boolean): If True, will create joint for every transform/vertex/edge/face.
+
+        orient (boolean): If True, will orient joint to transform/vertex/edge/face.
+
+        name (boolean): If True, will name the new joint(s) based on the transform/vertex/edge/face.
+
+    Returns:
+        (list): Joints created.
     """
     joints = []
-    shift_held = myu.isShiftHeld()
-    ctrl_held = myu.isCtrlHeld()
-    alt_held = myu.isAltHeld()
+    shift_held = myu.isShiftHeld() or each
+    ctrl_held = myu.isCtrlHeld() or orient
+    alt_held = myu.isAltHeld() or name
     selected = myu.validateSelect(selected, minimum=1)
 
     if shift_held:

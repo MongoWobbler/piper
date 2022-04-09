@@ -8,7 +8,9 @@ import piper.ui
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.plugin as plugin
+import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.ui.window as window
 from piper.mayapy.pipe.store import store
 
 
@@ -143,12 +145,50 @@ def onSceneOpened(*args):
     pm.evalDeferred(reloadPiperReferences, lp=True)
 
 
+def onBeforeSave(*args):
+    """
+    Called before maya saves the scene. Pops up warning if file is not writeable asking to checkout or make writeable.
+    """
+    answer = window.beforeSave()
+    if answer == 'Checkout':
+        perforce.makeAvailable()
+
+    elif answer == 'Make Writeable':
+        path = pm.sceneName()
+        pcu.clearReadOnlyFlag(path)
+
+
+def onAfterSave(*args):
+    """
+    Called after scene is saved.
+    """
+    if store.get(pcfg.use_perforce) and store.get(pcfg.p4_add_after_save):
+        perforce.makeAvailable()
+
+
+def registerCallbacks():
+    """
+    Registers all the callbacks to the global callbacks list.
+    """
+    global callbacks
+
+    callback = om.MEventMessage.addEventCallback('NewSceneOpened', onNewSceneOpened)
+    callbacks.append(callback)
+
+    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneOpened)
+    callbacks.append(callback)
+
+    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeSave, onBeforeSave)
+    callbacks.append(callback)
+
+    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterSave, onAfterSave)
+    callbacks.append(callback)
+
+
 def startup():
     """
     To be called when Maya starts up.
     """
-    global callbacks
-
     if store.get(pcfg.use_piper_units):
         loadDefaults()
 
@@ -159,11 +199,5 @@ def startup():
         loadRender()
 
     setStartupProject()
-
-    callback = om.MEventMessage.addEventCallback('NewSceneOpened', onNewSceneOpened)
-    callbacks.append(callback)
-
-    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneOpened)
-    callbacks.append(callback)
-
+    registerCallbacks()
     piper.ui.openPrevious()

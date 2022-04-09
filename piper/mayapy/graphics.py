@@ -1,10 +1,11 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import pymel.core as pm
 import piper_config as pcfg
 import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
+import piper.mayapy.pipe.paths as paths
 from piper.mayapy.pipe.store import store
 
 
@@ -33,12 +34,7 @@ class PiperShader(object):
         """
         # get user defined settings
         hdr_image_path = store.get(pcfg.hdr_image_path)
-        art_directory = store.get(pcfg.art_directory)
-
-        # attempt to make path relative to art directory
-        hdr_image_path = hdr_image_path.split(art_directory + '/')[-1]
-
-        return hdr_image_path
+        return paths.getRelativeArt(hdr_image_path) if hdr_image_path else ''
 
     def getTextures(self, warn=True):
         """
@@ -107,7 +103,6 @@ class PiperShader(object):
         if not self.texture_paths and self.texture_paths is not None:
             return pm.warning('No textures found in ' + self.textures_directory) if warn else None
 
-        art_directory = store.get(pcfg.art_directory)
         material_name = material.nodeName().lstrip(pcfg.material_prefix)
 
         for texture_path in self.texture_paths:
@@ -117,7 +112,7 @@ class PiperShader(object):
                 continue
 
             # use relative texture path if possible
-            texture_path = texture_path.lstrip(art_directory + '/')
+            texture_path = paths.getRelativeArt(texture_path)
 
             # diffuse/base color
             if texture_name.endswith(pcfg.diffuse_suffix):

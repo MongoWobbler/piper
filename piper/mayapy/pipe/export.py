@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import abc
@@ -117,7 +117,7 @@ class Export(ABC):
             shutil.copyfile(texture, export_path)
             print('Copying ' + texture + ' to ' + export_path)
 
-        print('Finished copying textures ' + '=' * 40)
+        print('Finished copying ' + str(len(textures)) + ' textures ' + '=' * 40)
 
     def _mesh(self, piper_node, settings, textures):
         """

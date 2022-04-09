@@ -21,7 +21,7 @@ right_name = 'Right '
 default_mirror_axis = 'x'
 
 # vendors
-vendors = {dcc_agnostic_name: ['Qt'],
+vendors = {dcc_agnostic_name: ['Qt', 'p4'],
            maya_name: ['fbx'],
            houdini_name: [],
            unreal_name: [],
@@ -32,6 +32,8 @@ vendors = {dcc_agnostic_name: ['Qt'],
 art_directory = 'art_directory'
 game_directory = 'game_directory'
 use_piper_units = 'use_piper_units'
+use_perforce = 'use_p4'
+p4_add_after_save = 'p4_add_after_save'
 export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
 unload_unwanted = 'unload_unwanted_plugins'
@@ -49,6 +51,8 @@ store_defaults = {art_directory: None,
                   game_directory: None,
                   use_piper_units: True,
                   use_piper_render: True,
+                  use_perforce: False,
+                  p4_add_after_save: False,
                   unload_unwanted: True,
                   export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
                   hdr_image_path: '',
