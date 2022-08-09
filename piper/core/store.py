@@ -1,8 +1,9 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import copy
-import piper_config as pcfg
+
+import piper.config as pcfg
 import piper.core.util as pcu
 
 

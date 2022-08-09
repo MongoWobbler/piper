@@ -8,7 +8,7 @@ import shutil
 
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.core.fbx_sdk as fbx_sdk
 import piper.mayapy.rig as rig
@@ -192,7 +192,7 @@ class Export(ABC):
         for skinned_mesh in skinned_meshes:
             export_path = self._mesh(skinned_mesh, self.skinned_mesh_settings, textures)
             fbx_file = fbx_sdk.PiperFBX(export_path)
-            deleted = fbx_file.deleteNodesWithPropertyValue(pcfg.delete_node_attribute, True)
+            deleted = fbx_file.deleteNodesWithPropertyValue(mcfg.delete_node_attribute, True)
             fbx_file.save() if deleted else fbx_file.close()
             export_paths.append(export_path)
 
@@ -222,14 +222,14 @@ class Export(ABC):
             animations = pipernode.get('piperAnimation', ignore=ignore)
 
         # check to make sure animation is healthy
-        if pcfg.check_anim_health_on_export:
+        if mcfg.check_anim_health_on_export:
             namespaces = {pig.namespace() for anim in animations for pig in anim.getChildren(ad=True, type='piperRig')}
             self.animation_errors = animation.health(namespaces, resume=False)
 
         for anim in animations:
             anim_name = anim.name(stripNamespace=True)
             skinned_meshes = anim.getChildren(ad=True, type='piperSkinnedMesh')
-            skinned_mesh = list(filter(lambda node: pcfg.skeleton_namespace in node.namespace(), skinned_meshes))
+            skinned_mesh = list(filter(lambda node: mcfg.skeleton_namespace in node.namespace(), skinned_meshes))
 
             if len(skinned_mesh) != 1:
                 pm.warning('Found {} skinned meshes in {}!'.format(len(skinned_mesh), anim_name)) if warn else None
@@ -261,12 +261,12 @@ class Export(ABC):
             root_control = rig.getRootControl(piper_rig)
 
             # only exporting sides curve since up can be re-created by taking inverse of side curve value
-            pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_up))
-            if pcfg.export_root_scale_curves:
-                root_control.attr(pcfg.squash_stretch_weight_attribute).set(0)
-                root.attr(pcfg.root_scale_sides) >> root_duplicate.attr(pcfg.root_scale_sides)
+            pm.deleteAttr(root_duplicate.attr(mcfg.root_scale_up))
+            if mcfg.export_root_scale_curves:
+                root_control.attr(mcfg.squash_stretch_weight_attribute).set(0)
+                root.attr(mcfg.root_scale_sides) >> root_duplicate.attr(mcfg.root_scale_sides)
             else:
-                pm.deleteAttr(root_duplicate.attr(pcfg.root_scale_sides))
+                pm.deleteAttr(root_duplicate.attr(mcfg.root_scale_sides))
 
             # delete unwanted attributes
             for joint, duplicate in zip(joints, duplicates):
@@ -274,7 +274,7 @@ class Export(ABC):
                 for attr in attributes:
                     attribute_name = attr.name().split('.')[-1]
 
-                    if attribute_name.startswith(pcfg.use_attributes) or attribute_name.endswith('Space'):
+                    if attribute_name.startswith(mcfg.use_attributes) or attribute_name.endswith('Space'):
                         pm.setAttr(attr, lock=False)
                         pm.deleteAttr(attr)
 
@@ -311,7 +311,7 @@ class Export(ABC):
                 export_paths.append(export_path)
 
             pm.delete(root_duplicate)
-            root_control.attr(pcfg.squash_stretch_weight_attribute).set(1)
+            root_control.attr(mcfg.squash_stretch_weight_attribute).set(1)
 
         pm.playbackOptions(min=start, max=end)
         pm.refresh(suspend=False)

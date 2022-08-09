@@ -4,7 +4,7 @@ import maya.OpenMaya as om
 import pymel.core as pm
 
 from Qt import QtCompat
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 from piper.ui.widget import manager
 from piper.ui.switcher import Switcher
@@ -57,7 +57,7 @@ class MayaSwitcher(Switcher):
         """
         # all controls state
         rigs = pm.ls(type='piperRig')
-        states = [attr.get() for r in rigs for attr in r.listAttr(v=True, k=True, st='*' + pcfg.visibility_suffix)]
+        states = [attr.get() for r in rigs for attr in r.listAttr(v=True, k=True, st='*' + mcfg.visibility_suffix)]
         state = not all(states)
         self.all_controls_button.setChecked(state)
 
@@ -122,12 +122,12 @@ class MayaSwitcher(Switcher):
             for child in node.getChildren() + [node]:
                 child_name = child.name(stripNamespace=True)
 
-                if child_name.endswith(pcfg.dynamic_pivot_suffix + pcfg.control_suffix):
+                if child_name.endswith(mcfg.dynamic_pivot_suffix + mcfg.control_suffix):
                     self.pivots.add(child_name)
-                    self.rests.add(child.attr(pcfg.dynamic_pivot_rest).get())
+                    self.rests.add(child.attr(mcfg.dynamic_pivot_rest).get())
 
                 # adding inner controls for visibility toggle
-                if pcfg.inner_suffix in child_name and child != node:
+                if mcfg.inner_suffix in child_name and child != node:
                     visibility = child.visibility.get()
                     inners_state.append(visibility)
                     self.inners.append(child)
@@ -217,7 +217,7 @@ class MayaSwitcher(Switcher):
         rigs = pm.ls(type='piperRig')
         state = not self.all_controls_button.isChecked()
         pm.undoInfo(openChunk=True)
-        [attr.set(state) for r in rigs for attr in r.listAttr(ud=True, v=True, k=True, st='*' + pcfg.visibility_suffix)]
+        [attr.set(state) for r in rigs for attr in r.listAttr(ud=True, v=True, k=True, st='*' + mcfg.visibility_suffix)]
         pm.undoInfo(closeChunk=True)
 
     def onInnerControlsPressed(self):

@@ -1,8 +1,9 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 
 
@@ -38,7 +39,7 @@ def unloadUnwanted():
     """
     Unloads all the unwanted Maya plugins defined in piper config.
     """
-    [unload(plugin) for plugin in pcfg.maya_unwanted_plugins]
+    [unload(plugin) for plugin in mcfg.unwanted_plugins]
 
 
 def loadAll():

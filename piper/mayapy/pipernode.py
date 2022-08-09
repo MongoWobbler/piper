@@ -1,7 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+
+import piper.config.maya as mcfg
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
 import piper.mayapy.attribute as attribute
@@ -345,7 +346,7 @@ def createMesh():
             piper_meshes = []
             for node in selected:
                 parent = node.getParent()
-                name = pcfg.mesh_prefix + node.nodeName()
+                name = mcfg.mesh_prefix + node.nodeName()
                 piper_mesh = create('piperMesh', 'cyan', name=name, parent=parent)
                 pm.parent(node, piper_mesh)
                 piper_meshes.append(piper_mesh)
@@ -358,7 +359,7 @@ def createMesh():
                 pm.warning('The following are not meshes! \n' + '\n'.join(non_mesh_transforms))
 
             # Get the parent roots and parent them under the piper mesh node to not mess up any hierarchies.
-            name = pcfg.mesh_prefix
+            name = mcfg.mesh_prefix
             name += scene_name if scene_name else selected[-1].nodeName()
             piper_mesh = create('piperMesh', 'cyan', name=name)
             parents = myu.getRootParents(selected)
@@ -366,7 +367,7 @@ def createMesh():
 
             return piper_mesh
 
-    name = '' if scene_name.startswith(pcfg.mesh_prefix) else pcfg.mesh_prefix
+    name = '' if scene_name.startswith(mcfg.mesh_prefix) else mcfg.mesh_prefix
     name += scene_name if scene_name else 'piperMesh'
     piper_mesh = create('piperMesh', 'cyan', name=name)
     meshes = pm.ls(type='mesh')
@@ -395,13 +396,14 @@ def createSkinnedMesh():
 
     if not skin_clusters:
         pm.warning('No skin clusters found!')
-        piper_skinned_mesh = create('piperSkinnedMesh', 'pink', name=pcfg.skinned_mesh_prefix + 'piperSkinnedMesh')
+        piper_skinned_mesh = create('piperSkinnedMesh', 'pink', name=mcfg.skinned_mesh_prefix + 'piperSkinnedMesh')
         return [piper_skinned_mesh]
 
     piper_skinned_meshes = []
     skinned_meshes = myu.getSkinnedMeshes(skin_clusters)
     for root_joint, geometry in skinned_meshes.items():
-        name = '' if scene_name.startswith(pcfg.skinned_mesh_prefix) else pcfg.skinned_mesh_prefix
+        name = '' if scene_name.startswith(
+            mcfg.skinned_mesh_prefix) else mcfg.skinned_mesh_prefix
         name += scene_name if scene_name else next(iter(geometry)).nodeName()
         piper_skinned_mesh = create('piperSkinnedMesh', 'pink', name=name)
         piper_skinned_meshes.append(piper_skinned_mesh)
@@ -423,7 +425,7 @@ def createRig(name=''):
     """
     name = name if name else 'piperRig'
     piper_rig = create('piperRig', 'burnt orange', name=name)
-    piper_rig.addAttr(pcfg.message_root_control, at='message')
+    piper_rig.addAttr(mcfg.message_root_control, at='message')
     piper_rig._.lock()
     attribute.nonKeyable(piper_rig.highPolyVisibility)
     attribute.lockAndHideCompound(piper_rig)
@@ -445,12 +447,12 @@ def createAnimation():
 
     if not rigs:
         pm.warning('No rigs found!')
-        piper_animation = create('piperAnimation', 'dark green', name=pcfg.animation_prefix + base_name)
+        piper_animation = create('piperAnimation', 'dark green', name=mcfg.animation_prefix + base_name)
         attribute.lockAndHideCompound(piper_animation)
         return [piper_animation]
 
     for rig in rigs:
-        name = pcfg.animation_prefix + base_name
+        name = mcfg.animation_prefix + base_name
         piper_animation = create('piperAnimation', 'dark green', name=name)
         attribute.lockAndHideCompound(piper_animation)
         pm.parent(rig, piper_animation)

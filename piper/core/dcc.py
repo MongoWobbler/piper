@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import copy
@@ -237,7 +237,24 @@ class DCC(object):
         """
         pass
 
-    def runInstaller(self, install_script, install_directory):
+    def _runInstaller(self, python, install_script, install_directory):
+        """
+        Convenience method to log and run the python executable with the given install script.
+
+        Args:
+            python (string): Path to python executable for DCC.
+
+            install_script (string): Full path to the python script the DCC is going to run to install
+            environment variables.
+
+            install_directory (string): Full path to directory that the given
+            install_script will add to the environment.
+        """
+        print('-' * 50)
+        print('Starting ' + self.name + '\'s ' + python)
+        subprocess.run([python, install_script, install_directory], shell=True)
+
+    def runInstaller(self, install_script, install_directory, versions=None, clean=False):
         """
         Runs the given install_script with the given install_directory passed to it on all versions of the DCC.
 
@@ -247,20 +264,28 @@ class DCC(object):
 
             install_directory (string): Full path to directory that the given
             install_script will add to the environment.
+
+            versions (string or list): Version(s) to install. If None given will attempt install all versions.
+
+            clean (boolean): If True, will delete all compiled (.pyc) scripts in the install directory.
         """
         if not self.isInstalled():
             print(self.name + ' is not installed, skipping.')
             return
 
+        if versions is None:
+            self.printInfo()
+            paths = self.getPythonPaths()
+        elif isinstance(versions, str):
+            paths = [self.getPythonPath(versions)]
+        else:
+            paths = [self.getPythonPath(version) for version in versions]
+
+        if clean:
+            pcu.deleteCompiledScripts(install_directory)
+
         self.onBeforeInstalling()
-
-        self.printInfo()
-        pcu.deleteCompiledScripts(install_directory)
-
-        for python in self.getPythonPaths():
-            print('-' * 50)
-            print('Starting ' + self.name + '\'s ' + python)
-            subprocess.run([python, install_script, install_directory], shell=True)
+        [self._runInstaller(python, install_script, install_directory) for python in paths]
 
     @staticmethod
     def _printInfo(text, iterables):

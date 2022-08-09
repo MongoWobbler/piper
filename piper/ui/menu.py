@@ -29,14 +29,28 @@ class PiperMenu(QtWidgets.QMenu):
         """
         pass
 
-    def add(self, name, on_pressed, *args, **kwargs):
+    @staticmethod
+    def _validateName(on_pressed, name=None):
+        """
+        Args:
+            on_pressed (method): Used to deduce name if None is given.
+
+            name (string): Name for the item to have on the menu. If None given, will use given method's name.
+
+        Returns:
+            (string): Name validated.
+        """
+        name = pcu.toSentenceCase(on_pressed.__name__) if name is None else name
+        return name.decode('utf-8') if sys.version.startswith('2') else name
+
+    def add(self, on_pressed, name=None, *args, **kwargs):
         """
         Convenience method for adding a new item to the menu.
 
         Args:
-            name (string): Name for the item to have on the menu.
-
             on_pressed (method): This will be called when the item is pressed.
+
+            name (string): Name for the item to have on the menu. If None given, will use given method's name.
 
         Returns:
             (QtWidgets.QAction): Action item added.
@@ -46,7 +60,7 @@ class PiperMenu(QtWidgets.QMenu):
             on_pressed(*args, **kwargs)
             self.onAfterPressed(on_pressed)
 
-        name = name.decode('utf-8') if sys.version.startswith('2') else name
+        name = self._validateName(on_pressed, name)
         action = QtWidgets.QAction(name, self)
         action.triggered.connect(wrapper)
         setTips(on_pressed, action)
@@ -54,16 +68,16 @@ class PiperMenu(QtWidgets.QMenu):
         self.actions.append(action)
         return action
 
-    def addSecondary(self, name, on_pressed, on_option, *args, **kwargs):
+    def addSecondary(self, on_pressed, on_option, name=None, *args, **kwargs):
         """
         Adds an action item to the menu with a option box.
 
         Args:
-            name (string): Name for the item to have on the menu.
-
             on_pressed (method): This will be called when the item is pressed.
 
             on_option (method): This will be called when the option box is pressed.
+
+            name (string): Name for the item to have on the menu.
 
         Returns:
             (piper.ui.widget.SecondaryAction): Action item added.
@@ -79,28 +93,28 @@ class PiperMenu(QtWidgets.QMenu):
             on_option(*args, **kwargs)
             self.onAfterPressed(on_pressed)
 
-        name = name.decode('utf-8') if sys.version.startswith('2') else name
+        name = self._validateName(on_pressed, name)
         action = SecondaryAction(name, pressed_wrapper, option_wrapper, on_pressed, on_option, self)
         self.addAction(action)
         self.actions.append(action)
 
         return action
 
-    def addCheckbox(self, name, state, on_pressed):
+    def addCheckbox(self, state, on_pressed, name=None):
         """
         Convenience method for adding a checkbox item to the menu.
 
         Args:
-            name (string): Name for the checkbox item to have on the menu.
-
             state (boolean): Initial state of checkbox.
 
             on_pressed (method): This will be called when the item is pressed.
 
+            name (string): Name for the checkbox item to have on the menu.
+
         Returns:
             (QtWidgets.QAction): Action item added.
         """
-        name = name.decode('utf-8') if sys.version.startswith('2') else name
+        name = self._validateName(on_pressed, name)
         action = QtWidgets.QAction(name, self)
         action.setCheckable(True)
         action.setChecked(state)
@@ -135,18 +149,18 @@ class PiperSceneMenu(PiperMenu):
         self.build()
 
     def build(self):
-        self.add('Open Current Scene in OS', self.openSceneInOS)
-        self.add('Open Art Directory in OS', self.openArtDirectoryInOS)
-        self.add('Open Game Directory in OS', self.openGameDirectoryInOS)
-        self.add('Open Piper Directory in OS', self.openPiperDirectoryInOS)
-        self.add('Open Selected Reference File', self.openSelectedReference)
+        self.add(self.openSceneInOS, 'Open Current Scene in OS')
+        self.add(self.openArtDirectoryInOS, 'Open Art Directory in OS')
+        self.add(self.openGameDirectoryInOS, 'Open Game Directory in OS')
+        self.add(self.openPiperDirectoryInOS, 'Open Piper Directory in OS')
+        self.add(self.openSelectedReference, 'Open Selected Reference File')
         self.addSeparator()
 
-        self.add('Copy Current Scene to Clipboard', self.copyCurrentSceneToClipboard)
-        self.add('Reload Current Scene', self.reloadCurrentScene)
+        self.add(self.copyCurrentSceneToClipboard)
+        self.add(self.reloadCurrentScene)
         self.addSeparator()
 
-        self.add('Open Piper Documentation', self.openDocumentation)
+        self.add(self.openDocumentation, 'Open Piper Documentation', )
 
     def openSceneInOS(self):
         pass
@@ -183,8 +197,8 @@ class PiperPerforceMenu(PiperMenu):
         self.build()
 
     def build(self):
-        self.add('Add/Checkout Scene', self.addScene)
-        self.addCheckbox('Add Scene After Saving', self.addSceneAfterSaving(), self.onAddSceneAfterSavingPressed)
+        self.add(self.addScene, 'Add/Checkout Scene')
+        self.addCheckbox(self.addSceneAfterSaving(), self.onAddSceneAfterSavingPressed, 'Add Scene After Saving')
 
     def addScene(self):
         pass
@@ -209,13 +223,13 @@ class PiperExportMenu(PiperMenu):
         self.build()
 
     def build(self):
-        self.add('Export To Game', self.exportToGame)
-        self.add('Export To Current Directory', self.exportToCurrentDirectory)
+        self.add(self.exportToGame)
+        self.add(self.exportToCurrentDirectory)
         self.addSeparator()
-        self.add('Export Meshes to Current as OBJ', self.exportMeshesToCurrentAsObj)
+        self.add(self.exportMeshesToCurrentAsObj, 'Export Meshes to Current as OBJ')
         self.addSeparator()
-        self.add('Set Art Directory', self.setArtDirectory)
-        self.add('Set Game Directory', self.setGameDirectory)
+        self.add(self.setArtDirectory)
+        self.add(self.setGameDirectory)
 
     def exportToGame(self):
         pass
@@ -268,9 +282,12 @@ class _PiperMainMenu(PiperMenu):
         self.addMenuP(self.settings_menu)
         self.addSeparator()
 
-        self.add('Reload Piper', self.reloadPiper)
+        self.add(self.reloadPiper)
 
     def reloadPiper(self):
+        """
+        Reloads all the piper python modules and windows.
+        """
         manager.closeAll()
         self.on_before_reload()
         pcu.removeModules(path=pcu.getPiperDirectory())

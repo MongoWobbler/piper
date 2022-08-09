@@ -1,7 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
@@ -121,7 +122,7 @@ def duplicateChain(chain, prefix='new_', color='default', scale=1.0):
 
     for original, duplicate in zip(chain, new_chain):
         duplicate.rename(prefix + original.name(stripNamespace=True))
-        [original.attr(attr) >> duplicate.attr(attr) for attr in pcfg.bind_attributes if original.hasAttr(attr)]
+        [original.attr(attr) >> duplicate.attr(attr) for attr in mcfg.bind_attributes if original.hasAttr(attr)]
 
         if duplicate.hasAttr('radius'):
             duplicate.radius.set(duplicate.radius.get() * scale)
@@ -310,7 +311,7 @@ def parentMatrixConstraint(driver=None, target=None,
     driver_name = driver.name(stripNamespace=True)
 
     if all([t, r, s]):
-        mult_name = '_'.join([name, pcfg.parent_matrix_mult_suffix])
+        mult_name = '_'.join([name, mcfg.parent_matrix_mult_suffix])
     else:
         middle = ''
         if t:
@@ -320,10 +321,10 @@ def parentMatrixConstraint(driver=None, target=None,
         if s:
             middle += 'S'
 
-        mult_name = '_'.join([name, middle, pcfg.parent_matrix_mult_suffix])
+        mult_name = '_'.join([name, middle, mcfg.parent_matrix_mult_suffix])
 
     matrix_multiplication = pm.createNode('multMatrix', n=mult_name)
-    decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + name + pcfg.parent_matrix_decomp_suffix)
+    decomp_matrix = pm.createNode('decomposeMatrix', n=driver_name + '_to_' + name + mcfg.parent_matrix_decomp_suffix)
 
     if offset:
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
@@ -343,22 +344,22 @@ def parentMatrixConstraint(driver=None, target=None,
     if r:
         if target.hasAttr('jointOrient') and target.jointOrient.get() != pm.dt.Vector(0, 0, 0):
             if jo:
-                compose_matrix = pm.createNode('composeMatrix', n=name + pcfg.parent_matrix_rot_comp_suffix)
+                compose_matrix = pm.createNode('composeMatrix', n=name + mcfg.parent_matrix_rot_comp_suffix)
                 compose_matrix.inputRotate.set(target.jointOrient.get())
                 target_parent = target.getParent()
 
                 if target_parent:
-                    mult_rot_matrix = pm.createNode('multMatrix', n=name + pcfg.parent_matrix_rot_mult_suffix)
+                    mult_rot_matrix = pm.createNode('multMatrix', n=name + mcfg.parent_matrix_rot_mult_suffix)
                     compose_matrix.outputMatrix >> mult_rot_matrix.matrixIn[0]
                     target_parent.worldMatrix >> mult_rot_matrix.matrixIn[1]
                     joint_orient_matrix_output = mult_rot_matrix.matrixSum
                 else:
                     joint_orient_matrix_output = compose_matrix.outputMatrix
 
-                inverse_matrix = pm.createNode('inverseMatrix', n=name + pcfg.parent_matrix_rot_inv_suffix)
+                inverse_matrix = pm.createNode('inverseMatrix', n=name + mcfg.parent_matrix_rot_inv_suffix)
                 joint_orient_matrix_output >> inverse_matrix.inputMatrix
 
-                mult_rot_matrix = pm.createNode('multMatrix', n=name + pcfg.parent_matrix_rot_mult_suffix)
+                mult_rot_matrix = pm.createNode('multMatrix', n=name + mcfg.parent_matrix_rot_mult_suffix)
 
                 if offset:
                     offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
@@ -369,7 +370,7 @@ def parentMatrixConstraint(driver=None, target=None,
                     driver.worldMatrix >> mult_rot_matrix.matrixIn[0]
                     inverse_matrix.outputMatrix >> mult_rot_matrix.matrixIn[1]
 
-                rotate_decompose = pm.createNode('decomposeMatrix', n=name + pcfg.parent_matrix_rot_decomp_suffix)
+                rotate_decompose = pm.createNode('decomposeMatrix', n=name + mcfg.parent_matrix_rot_decomp_suffix)
                 mult_rot_matrix.matrixSum >> rotate_decompose.inputMatrix
                 output_rotate = rotate_decompose.outputRotate
 
@@ -419,19 +420,19 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
     driver_name = driver.name(stripNamespace=True)
 
     if target_parent and offset:
-        matrix_mult = pm.createNode('multMatrix', name=target_name + pcfg.offset_and_parent_mult_suffix)
+        matrix_mult = pm.createNode('multMatrix', name=target_name + mcfg.offset_and_parent_mult_suffix)
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
         matrix_mult.matrixIn[0].set(offset)
         driver.worldMatrix >> matrix_mult.matrixIn[1]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[2]
         output = matrix_mult.matrixSum
     elif target_parent:
-        matrix_mult = pm.createNode('multMatrix', name=target_name + pcfg.offset_parent_mult_suffix)
+        matrix_mult = pm.createNode('multMatrix', name=target_name + mcfg.offset_parent_mult_suffix)
         driver.worldMatrix >> matrix_mult.matrixIn[0]
         target_parent.worldInverseMatrix >> matrix_mult.matrixIn[1]
         output = matrix_mult.matrixSum
     elif offset:
-        matrix_mult = pm.createNode('multMatrix', name=target_name + pcfg.offset_only_mult_suffix)
+        matrix_mult = pm.createNode('multMatrix', name=target_name + mcfg.offset_only_mult_suffix)
         offset = target.worldMatrix.get() * driver.worldInverseMatrix.get()
         matrix_mult.matrixIn[0].set(offset)
         driver.worldMatrix >> matrix_mult.matrixIn[1]
@@ -444,8 +445,8 @@ def offsetConstraint(driver, target, t=True, r=True, s=True, offset=False, plug=
         pass
     else:
         matrix_prefix = driver_name + '_to_' + target_name
-        decomp_matrix = pm.createNode('decomposeMatrix', n=matrix_prefix + pcfg.offset_parent_decomp_suffix)
-        comp_matrix = pm.createNode('composeMatrix', n=matrix_prefix + pcfg.offset_parent_comp_suffix)
+        decomp_matrix = pm.createNode('decomposeMatrix', n=matrix_prefix + mcfg.offset_parent_decomp_suffix)
+        comp_matrix = pm.createNode('composeMatrix', n=matrix_prefix + mcfg.offset_parent_comp_suffix)
         output >> decomp_matrix.inputMatrix
 
         if t:
@@ -485,14 +486,14 @@ def aimConstraint(target, up, driven):
     parent_plug = offset_plug if offset_plug else driven.parentMatrix
 
     driven_name = driven.name(stripNamespace=True)
-    driven_compose = pm.createNode('composeMatrix', n=driven_name + '_T' + pcfg.compose_matrix_suffix)
+    driven_compose = pm.createNode('composeMatrix', n=driven_name + '_T' + mcfg.compose_matrix_suffix)
     driven.translate >> driven_compose.inputTranslate
 
-    mult_matrix = pm.createNode('multMatrix', n=driven_name + '_parent' + pcfg.mult_matrix_suffix)
+    mult_matrix = pm.createNode('multMatrix', n=driven_name + '_parent' + mcfg.mult_matrix_suffix)
     driven_compose.outputMatrix >> mult_matrix.matrixIn[0]
     parent_plug >> mult_matrix.matrixIn[1]
 
-    aim_matrix_name = driven_name + '_TO_' + target.name(stripNamespace=True) + pcfg.aim_matrix_suffix
+    aim_matrix_name = driven_name + '_TO_' + target.name(stripNamespace=True) + mcfg.aim_matrix_suffix
     aim_matrix = pm.createNode('aimMatrix', n=aim_matrix_name)
     mult_matrix.matrixSum >> aim_matrix.inputMatrix
 
@@ -506,16 +507,16 @@ def aimConstraint(target, up, driven):
     up.worldMatrix >> aim_matrix.secondaryTargetMatrix
 
     attribute.addSeparator(driven)
-    driven.addAttr(pcfg.bendy_aim_attribute, k=True, dv=1, hsx=True, hsn=True, smn=0, smx=1)
+    driven.addAttr(mcfg.bendy_aim_attribute, k=True, dv=1, hsx=True, hsn=True, smn=0, smx=1)
 
     if offset_plug:
-        blend_matrix = pm.createNode('blendMatrix', n=driven + pcfg.aim_matrix_suffix + pcfg.blend_matrix_suffix)
+        blend_matrix = pm.createNode('blendMatrix', n=driven + mcfg.aim_matrix_suffix + mcfg.blend_matrix_suffix)
         offset_plug >> blend_matrix.inputMatrix
         aim_matrix.outputMatrix >> blend_matrix.target[0].targetMatrix
-        driven.attr(pcfg.bendy_aim_attribute) >> blend_matrix.target[0].weight
+        driven.attr(mcfg.bendy_aim_attribute) >> blend_matrix.target[0].weight
         blend_matrix.outputMatrix >> driven.offsetParentMatrix
     else:
-        driven.attr(pcfg.bendy_aim_attribute) >> aim_matrix.envelope
+        driven.attr(mcfg.bendy_aim_attribute) >> aim_matrix.envelope
         aim_matrix.outputMatrix >> driven.offsetParentMatrix
 
     return aim_matrix

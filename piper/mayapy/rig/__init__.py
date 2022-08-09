@@ -6,7 +6,8 @@ import inspect
 
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
@@ -35,7 +36,7 @@ def getRootControl(rig):
     Returns:
         (pm.nodetypes.DependNode): Root control of rig.
     """
-    return attribute.getDestinationNode(rig.attr(pcfg.message_root_control))
+    return attribute.getDestinationNode(rig.attr(mcfg.message_root_control))
 
 
 def getMeshes():
@@ -63,7 +64,7 @@ def getSkeletonNodes(rigs=None):
         rigs = pipernode.get('piperRig')
 
     return {child: rig for rig in rigs for child in rig.getChildren(ad=True, type='piperSkinnedMesh') if
-            pcfg.skeleton_namespace in child.namespace()}
+            mcfg.skeleton_namespace in child.namespace()}
 
 
 def getSkeletonMeshes(rigs=None):
@@ -164,7 +165,7 @@ class Rig(object):
 
             group (boolean): If True, will automatically parent nodes into the groups and/or into rig node.
 
-            color (boolean): If True, will automatically color controls according to settings in piper_config.py
+            color (boolean): If True, will automatically color controls according to settings in piper.config.maya.py
 
             copy_controls (boolean): If True, will attempt to copy control shapes from existing rig on finish.
 
@@ -187,7 +188,7 @@ class Rig(object):
         self.inner_bendy_controls = []
         self.root_control = None
         self.body_base_control = None
-        self.namespace = pcfg.skeleton_namespace + ':'
+        self.namespace = mcfg.skeleton_namespace + ':'
 
         if find and not rig:
             rigs = pm.ls(type='piperRig')
@@ -231,7 +232,7 @@ class Rig(object):
         self.path = path
         skeleton_path = paths.getRelativeArt(path=path)
         rig_name, _ = os.path.splitext(os.path.basename(skeleton_path))
-        rig_name = rig_name.split(pcfg.skinned_mesh_prefix)[-1]
+        rig_name = rig_name.split(mcfg.skinned_mesh_prefix)[-1]
 
         # if scene is modified, ask user if they would like to save, not save, or cancel operation
         if not uiwindow.save():
@@ -248,10 +249,11 @@ class Rig(object):
         pm.newFile(force=True)
         self.rig = pipernode.createRig(name=rig_name)
         one_minus = pipernode.oneMinus(self.rig.highPolyVisibility)
-        pm.createReference(skeleton_path, namespace=pcfg.skeleton_namespace)
-        pm.createReference(skeleton_path, namespace=pcfg.bind_namespace)
+        pm.createReference(skeleton_path, namespace=mcfg.skeleton_namespace)
+        pm.createReference(skeleton_path, namespace=mcfg.bind_namespace)
         skinned_nodes = pipernode.get('piperSkinnedMesh')
-        [node.visibility.set(False) for node in skinned_nodes if node.name().startswith(pcfg.bind_namespace)]
+        [node.visibility.set(False) for node in skinned_nodes if node.name().startswith(
+            mcfg.bind_namespace)]
         pm.parent(skinned_nodes, self.rig)
         [one_minus.output >> mesh.visibility for mesh in getSkeletonMeshes()]
         lockMeshes()
@@ -278,7 +280,7 @@ class Rig(object):
 
         needs_formatting = transform.find('{}') >= 0
 
-        if not transform.startswith(self.namespace) and not transform.endswith(pcfg.control_suffix):
+        if not transform.startswith(self.namespace) and not transform.endswith(mcfg.control_suffix):
             spaced = self.namespace + transform
             transform = spaced if pm.objExists(spaced) or needs_formatting else transform
 
@@ -372,7 +374,7 @@ class Rig(object):
 
         # else get the first parent that is either a piperRig or is a group
         else:
-            parent = myu.getFirstTypeOrEndsWithParent(reference_transform, 'piperRig', pcfg.group_suffix)
+            parent = myu.getFirstTypeOrEndsWithParent(reference_transform, 'piperRig', mcfg.group_suffix)
             if parent:
                 self.addToGroupStack(parent, transforms)
                 found = True
@@ -397,10 +399,10 @@ class Rig(object):
         pm.select(cl=True)
         control_members = []
         movable_members = []
-        control_set = control.getSet(pcfg.control_set)
-        inners_set = control.getSet(pcfg.inner_controls_set)
-        movable_set = control.getSet(pcfg.movable_controls_set)
-        iks_set = control.getSet(pcfg.ik_controls_set)
+        control_set = control.getSet(mcfg.control_set)
+        inners_set = control.getSet(mcfg.inner_controls_set)
+        movable_set = control.getSet(mcfg.movable_controls_set)
+        iks_set = control.getSet(mcfg.ik_controls_set)
 
         for name, controls in self.controls.items():
 
@@ -479,37 +481,40 @@ class Rig(object):
 
     def colorize(self):
         """
-        Colors all the controls according to setting in piper_config.py
+        Colors all the controls according to setting in piper.config.maya.py
         """
         controls = pcu.flatten(list(self.controls.values()))
 
-        left_control = pcfg.left_suffix + pcfg.control_suffix
-        left_banker = pcfg.left_suffix + pcfg.banker_suffix + pcfg.control_suffix
-        left_reverse = pcfg.left_suffix + pcfg.reverse_suffix + pcfg.control_suffix
+        left_control = pcfg.left_suffix + mcfg.control_suffix
+        left_banker = pcfg.left_suffix + mcfg.banker_suffix + mcfg.control_suffix
+        left_reverse = pcfg.left_suffix + mcfg.reverse_suffix + mcfg.control_suffix
 
-        right_control = pcfg.right_suffix + pcfg.control_suffix
-        right_banker = pcfg.right_suffix + pcfg.banker_suffix + pcfg.control_suffix
-        right_reverse = pcfg.right_suffix + pcfg.reverse_suffix + pcfg.control_suffix
+        right_control = pcfg.right_suffix + mcfg.control_suffix
+        right_banker = pcfg.right_suffix + mcfg.banker_suffix + mcfg.control_suffix
+        right_reverse = pcfg.right_suffix + mcfg.reverse_suffix + mcfg.control_suffix
 
         left_suffixes = (left_control, left_banker, left_reverse)
         right_suffixes = (right_control, right_banker, right_reverse)
         self._color(controls, left_suffixes, right_suffixes,
-                    pcfg.left_color, pcfg.right_color, pcfg.middle_color)
+                    mcfg.left_color, mcfg.right_color, mcfg.middle_color)
 
-        left_suffix = pcfg.left_suffix + pcfg.inner_suffix + pcfg.control_suffix
-        right_suffix = pcfg.right_suffix + pcfg.inner_suffix + pcfg.control_suffix
+        left_suffix = pcfg.left_suffix + mcfg.inner_suffix + mcfg.control_suffix
+        right_suffix = pcfg.right_suffix + mcfg.inner_suffix + mcfg.control_suffix
         self._color(self.inner_controls, left_suffix, right_suffix,
-                    pcfg.left_inner_color, pcfg.right_inner_color, pcfg.middle_inner_color)
+                    mcfg.left_inner_color, mcfg.right_inner_color,
+                    mcfg.middle_inner_color)
 
-        left_suffix = pcfg.left_suffix + pcfg.bendy_suffix + pcfg.control_suffix
-        right_suffix = pcfg.right_suffix + pcfg.bendy_suffix + pcfg.control_suffix
+        left_suffix = pcfg.left_suffix + mcfg.bendy_suffix + mcfg.control_suffix
+        right_suffix = pcfg.right_suffix + mcfg.bendy_suffix + mcfg.control_suffix
         self._color(self.bendy_controls, left_suffix, right_suffix,
-                    pcfg.left_bendy_color, pcfg.right_bendy_color, pcfg.middle_bendy_color)
+                    mcfg.left_bendy_color, mcfg.right_bendy_color,
+                    mcfg.middle_bendy_color)
 
-        left_suffix = pcfg.left_suffix + pcfg.inner_suffix + pcfg.bendy_suffix + pcfg.control_suffix
-        right_suffix = pcfg.right_suffix + pcfg.inner_suffix + pcfg.bendy_suffix + pcfg.control_suffix
+        left_suffix = pcfg.left_suffix + mcfg.inner_suffix + mcfg.bendy_suffix + mcfg.control_suffix
+        right_suffix = pcfg.right_suffix + mcfg.inner_suffix + mcfg.bendy_suffix + mcfg.control_suffix
         self._color(self.inner_bendy_controls, left_suffix, right_suffix,
-                    pcfg.left_inner_bendy_color, pcfg.right_inner_bendy_color, pcfg.middle_inner_bendy_color)
+                    mcfg.left_inner_bendy_color, mcfg.right_inner_bendy_color,
+                    mcfg.middle_inner_bendy_color)
 
     def organize(self, transforms, prefix=None, name=None):
         """
@@ -534,7 +539,7 @@ class Rig(object):
 
         if name:
             prefix = prefix[:0] + prefix[0].capitalize() + prefix[1:]
-            group_name = prefix + '_' + name.capitalize().replace(' ', '_') + pcfg.group_suffix
+            group_name = prefix + '_' + name.capitalize().replace(' ', '_') + mcfg.group_suffix
             if pm.objExists(group_name):
                 group = pm.PyNode(group_name)
             else:
@@ -550,7 +555,7 @@ class Rig(object):
 
             # drive visibility of groups through rig node
             if group:
-                attribute_name = group.name() + pcfg.visibility_suffix
+                attribute_name = group.name() + mcfg.visibility_suffix
                 if not self.rig.hasAttr(attribute_name):
                     self.rig.addAttr(attribute_name, at='bool', dv=1, k=True)
                     self.rig.attr(attribute_name) >> group.visibility
@@ -588,7 +593,7 @@ class Rig(object):
 
         pivot_ctrl, _ = control.create(transform,
                                        shape=shape,
-                                       name=target.name() + pcfg.dynamic_pivot_suffix,
+                                       name=target.name() + mcfg.dynamic_pivot_suffix,
                                        axis=axis,
                                        color=color,
                                        scale=scale,
@@ -598,8 +603,8 @@ class Rig(object):
 
         pivot_ctrl.translate >> target.rotatePivot
         attribute.nonKeyableCompound(pivot_ctrl, ['r', 's'])
-        pivot_ctrl.addAttr(pcfg.dynamic_pivot_rest, dt='string', k=False, h=True, s=True)
-        pivot_ctrl.attr(pcfg.dynamic_pivot_rest).set(transform.name())
+        pivot_ctrl.addAttr(mcfg.dynamic_pivot_rest, dt='string', k=False, h=True, s=True)
+        pivot_ctrl.attr(mcfg.dynamic_pivot_rest).set(transform.name())
         function_name = inspect.currentframe().f_code.co_name
         self.organize([pivot_ctrl], prefix=function_name, name='')
         self.addControls([pivot_ctrl], name=function_name)
@@ -621,7 +626,7 @@ class Rig(object):
         """
         pick_walk_parent = controls[-1] if controls else None
         if parent and i == 0:
-            inner_ctrl = parent.name().replace(pcfg.control_suffix, pcfg.inner_suffix + pcfg.control_suffix)
+            inner_ctrl = parent.name().replace(mcfg.control_suffix, mcfg.inner_suffix + mcfg.control_suffix)
             pick_walk_parent = pm.PyNode(inner_ctrl) if pm.objExists(inner_ctrl) else parent
 
         if pick_walk_parent:
@@ -718,7 +723,7 @@ class Rig(object):
         return space.switch(transform, new_space=new_space, t=t, r=r, o=o, s=s, key=key)
 
     @_ignoreMirror
-    def root(self, transform=pcfg.root_joint_name, name=pcfg.root_joint_name):
+    def root(self, transform=mcfg.root_joint_name, name=mcfg.root_joint_name):
         """
         Creates a root control with a squash and stretch attribute.
 
@@ -737,29 +742,31 @@ class Rig(object):
 
         # create a group above root control that will be scaled and squash and stretch attribute
         name_prefix = name.lower() + '_scale'
-        root_scale = pm.group(self.root_control, name=name_prefix + pcfg.group_suffix)
+        root_scale = pm.group(self.root_control, name=name_prefix + mcfg.group_suffix)
         attribute.addSeparator(self.root_control)
-        self.root_control.addAttr(pcfg.squash_stretch_attribute, k=True, dv=1, min=0.001)
-        self.root_control.addAttr(pcfg.squash_stretch_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=0, smx=1)
-        attribute.nonKeyable(self.root_control.attr(pcfg.squash_stretch_weight_attribute))
+        self.root_control.addAttr(mcfg.squash_stretch_attribute, k=True, dv=1, min=0.001)
+        self.root_control.addAttr(mcfg.squash_stretch_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=0, smx=1)
+        attribute.nonKeyable(self.root_control.attr(mcfg.squash_stretch_weight_attribute))
 
         # create blender
         blender = pm.createNode('piperBlendAxis', name=name_prefix + '_BA')
-        self.root_control.attr(pcfg.squash_stretch_weight_attribute) >> blender.weight
+        self.root_control.attr(mcfg.squash_stretch_weight_attribute) >> blender.weight
         blender.axis1.set(1, 1, 1)
         blender.axis2.set(1, 1, 1)
         blender.output >> root_scale.scale
 
         # hook up squash and stretch
-        reciprocal = xform.squashStretch(self.root_control.attr(pcfg.squash_stretch_attribute), blender, 'a2')
-        transform.addAttr(pcfg.root_scale_up, k=True, dv=1)
-        transform.addAttr(pcfg.root_scale_sides, k=True, dv=1)
-        self.root_control.attr(pcfg.squash_stretch_attribute) >> transform.attr(pcfg.root_scale_up)
-        reciprocal.output >> transform.attr(pcfg.root_scale_sides)
+        reciprocal = xform.squashStretch(self.root_control.attr(mcfg.squash_stretch_attribute), blender, 'a2')
+        transform.addAttr(mcfg.root_scale_up, k=True, dv=1)
+        transform.addAttr(mcfg.root_scale_sides, k=True, dv=1)
+        self.root_control.attr(mcfg.squash_stretch_attribute) >> transform.attr(
+            mcfg.root_scale_up)
+        reciprocal.output >> transform.attr(mcfg.root_scale_sides)
 
         # connect root and rig with message for easy look up
-        self.root_control.addAttr(pcfg.message_root_control, at='message')
-        self.rig.attr(pcfg.message_root_control) >> self.root_control.attr(pcfg.message_root_control)
+        self.root_control.addAttr(mcfg.message_root_control, at='message')
+        self.rig.attr(mcfg.message_root_control) >> self.root_control.attr(
+            mcfg.message_root_control)
 
         return controls
 
@@ -804,7 +811,7 @@ class Rig(object):
         global_ctrl = self.root_control
         start, end, parent, offset = self.validateTransforms([start, end, parent, offset])
         transforms = xform.getChain(start, end)
-        duplicates = xform.duplicateChain(transforms, prefix=pcfg.fk_prefix, color='green', scale=0.5)
+        duplicates = xform.duplicateChain(transforms, prefix=mcfg.fk_prefix, color='green', scale=0.5)
 
         for i, (transform, duplicate) in enumerate(zip(transforms, duplicates)):
             dup_name = duplicate.name()
@@ -819,16 +826,16 @@ class Rig(object):
             controls.append(ctrl)
 
             xform.offsetConstraint(ctrl, duplicate, message=True)
-            in_ctrl = control.create(duplicate, name=dup_name + pcfg.inner_suffix, axis=calc_axis, shape=curve.plus,
+            in_ctrl = control.create(duplicate, name=dup_name + mcfg.inner_suffix, axis=calc_axis, shape=curve.plus,
                                      size=size, parent=ctrl, color='burnt orange', inner=.125, matrix_offset=True)
 
             decompose = xform.parentMatrixConstraint(in_ctrl, duplicate)
             decomposes.append(decompose)
             in_controls.append(in_ctrl)
 
-            transform_parent = None if transform.name() == pcfg.root_joint_name else transform.getParent()
+            transform_parent = None if transform.name() == mcfg.root_joint_name else transform.getParent()
             bind_transform = convert.toBind(transform, return_node=True)
-            bind_transform.attr(pcfg.length_attribute) >> ctrl.initialLength
+            bind_transform.attr(mcfg.length_attribute) >> ctrl.initialLength
             spaces = [transform_parent, ctrl_parent]
             spaces = filter(lambda node: not isinstance(node, (pm.nodetypes.PiperSkinnedMesh, type(None))), spaces)
 
@@ -872,7 +879,7 @@ class Rig(object):
             multiply_input = attribute.getNextAvailableMultiplyInput(multiplies[1])
             controls[0].attr('s' + calc_axis) >> multiply_input
 
-        if start.name(stripNamespace=True) == pcfg.body_base_joint_name:
+        if start.name(stripNamespace=True) == mcfg.body_base_joint_name:
             self.body_base_control = controls[0]
 
         # used for chains after IK
@@ -925,7 +932,7 @@ class Rig(object):
         start, end, parent = self.validateTransforms([start, end, parent])
         global_ctrl = self.root_control
         transforms = xform.getChain(start, end)
-        duplicates = xform.duplicateChain(transforms, prefix=pcfg.ik_prefix, color='purple', scale=0.5)
+        duplicates = xform.duplicateChain(transforms, prefix=mcfg.ik_prefix, color='purple', scale=0.5)
         mid = pcu.getMedian(transforms)
         mid_duplicate = pcu.getMedian(duplicates)
 
@@ -949,7 +956,7 @@ class Rig(object):
                 start_ctrl = ctrl
 
                 # scale buffer transform
-                scale_buffer = pm.joint(n=dup_name + pcfg.scale_buffer_suffix)
+                scale_buffer = pm.joint(n=dup_name + mcfg.scale_buffer_suffix)
                 scale_buffer.segmentScaleCompensate.set(False)
                 pm.matchTransform(scale_buffer, duplicate)
                 pm.parent(duplicate, scale_buffer)
@@ -980,8 +987,8 @@ class Rig(object):
         nodes_to_organize = [controls[0], scale_buffer, piper_ik]
         mid_bind = convert.toBind(mid, return_node=True)
         bind_transform = convert.toBind(transforms[-1], return_node=True)
-        mid_bind.attr(pcfg.length_attribute) >> piper_ik.startInitialLength
-        bind_transform.attr(pcfg.length_attribute) >> piper_ik.endInitialLength
+        mid_bind.attr(mcfg.length_attribute) >> piper_ik.startInitialLength
+        bind_transform.attr(mcfg.length_attribute) >> piper_ik.endInitialLength
 
         if axis.startswith('n'):
             piper_ik.direction.set(-1)
@@ -1044,7 +1051,7 @@ class Rig(object):
             parent.worldMatrix >> parent_decompose.inputMatrix
             parent_decompose.attr('outputScale' + axis.upper()) >> piper_ik.globalScale
 
-        if start.name(stripNamespace=True) == pcfg.body_base_joint_name:
+        if start.name(stripNamespace=True) == mcfg.body_base_joint_name:
             self.body_base_control = controls[0]
 
         function_name = inspect.currentframe().f_code.co_name
@@ -1094,10 +1101,10 @@ class Rig(object):
 
         # create the switcher control and add the transforms, fk, and iks to its attribute to store it
         switcher_control = switcher.create(end, end.name(stripNamespace=True))
-        switcher_attribute = switcher_control.attr(pcfg.fk_ik_attribute)
-        switcher.addData(switcher_control.attr(pcfg.switcher_transforms), transforms, names=True)
-        switcher.addData(switcher_control.attr(pcfg.switcher_fk), fk_ctrls + in_ctrls, names=True)
-        switcher.addData(switcher_control.attr(pcfg.switcher_ik), ik_ctrls, names=True)
+        switcher_attribute = switcher_control.attr(mcfg.fk_ik_attribute)
+        switcher.addData(switcher_control.attr(mcfg.switcher_transforms), transforms, names=True)
+        switcher.addData(switcher_control.attr(mcfg.switcher_fk), fk_ctrls + in_ctrls, names=True)
+        switcher.addData(switcher_control.attr(mcfg.switcher_ik), ik_ctrls, names=True)
         controls.insert(0, switcher_control)
 
         # one minus the output of the fk ik attribute in order to drive visibility of ik/fk controls
@@ -1126,11 +1133,11 @@ class Rig(object):
         # make proxy fk ik attribute on all the controls
         for ctrl in controls[1:]:  # start on index 1 since switcher is on index 0
             attribute.addSeparator(ctrl)
-            ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+            ctrl.addAttr(mcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
         # make IK control drive switcher visibility
-        ik_ctrls[-1].addAttr(pcfg.switcher_visibility, at='bool', dv=0, k=True)
-        switcher_visibility = ik_ctrls[-1].attr(pcfg.switcher_visibility)
+        ik_ctrls[-1].addAttr(mcfg.switcher_visibility, at='bool', dv=0, k=True)
+        switcher_visibility = ik_ctrls[-1].attr(mcfg.switcher_visibility)
         switcher_visibility >> switcher_control.lodVisibility
         attribute.nonKeyable(switcher_visibility)
 
@@ -1229,7 +1236,7 @@ class Rig(object):
             # name and create blend matrix
             driver_name = driver.name(stripNamespace=True)
             target_name = target.name(stripNamespace=True)
-            blend_name = driver_name + '_To_' + target_name + pcfg.twist_blend_suffix
+            blend_name = driver_name + '_To_' + target_name + mcfg.twist_blend_suffix
             blend_matrix = pm.createNode('blendMatrix', n=blend_name)
 
             # connect blend matrix and set default values
@@ -1241,14 +1248,14 @@ class Rig(object):
             blend_matrix.target[0].useShear.set(False)
 
             # create attribute on control to drive the distance weight
-            ctrl.addAttr(pcfg.twist_blend_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=-1, smx=1)
-            ctrl.attr(pcfg.twist_blend_weight_attribute) >> blend_matrix.target[0].weight
-            ctrl.attr(pcfg.twist_blend_weight_attribute).set(distance_percentage)
+            ctrl.addAttr(mcfg.twist_blend_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=-1, smx=1)
+            ctrl.attr(mcfg.twist_blend_weight_attribute) >> blend_matrix.target[0].weight
+            ctrl.attr(mcfg.twist_blend_weight_attribute).set(distance_percentage)
 
         # create twist node and add twist attribute on control
         twist_node = pipernode.createSwingTwist(target, ctrl, axis=axis, twist=weight)
-        ctrl.addAttr(pcfg.twist_weight_attribute, k=True, dv=weight, hsx=True, hsn=True, smn=-1, smx=1)
-        ctrl.attr(pcfg.twist_weight_attribute) >> twist_node.twist
+        ctrl.addAttr(mcfg.twist_weight_attribute, k=True, dv=weight, hsx=True, hsn=True, smn=-1, smx=1)
+        ctrl.attr(mcfg.twist_weight_attribute) >> twist_node.twist
 
         return duplicates, controls, in_ctrl
 
@@ -1330,16 +1337,16 @@ class Rig(object):
         for i, joint in enumerate(joints):
 
             joint_name = joint.name(stripNamespace=True)
-            dividend = convert.toBind(joint).attr(pcfg.length_attribute)
-            divisor = end_bind_joint.attr(pcfg.length_attribute)
+            dividend = convert.toBind(joint).attr(mcfg.length_attribute)
+            divisor = end_bind_joint.attr(mcfg.length_attribute)
             decimal_distance = pipernode.divide(dividend, divisor).output
 
-            ctrl_name = joint_name + pcfg.bendy_suffix
-            ctrl_exists = pm.objExists(ctrl_name + pcfg.control_suffix)
+            ctrl_name = joint_name + mcfg.bendy_suffix
+            ctrl_exists = pm.objExists(ctrl_name + mcfg.control_suffix)
             control_existed.append(ctrl_exists)
 
             if ctrl_exists:
-                ctrl = pm.PyNode(ctrl_name + pcfg.control_suffix)
+                ctrl = pm.PyNode(ctrl_name + mcfg.control_suffix)
                 controls.append(ctrl)
                 continue
             else:
@@ -1351,14 +1358,14 @@ class Rig(object):
             if joint == joints[0]:
                 xform.offsetConstraint(joint, ctrl)
             elif joint == joints[-1]:
-                blend_matrix = pm.createNode('blendMatrix', n=joint_name + pcfg.blend_matrix_suffix)
+                blend_matrix = pm.createNode('blendMatrix', n=joint_name + mcfg.blend_matrix_suffix)
                 start_joint.worldMatrix >> blend_matrix.inputMatrix
                 end_joint.worldMatrix >> blend_matrix.target[0].targetMatrix
                 blend_matrix.target[0].useRotate.set(0)
                 blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
             else:
                 si = str(i)
-                locator = pm.spaceLocator(n=joint_name + pcfg.bendy_locator_suffix)
+                locator = pm.spaceLocator(n=joint_name + mcfg.bendy_locator_suffix)
                 uv_pin.attr('outputMatrix[{}]'.format(si)) >> locator.offsetParentMatrix
                 uv_pin.attr('coordinate[{}].coordinateU'.format(si)).set(0.5)
                 decimal_distance >> uv_pin.attr('coordinate[{}].coordinateV'.format(si))
@@ -1366,7 +1373,7 @@ class Rig(object):
                 pm.select(cl=True)
                 xform.parentMatrixConstraint(locator, joint, offset=True)
 
-                blend_matrix = pm.createNode('blendMatrix', n=joint_name + pcfg.blend_matrix_suffix)
+                blend_matrix = pm.createNode('blendMatrix', n=joint_name + mcfg.blend_matrix_suffix)
                 start_joint.worldMatrix >> blend_matrix.inputMatrix
                 end_joint.worldMatrix >> blend_matrix.target[0].targetMatrix
                 decimal_distance >> blend_matrix.target[0].weight
@@ -1374,7 +1381,7 @@ class Rig(object):
                 blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
 
                 # inner control
-                inner_name = joint_name + pcfg.inner_suffix + pcfg.bendy_suffix
+                inner_name = joint_name + mcfg.inner_suffix + mcfg.bendy_suffix
                 size = control.calculateSize(joint)
                 in_ctrl = control.create(locator, curve.plus, inner_name, axis_label,
                                          scale=.85, parent=ctrl, size=size, inner=.02)
@@ -1389,7 +1396,7 @@ class Rig(object):
                 piper_mult = pipernode.multiply(locator, inputs=[parent_scale, ctrl_scale, in_ctrl_scale])
 
                 # multiplying inner control's translate by scale to compensate for any parent scaling
-                scale_mult = pm.createNode('multiplyDivide', n=ctrl_name + pcfg.bendy_locator_suffix + 'scaleMultiply')
+                scale_mult = pm.createNode('multiplyDivide', n=ctrl_name + mcfg.bendy_locator_suffix + 'scaleMultiply')
                 piper_mult.output >> scale_mult.input1
                 in_ctrl.t >> scale_mult.input2
                 scale_mult.output >> locator.t
@@ -1484,9 +1491,9 @@ class Rig(object):
         if not pivot_track:
 
             # if IK joint given, get the name of the regular joint by stripping the ik prefix
-            if joint_name.startswith(pcfg.ik_prefix):
-                stripped_name = pcu.removePrefixes(joint_name, pcfg.ik_prefix)
-                namespace_name = pcfg.skeleton_namespace + ':' + stripped_name
+            if joint_name.startswith(mcfg.ik_prefix):
+                stripped_name = pcu.removePrefixes(joint_name, mcfg.ik_prefix)
+                namespace_name = mcfg.skeleton_namespace + ':' + stripped_name
                 search_joint = pm.PyNode(stripped_name) if pm.objExists(stripped_name) else pm.PyNode(namespace_name)
             else:
                 search_joint = joint
@@ -1514,18 +1521,18 @@ class Rig(object):
         xform.toOffsetMatrix(normalized_pivot)
 
         # figure out control size, create control, lock and hide axis, translate, and scale
-        if ik_control.hasAttr(pcfg.proxy_fk_ik):
+        if ik_control.hasAttr(mcfg.proxy_fk_ik):
             switcher_control = switcher.get(ik_control)
-            transforms = switcher.getData(switcher_control.attr(pcfg.switcher_transforms), cast=True)
+            transforms = switcher.getData(switcher_control.attr(mcfg.switcher_transforms), cast=True)
             size = control.calculateSize(transforms[-1])
         else:
             size = None
 
         if use_track_shape:
-            ctrl = pm.duplicate(pivot_track, n=joint_name + pcfg.banker_suffix + pcfg.control_suffix)[0]
+            ctrl = pm.duplicate(pivot_track, n=joint_name + mcfg.banker_suffix + mcfg.control_suffix)[0]
             curve.color(ctrl, 'burnt orange')
         else:
-            ctrl = control.create(joint, shape=curve.plus, name=joint_name + pcfg.banker_suffix, axis=axes[0],
+            ctrl = control.create(joint, shape=curve.plus, name=joint_name + mcfg.banker_suffix, axis=axes[0],
                                   color='burnt orange', matrix_offset=True, size=size, inner=.125, outer=1.25)
 
         attribute.lockAndHide(ctrl.attr('r' + axes[0]))
@@ -1603,16 +1610,16 @@ class Rig(object):
         pivot_track.visibility.set(False)
         normalized_track.visibility.set(False)
 
-        ik_control.addAttr(pcfg.banker_attribute, dt='string', k=False, h=True, s=True)
-        ik_control.attr(pcfg.banker_attribute).set(ctrl.name())
+        ik_control.addAttr(mcfg.banker_attribute, dt='string', k=False, h=True, s=True)
+        ik_control.attr(mcfg.banker_attribute).set(ctrl.name())
 
         # hook up pivot control with fk_ik attribute if ik has an fk-ik proxy
-        if ik_control.hasAttr(pcfg.proxy_fk_ik):
+        if ik_control.hasAttr(mcfg.proxy_fk_ik):
             switcher_control = switcher.get(ik_control)
-            switcher_attribute = switcher_control.attr(pcfg.fk_ik_attribute)
+            switcher_attribute = switcher_control.attr(mcfg.fk_ik_attribute)
             switcher_attribute >> ctrl.lodVisibility
             attribute.addSeparator(ctrl)
-            ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+            ctrl.addAttr(mcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
         control.tagAsControllerParent(ctrl, ik_control)
         nodes_to_organize = [reverse_group, normalized_pivot, normalized_track, pivot_track]
@@ -1666,7 +1673,7 @@ class Rig(object):
             axis = convert.axisToTriAxis(axis)[1]
 
         # create control
-        name = transform.name(stripNamespace=True) + pcfg.reverse_suffix
+        name = transform.name(stripNamespace=True) + mcfg.reverse_suffix
         driver_parent = driver.getParent()
         ctrl = control.create(transform, shape, name, axis, 'burnt orange', 0.5, True, parent=driver_parent)
         self.addControls([ctrl], name=inspect.currentframe().f_code.co_name)
@@ -1712,13 +1719,13 @@ class Rig(object):
             return ctrl
 
         # add reverse control to switcher data and connect ik visibility onto reverse control
-        switcher.addData(switcher_ctrl.attr(pcfg.switcher_reverses), [name])
-        switcher_attribute = switcher_ctrl.attr(pcfg.fk_ik_attribute)
+        switcher.addData(switcher_ctrl.attr(mcfg.switcher_reverses), [name])
+        switcher_attribute = switcher_ctrl.attr(mcfg.fk_ik_attribute)
         switcher_attribute >> ctrl.lodVisibility
 
         # add proxy fk_ik attribute to ctrl
         attribute.addSeparator(ctrl)
-        ctrl.addAttr(pcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+        ctrl.addAttr(mcfg.proxy_fk_ik, proxy=switcher_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
 
         # only make driven_negate by affected if IK is set to True
         blend = pm.createNode('blendMatrix', n=source_name + '_negateBlend')
@@ -1757,6 +1764,6 @@ class Rig(object):
         ik_handle = ctrls[-1].connections(skipConversionNodes=True, type='ikHandle')[0]
         reverse_ctrl = self.reverse(ik_handle, ik_transforms[-1], ball_control[0], ball, ctrls[0])
         control.tagAsControllerParent(reverse_ctrl, banker)
-        ctrls[0].attr(pcfg.fk_ik_attribute).set(1)  # set to IK since that is what most human legs are set to.
+        ctrls[0].attr(mcfg.fk_ik_attribute).set(1)  # set to IK since that is what most human legs are set to.
 
         return [fk_transforms, ik_transforms, ctrls], [ball_joint, ball_control, ball_inner], [banker, reverse_ctrl]

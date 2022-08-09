@@ -16,7 +16,7 @@ import subprocess
 import webbrowser
 import collections
 from weakref import proxy
-import piper_config as pcfg
+import piper.config as pcfg
 
 
 operators = {'< ': operator.lt,
@@ -46,6 +46,40 @@ def getPiperDirectory():
         (string): Path to piper directory.
     """
     return os.environ['PIPER_DIR']
+
+
+def setPiperDirectory():
+    """
+    Sets the directory for the environment key "PIPER_DIR".
+
+    Returns:
+        (string): Path to piper directory.
+    """
+    is_frozen = getattr(sys, 'frozen', False)
+    piper_directory = os.path.dirname(sys.executable) if is_frozen else os.path.abspath(__file__ + '/../../..')
+    piper_directory = piper_directory.replace('\\', '/')
+    os.environ['PIPER_DIR'] = piper_directory
+    return piper_directory
+
+
+def getInstallScriptPath(dcc):
+    """
+    Gets the path to the installs script of the given dcc by joining piper directory, and other piper directories.
+
+    Args:
+        dcc (string): Digital Content Creation Package to get install script path for.
+
+    Returns:
+        (string): Full path to python install script.
+    """
+    piper_directory = getPiperDirectory()
+    install_script = pcfg.install_scripts[dcc]
+    install_script_path = os.path.join(piper_directory, 'piper', 'core', install_script)
+
+    if not os.path.exists(install_script_path):
+        raise FileNotFoundError(install_script_path + ' does not exist! Is installer.exe in the correct directory?')
+
+    return install_script_path
 
 
 def listFullDirectory(directory):
@@ -105,9 +139,12 @@ def getSide(name):
         return ''
 
 
-def getApp():
+def getApp(error=True):
     """
     Gets the application that is running the current python script.
+
+    Args:
+        error (boolean): Raises ValueError if no valid DCC app found.
 
     Returns:
         (string): Maya, Houdini, UnrealEngine, or 3dsMax.
@@ -118,10 +155,12 @@ def getApp():
         return pcfg.maya_name
     elif 'HOUDIN' in path:
         return pcfg.houdini_name
-    elif 'UnrealEnginePython' in path:
+    elif 'Engine\\Binaries\\' in path:
         return pcfg.unreal_name
     elif '3ds' in path and 'Max' in path:
         return pcfg.max_3ds_name
+    elif not error:
+        return None
     else:
         raise ValueError('No compatible software found in ' + path + '. Please see piper_config for compatible DCCs.')
 
@@ -377,14 +416,13 @@ def copyToClipboard(text):
         text (string): Text to copy to clipboard.
     """
     operating_system = platform.system()
-    command = 'echo ' + text.strip()
 
     if operating_system == 'Darwin':  # macOS
-        command += '|pbcopy'
+        command = 'pbcopy'
     else:
-        command += '|clip'  # Windows
+        command = 'clip'  # Windows
 
-    return subprocess.check_call(command, shell=True)
+    return subprocess.run(command, universal_newlines=True, input=text, shell=True)
 
 
 def deleteCompiledScripts(directory=None):

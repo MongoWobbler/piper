@@ -6,7 +6,8 @@ from Qt import QtWidgets
 
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.rig as rig
@@ -183,13 +184,13 @@ class MayaCurvesMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        [self.add(pcu.toSentenceCase(curve_method.__name__), curve_method) for curve_method in curve.methods]
+        [self.add(curve_method) for curve_method in curve.methods]
         self.addSeparator()
-        self.add('Create Curve(s) From Cross Section', curve.crossSection)
-        self.add('Create Cross Section Curve at Origin', curve.originCrossSection)
+        self.add(curve.crossSection, 'Create Curve(s) From Cross Section')
+        self.add(curve.originCrossSection, 'Create Cross Section Curve at Origin')
         self.addSeparator()
-        self.add('Layout All Curves', curve.layoutAll)
-        self.add('Layout All Colors', curve.layoutColors)
+        self.add(curve.layoutAll, 'Layout All Curves')
+        self.add(curve.layoutColors, 'Layout All Colors')
 
 
 class MayaNodesMenu(MayaPiperMenu):
@@ -199,9 +200,9 @@ class MayaNodesMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.add('Create Mesh', pipernode.createMesh)
-        self.add('Create Skinned Mesh', pipernode.createSkinnedMesh)
-        self.add('Create Animation', pipernode.createAnimation)
+        self.add(pipernode.createMesh)
+        self.add(pipernode.createSkinnedMesh)
+        self.add(pipernode.createAnimation)
 
 
 class MayaBonesMenu(MayaPiperMenu):
@@ -212,23 +213,23 @@ class MayaBonesMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.add('Create at Pivot', bone.createAtPivot)
-        self.add('Parent', xform.parent)
-        self.add('Mirror Translate', xform.mirrorTranslate)
-        self.add('Mirror Rotate', xform.mirrorRotate)
-        self.add('Assign Labels', bone.assignLabels)
-        self.add('Assign Bind Attributes', bone.assignBindAttributes)
-        self.add('Add Delete Attribute', attribute.addDelete)
-        self.add('Turn Off Segment Scale Compensate', bone.setSegmentScaleCompensateOff)
-        self.add('Return to Bind Pose', skin.returnToBindPose)
+        self.add(bone.createAtPivot)
+        self.add(xform.parent)
+        self.add(xform.mirrorTranslate)
+        self.add(xform.mirrorRotate)
+        self.add(bone.assignLabels)
+        self.add(bone.assignBindAttributes)
+        self.add(attribute.addDelete, 'Add Delete Attribute')
+        self.add(bone.setSegmentScaleCompensateOff, 'Turn Off Segment Scale Compensate', )
+        self.add(skin.returnToBindPose)
         self.addSeparator()
-        self.add('Select Fractionally Weighted Verts', skin.selectWeightedVerts)
-        self.add('Select Weighted Verts', myvert_selector.show)
+        self.add(skin.selectWeightedVerts, 'Select Fractionally Weighted Verts')
+        self.add(myvert_selector.show, 'Select Weighted Verts')
         self.addSeparator()
-        self.add('Unbind', self.binder.unbind)
-        self.add('Rebind', self.binder.rebind)
+        self.add(self.binder.unbind)
+        self.add(self.binder.rebind)
         self.addSeparator()
-        self.add('Health Check', bone.health)
+        self.add(bone.health, 'Health Check')
 
 
 class MayaRigMenu(MayaPiperMenu):
@@ -238,10 +239,10 @@ class MayaRigMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.add('Add Space(s)', space.create)
+        self.add(space.create, 'Add Space(s)')
         self.addSeparator()
-        self.add('Lock Mesh(es)', rig.lockMeshes)
-        self.add('Unlock Mesh(es)', rig.unlockMeshes)
+        self.add(rig.lockMeshes, 'Lock Mesh(es)')
+        self.add(rig.unlockMeshes, 'Unlock Mesh(es)')
 
 class MayaReferenceMenu(MayaPiperMenu):
 
@@ -268,11 +269,11 @@ class MayaReferenceMenu(MayaPiperMenu):
         if not art_directory:
             return
 
-        rigs = pcu.getAllFilesEndingWithWord(pcfg.maya_rig_suffixes, art_directory)
+        rigs = pcu.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, art_directory)
         for rig in rigs:
             name = os.path.basename(os.path.abspath(rig + '/../..'))
             rig = paths.getRelativeArt(rig)
-            self.add(name, self.referenceRig, rig)
+            self.add(self.referenceRig, name, rig)
 
 
 class MayaAnimationMenu(MayaPiperMenu):
@@ -282,17 +283,17 @@ class MayaAnimationMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.add('Clipper', myclipper.show)
-        self.add('Space Switcher', myswitcher.show)
+        self.add(myclipper.show, 'Clipper')
+        self.add(myswitcher.show, 'Space Switcher')
         self.addSeparator()
-        self.add('Reference High-Poly', resolution.createHigh)
-        self.add('Remove High-Poly', resolution.removeHigh)
+        self.add(resolution.createHigh, 'Reference High-Poly')
+        self.add(resolution.removeHigh, 'Remove High-Poly')
         self.addSeparator()
-        self.add('Toggle Auto/Stepped Tangents', key.toggleStepped)
-        self.add('Round Keyframes', key.roundAll)
-        self.add('Delete Decimal Keyframes On Curves', key.deleteDecimals)
+        self.add(key.toggleStepped, 'Toggle Auto/Stepped Tangents')
+        self.add(key.roundAll, 'Round Keyframes')
+        self.add(key.deleteDecimals, 'Delete Decimal Keyframes On Curves')
         self.addSeparator()
-        self.add('Health Check', animation.health)
+        self.add(animation.health, 'Health Check')
 
 
 class MayaGraphicsMenu(MayaPiperMenu):
@@ -302,8 +303,8 @@ class MayaGraphicsMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.add('Create Initial Material', graphics.createInitialMaterial)
-        self.add('Update Materials', graphics.updateMaterials)
+        self.add(graphics.createInitialMaterial)
+        self.add(graphics.updateMaterials)
 
 
 class MayaSettingsMenu(MayaPiperMenu):
@@ -313,18 +314,18 @@ class MayaSettingsMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.addCheckbox('Use Perforce', store.get(pcfg.use_perforce), self.onUsePerforcePressed)
+        self.addCheckbox(store.get(pcfg.use_perforce), self.onUsePerforcePressed, 'Use Perforce')
         self.addSeparator()
-        self.addCheckbox('Use Piper Units', store.get(pcfg.use_piper_units), self.onUseUnitsPressed)
-        self.addCheckbox('Use Piper Render', store.get(pcfg.use_piper_render), self.onUseRenderPressed)
-        self.addCheckbox('Export In Ascii', store.get(pcfg.export_ascii), self.onExportInAsciiPressed)
-        self.addCheckbox('Unload Unwanted Plug-ins', store.get(pcfg.unload_unwanted), self.onUnloadUnwantedPressed)
-        self.add('Set HDR Image', self.onSetHdrImagePressed)
+        self.addCheckbox(store.get(pcfg.use_piper_units), self.onUseUnitsPressed, 'Use Piper Units')
+        self.addCheckbox(store.get(pcfg.use_piper_render), self.onUseRenderPressed, 'Use Piper Render')
+        self.addCheckbox(store.get(pcfg.export_ascii), self.onExportInAsciiPressed, 'Export In Ascii')
+        self.addCheckbox(store.get(pcfg.unload_unwanted), self.onUnloadUnwantedPressed, 'Unload Unwanted Plug-ins')
+        self.add(self.onSetHdrImagePressed, 'Set HDR Image')
         self.addSeparator()
-        self.add('Assign Hotkeys', settings.hotkeys)
+        self.add(settings.hotkeys, 'Assign Hotkeys')
 
         self.addSeparator()
-        self.add('Uninstall Piper', self.uninstall)
+        self.add(self.uninstall, 'Uninstall Piper')
 
     def onUsePerforcePressed(self, state):
         """

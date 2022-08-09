@@ -1,8 +1,9 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config as pcfg
 from piper.mayapy.pipe.store import store
 
 

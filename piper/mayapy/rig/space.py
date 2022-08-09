@@ -1,7 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.mayamath as mayamath
@@ -24,12 +24,12 @@ def _connect(transform, target, space, orient_matrix=None):
         space (pm.Attribute): Space attribute that will drive the target weight.
     """
     space >> target.weight
-    transform.attr(pcfg.space_use_translate) >> target.useTranslate
-    transform.attr(pcfg.space_use_rotate) >> target.useRotate
-    transform.attr(pcfg.space_use_scale) >> target.useScale
+    transform.attr(mcfg.space_use_translate) >> target.useTranslate
+    transform.attr(mcfg.space_use_rotate) >> target.useRotate
+    transform.attr(mcfg.space_use_scale) >> target.useScale
 
     if orient_matrix:
-        transform.attr(pcfg.space_use_orient) >> orient_matrix.useOrient
+        transform.attr(mcfg.space_use_orient) >> orient_matrix.useOrient
 
 
 def exists(transform):
@@ -61,8 +61,8 @@ def getAll(transform, cast=False):
     """
     spaces = None
 
-    if transform.hasAttr(pcfg.spaces_name):
-        spaces = transform.attr(pcfg.spaces_name).get()
+    if transform.hasAttr(mcfg.spaces_name):
+        spaces = transform.attr(mcfg.spaces_name).get()
 
     if spaces:
         spaces = spaces.split(', ')
@@ -125,7 +125,7 @@ def create(transform=None, spaces=None, direct=False, warn=True):
 
     if not matrix_blend:
         # create and hook up matrix blend
-        matrix_blend = pm.createNode('blendMatrix', n=transform_name + pcfg.space_blend_matrix_suffix)
+        matrix_blend = pm.createNode('blendMatrix', n=transform_name + mcfg.space_blend_matrix_suffix)
         attribute.addSpaceMessage(matrix_blend, transform)
         target = matrix_blend.attr('target[0]')
 
@@ -137,11 +137,11 @@ def create(transform=None, spaces=None, direct=False, warn=True):
             matrix_blend.inputMatrix.set(offset_matrix)
 
         if direct:
-            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset' + pcfg.mult_matrix_suffix)
+            multiply = pm.createNode('multMatrix', n=transform_name + '_blendOffset' + mcfg.mult_matrix_suffix)
             multiply.matrixIn[0].set(transform.matrix.get())
             matrix_blend.outputMatrix >> multiply.matrixIn[1]
 
-            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blend' + pcfg.decompose_matrix_suffix)
+            decompose = pm.createNode('decomposeMatrix', n=transform_name + '_blend' + mcfg.decompose_matrix_suffix)
             multiply.matrixSum >> decompose.inputMatrix
             decompose.outputTranslate >> transform.translate
             decompose.outputRotate >> transform.rotate
@@ -155,20 +155,20 @@ def create(transform=None, spaces=None, direct=False, warn=True):
 
         # create attributes on transform and add world space by default
         attribute.addSeparator(transform)
-        transform.addAttr(pcfg.space_use_translate, at='bool', dv=1, k=True)
-        transform.addAttr(pcfg.space_use_rotate, at='bool', dv=1, k=True)
-        transform.addAttr(pcfg.space_use_orient, at='bool', dv=0, k=True)
-        transform.addAttr(pcfg.space_use_scale, at='bool', dv=1, k=True)
-        transform.addAttr(pcfg.spaces_name, dt='string', k=False, h=True, s=True)
-        transform.addAttr(pcfg.space_world_name, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
-        _connect(transform, target, transform.attr(pcfg.space_world_name))
-        space_attributes.append(pcfg.space_world_name)
+        transform.addAttr(mcfg.space_use_translate, at='bool', dv=1, k=True)
+        transform.addAttr(mcfg.space_use_rotate, at='bool', dv=1, k=True)
+        transform.addAttr(mcfg.space_use_orient, at='bool', dv=0, k=True)
+        transform.addAttr(mcfg.space_use_scale, at='bool', dv=1, k=True)
+        transform.addAttr(mcfg.spaces_name, dt='string', k=False, h=True, s=True)
+        transform.addAttr(mcfg.space_world_name, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+        _connect(transform, target, transform.attr(mcfg.space_world_name))
+        space_attributes.append(mcfg.space_world_name)
 
     # used for orient
     position = attribute.getSourcePlug(matrix_blend.inputMatrix)
     for space in spaces:
         space_name = space.name(stripNamespace=True)
-        space_attribute = space_name + pcfg.space_suffix
+        space_attribute = space_name + mcfg.space_suffix
 
         if transform.hasAttr(space_attribute):
             pm.warning(space_attribute + ' already exists on ' + transform_name) if warn else None
@@ -180,7 +180,7 @@ def create(transform=None, spaces=None, direct=False, warn=True):
 
         # make multiply matrix node and hook it up
         if direct or parent:
-            mult_name = 'space_{}_To_{}{}'.format(transform_name, space_name, pcfg.mult_matrix_suffix)
+            mult_name = 'space_{}_To_{}{}'.format(transform_name, space_name, mcfg.mult_matrix_suffix)
             multiply = pm.createNode('multMatrix', n=mult_name)
             is_space_plugged = False
             inverse_matrix_plug = multiply.matrixIn[1]
@@ -202,7 +202,7 @@ def create(transform=None, spaces=None, direct=False, warn=True):
 
         # if has input matrix, then create an orient space
         if position:
-            orient_name = '{}_X_{}{}'.format(transform_name, space_name, pcfg.orient_matrix_suffix)
+            orient_name = '{}_X_{}{}'.format(transform_name, space_name, mcfg.orient_matrix_suffix)
             orient_matrix = pipernode.createOrientMatrix(position, target_plug, name=orient_name)
             target_plug = orient_matrix.output
 
@@ -213,7 +213,7 @@ def create(transform=None, spaces=None, direct=False, warn=True):
     # update the spaces attribute
     old_spaces = getAll(transform)
     updated_spaces = old_spaces + space_attributes
-    transform.attr(pcfg.spaces_name).set(', '.join(updated_spaces))
+    transform.attr(mcfg.spaces_name).set(', '.join(updated_spaces))
     return space_attributes
 
 
@@ -282,8 +282,8 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
         to_key = ik_controls + [switcher_ctrl] + reverses
 
         # if foot has banker attribute, set to banker's rotations to 0 and add it to key list
-        if ik_controls[-1].hasAttr(pcfg.banker_attribute):
-            banker_control = pm.PyNode(ik_controls[-1].attr(pcfg.banker_attribute).get())
+        if ik_controls[-1].hasAttr(mcfg.banker_attribute):
+            banker_control = pm.PyNode(ik_controls[-1].attr(mcfg.banker_attribute).get())
             [banker_control.attr(r).set(0) for r in ['rx', 'ry', 'rz'] if not banker_control.attr(r).isLocked()]
             to_key.append(banker_control)
 
@@ -331,7 +331,7 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
             pm.xform(fk_control, ws=True, m=matrix)
 
     if not match_only:
-        switcher_ctrl.attr(pcfg.fk_ik_attribute).set(new_fk_ik_value)
+        switcher_ctrl.attr(mcfg.fk_ik_attribute).set(new_fk_ik_value)
 
         if reverse_control_transforms:
             {pm.xform(transform, ws=True, m=matrix) for transform, matrix in reverse_control_transforms.items()}
@@ -350,7 +350,7 @@ def resetDynamicPivot(pivot_control, key=True, rest=False):
     """
     parent = pivot_control.getParent()
     matrix = parent.worldMatrix.get()
-    rest_matrix = pm.PyNode(pivot_control.attr(pcfg.dynamic_pivot_rest).get()).worldMatrix.get()
+    rest_matrix = pm.PyNode(pivot_control.attr(mcfg.dynamic_pivot_rest).get()).worldMatrix.get()
 
     if key:
         current_frame = pm.currentTime(q=True)

@@ -2,7 +2,7 @@
 
 from Qt import QtWidgets, QtCore, QtGui
 
-import piper_config as pcfg
+import piper.config as pcfg
 import piper.core.store as store
 
 
@@ -157,6 +157,37 @@ def getUserInput(title, description, parent=None, password=False):
     return str(answer) if answer and pressed_ok else False
 
 
+def addRemoveButtons(on_add_pressed, on_remove_pressed):
+    """
+    Creates two buttons vertically that are connected to the given methods
+
+    Args:
+        on_add_pressed (method): Called when the "+" button is pressed.
+
+        on_remove_pressed (method): Called when the "-" button is pressed.
+
+    Returns:
+        (QtWidgets.QVBoxLayout): Layout that created buttons belong to.
+    """
+    buttons_layout = QtWidgets.QVBoxLayout()
+    font = QtGui.QFont('Arial', 12)
+
+    # add button
+    add_line_button = QtWidgets.QPushButton('+')
+    add_line_button.clicked.connect(on_add_pressed)
+    add_line_button.setFont(font)
+    buttons_layout.addWidget(add_line_button)
+
+    # remove button
+    remove_line_button = QtWidgets.QPushButton('-')
+    remove_line_button.clicked.connect(on_remove_pressed)
+    remove_line_button.setFont(font)
+    buttons_layout.addWidget(remove_line_button, 1)
+
+    buttons_layout.addStretch(1)
+    return buttons_layout
+
+
 class SecondaryAction(QtWidgets.QWidgetAction):
 
     def __init__(self, name, main_wrapped, secondary_wrapped, main_action, secondary_action, *args, **kwargs):
@@ -236,6 +267,50 @@ class SecondaryLabel(QtWidgets.QLabel):
 
     def mouseReleaseEvent(self, ev):
         self.clicked.emit()
+
+
+class TreeNodeItem(QtWidgets.QTreeWidgetItem):
+
+    def __init__(self, *args, **kwargs):
+        """
+        QTreeWidgetItem with the ability to set multiple checkboxes of its TreeWidget when multiple are selected.
+        """
+        super(TreeNodeItem, self).__init__(*args, **kwargs)
+        self.parent_widget = self.treeWidget()
+
+    def setData(self, column, role, value):
+        """
+        Overriding setData function to set multiple checkboxes state when several rows are highlighted.
+        Role == 10 means checkbox state is being updated.
+
+        Args:
+            column (int): Index of column to set data for.
+
+            role (int): Data role that is being set.
+
+            value (any): Data being passed.
+        """
+        # sets the checkbox state for all items selected
+        if role == 10 and not self.parent_widget.is_updating and self.treeWidget().selectedItems():
+            self.parent_widget.is_updating = True
+            items = self.treeWidget().selectedItems()
+
+            [item.setData(column, role, value) for item in items]
+            self.parent_widget.items_to_select = items
+
+        super(TreeNodeItem, self).setData(column, role, value)
+
+
+class TreeWidget(QtWidgets.QTreeWidget):
+
+    def __init__(self, *args, **kwargs):
+        """
+        Tree Widget that holds whether the widget is being updated or not in order to prevent duplicate commands.
+        As well as items to select when checkboxes get selected in order to not lose currently selected items.
+        """
+        super(TreeWidget, self).__init__(*args, **kwargs)
+        self.is_updating = False
+        self.items_to_select = []
 
 
 manager = getManager()

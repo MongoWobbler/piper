@@ -1,7 +1,7 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.mayapy.attribute as attribute
 
 from . import curve
@@ -22,15 +22,15 @@ def get(transform, error=True, name=False):
     Returns:
         (pm.nodetypes.Transform or String): Switcher control that holds real fk_ik attribute.
     """
-    if transform.hasAttr(pcfg.proxy_fk_ik):
-        real_switcher = transform.attr(pcfg.proxy_fk_ik).connections()
+    if transform.hasAttr(mcfg.proxy_fk_ik):
+        real_switcher = transform.attr(mcfg.proxy_fk_ik).connections()
 
         if not real_switcher:
             pm.error(transform.nodeName() + ' has proxy attribute but is not connected!')
 
         return real_switcher[0].name() if name else real_switcher[0]
 
-    elif transform.hasAttr(pcfg.fk_ik_attribute):
+    elif transform.hasAttr(mcfg.fk_ik_attribute):
         return transform.name() if name else transform
 
     elif error:
@@ -52,15 +52,15 @@ def create(driver, name=''):
     Returns:
         (pm.nodetypes.Transform): Switcher control created.
     """
-    name = name + pcfg.switcher_suffix
+    name = name + mcfg.switcher_suffix
     switcher_control = control.create(driver, name=name, shape=curve.cube, scale=0.5)
     attribute.addSeparator(switcher_control)
     attribute.nonKeyableCompound(switcher_control)
-    switcher_control.addAttr(pcfg.fk_ik_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
-    switcher_control.addAttr(pcfg.switcher_transforms, dt='string', k=False, h=True, s=True)
-    switcher_control.addAttr(pcfg.switcher_fk, dt='string', k=False, h=True, s=True)
-    switcher_control.addAttr(pcfg.switcher_ik, dt='string', k=False, h=True, s=True)
-    switcher_control.addAttr(pcfg.switcher_reverses, dt='string', k=False, h=True, s=True)
+    switcher_control.addAttr(mcfg.fk_ik_attribute, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
+    switcher_control.addAttr(mcfg.switcher_transforms, dt='string', k=False, h=True, s=True)
+    switcher_control.addAttr(mcfg.switcher_fk, dt='string', k=False, h=True, s=True)
+    switcher_control.addAttr(mcfg.switcher_ik, dt='string', k=False, h=True, s=True)
+    switcher_control.addAttr(mcfg.switcher_reverses, dt='string', k=False, h=True, s=True)
     driver.worldMatrix >> switcher_control.offsetParentMatrix
 
     return switcher_control
@@ -100,9 +100,9 @@ def getAllData(transform):
         Transforms and controls are in order.
     """
     switcher = get(transform)
-    attribute.exists(switcher, pcfg.switcher_attributes, error=True)
-    fk_ik_value = switcher.attr(pcfg.fk_ik_attribute).get()
-    attributes = [getData(switcher.attr(attr), cast=True) for attr in pcfg.switcher_attributes[:-1]]
+    attribute.exists(switcher, mcfg.switcher_attributes, error=True)
+    fk_ik_value = switcher.attr(mcfg.fk_ik_attribute).get()
+    attributes = [getData(switcher.attr(attr), cast=True) for attr in mcfg.switcher_attributes[:-1]]
     attributes.insert(0, switcher)
     attributes.append(fk_ik_value)
 

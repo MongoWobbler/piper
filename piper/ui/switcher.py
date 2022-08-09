@@ -4,7 +4,7 @@ import os
 
 from Qt import QtWidgets, QtCore, QtGui
 
-import piper_config as pcfg
+import piper.config as pcfg
 import piper.core.util as pcu
 
 

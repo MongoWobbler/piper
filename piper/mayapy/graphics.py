@@ -2,7 +2,8 @@
 
 import os
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipe.paths as paths
@@ -158,7 +159,8 @@ class PiperShader(object):
         Returns:
             (list): Materials that match prefix.
         """
-        return [material for material in pm.ls(mat=True) if material.nodeName().startswith(pcfg.material_prefix)]
+        return [material for material in pm.ls(mat=True) if material.nodeName().startswith(
+            pcfg.material_prefix)]
 
     def updateMaterials(self, warn=True):
         """
@@ -261,7 +263,7 @@ def createInitialMaterial(transforms=None, delete_old=True):
 
     # add material prefix to material name, create material, material to shader engine to view, and assign
     material_name = pcfg.material_prefix + material_name
-    material = pm.shadingNode(pcfg.maya_default_initial_material, asShader=True, skipSelect=True, name=material_name)
+    material = pm.shadingNode(mcfg.default_initial_material, asShader=True, skipSelect=True, name=material_name)
     material.outColor >> shader.surfaceShader
     pm.sets(shader, edit=True, forceElement=transforms)
 

@@ -3,7 +3,8 @@
 import copy
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.core.util as pcu
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
@@ -76,12 +77,12 @@ def assignBindAttributes(joints=None):
 
     for joint in joints:
 
-        if not joint.hasAttr(pcfg.length_attribute):
-            joint.addAttr(pcfg.length_attribute, s=True, w=True, r=True, dv=0.001, min=0.001)
+        if not joint.hasAttr(mcfg.length_attribute):
+            joint.addAttr(mcfg.length_attribute, s=True, w=True, r=True, dv=0.001, min=0.001)
 
         joint_parent = joint.getParent()
         if joint_parent and isinstance(joint_parent, pm.nodetypes.Joint):
-            distance_name = joint.name() + '_to_' + joint_parent.name() + pcfg.distance_suffix
+            distance_name = joint.name() + '_to_' + joint_parent.name() + mcfg.distance_suffix
 
             if pm.objExists(distance_name):
                 pm.delete(distance_name)
@@ -89,7 +90,7 @@ def assignBindAttributes(joints=None):
             distance = pm.createNode('distanceBetween', n=distance_name)
             joint.worldMatrix >> distance.inMatrix1
             joint_parent.worldMatrix >> distance.inMatrix2
-            distance.distance >> joint.attr(pcfg.length_attribute)
+            distance.distance >> joint.attr(mcfg.length_attribute)
 
     pm.displayInfo('Finished assigning Piper joint attributes to ' + str(len(joints)) + ' joints.')
 
@@ -265,20 +266,20 @@ def health(parent_fail=pm.error,
     actionable = copy.deepcopy(actionable_default)
 
     # check if root joint exists and that there is only one
-    root_joint = pm.PyNode(pcfg.root_joint_name)
+    root_joint = pm.PyNode(mcfg.root_joint_name)
 
     # check if root has parent. Only valid parent is a skinned mesh node
     root_parent = root_joint.getParent()
     if root_parent and not isinstance(root_parent, pm.nodetypes.PiperSkinnedMesh):
         actionable['parent'] = root_joint
-        parent_fail(pcfg.root_joint_name + ' is parented to invalid transform!')
+        parent_fail(mcfg.root_joint_name + ' is parented to invalid transform!')
 
     joints = root_joint.getChildren(ad=True)
 
     # warn user about having only root joint
     if not joints:
         actionable['children'] = root_joint
-        no_children_fail('No skeleton hierarchy found! Only ' + pcfg.root_joint_name + ' found.')
+        no_children_fail('No skeleton hierarchy found! Only ' + mcfg.root_joint_name + ' found.')
 
     # set up hierarchy traversal, start with root joint by appending and reversing list
     joints.append(root_joint)
@@ -306,15 +307,15 @@ def health(parent_fail=pm.error,
         # check if joint has preferred angle ONLY if joint is not an end joint
         if joint.getChildren(type='joint') and \
            joint.preferredAngle.get().isEquivalent(zero_vector, tol=0.1) and \
-           any([prefix in joint_name for prefix in pcfg.required_preferred_angle]):
+           any([prefix in joint_name for prefix in mcfg.required_preferred_angle]):
 
             actionable['preferred_angle'].append(joint)
             preferred_angle_fail(joint_name + ' does not have a preferred angle set to non-zero value!')
 
         # check if joint has bind length attribute
-        if not joint.hasAttr(pcfg.length_attribute):
+        if not joint.hasAttr(mcfg.length_attribute):
             actionable['bind_attribute'].append(joint)
-            bind_attribute_fail(joint_name + ' does not have the ' + pcfg.length_attribute + ' attribute!')
+            bind_attribute_fail(joint_name + ' does not have the ' + mcfg.length_attribute + ' attribute!')
 
     errors = {} if actionable == actionable_default else actionable
     pm.warning('Errors found in skeleton! Open Script Editor') if errors else pm.displayInfo('Skeleton is happy')

@@ -1,11 +1,12 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import json
 
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.mayapy.rig as rig
 import piper.mayapy.rig.skin as skin
 import piper.mayapy.attribute as attribute
@@ -77,7 +78,7 @@ def createHigh(rigs=None):
                 # reference in high poly, filter by transform, create group, group deformers, and parent group
                 nodes = pm.createReference(high_relative, namespace=pcfg.high_poly_namespace, returnNewNodes=True)
                 nodes = pm.ls(nodes, type='transform')
-                group_name = os.path.basename(path) + pcfg.high_poly_file_suffix + pcfg.group_suffix
+                group_name = os.path.basename(path) + pcfg.high_poly_file_suffix + mcfg.group_suffix
                 group = pm.PyNode(group_name) if pm.objExists(group_name) else pm.group(name=group_name, em=True)
                 deformers.append(group.name())  # deformers will be serialized with json so using group name
                 pm.parent(nodes, group)
@@ -86,7 +87,8 @@ def createHigh(rigs=None):
 
             # finding the accompanying high poly mesh with a suffix swap
             high_name = pcfg.high_poly_namespace + ':'
-            high_name += mesh.name(stripNamespace=True).replace(pcfg.low_poly_suffix, pcfg.high_poly_suffix)
+            high_name += mesh.name(stripNamespace=True).replace(pcfg.low_poly_suffix,
+                                                                pcfg.high_poly_suffix)
 
             if not pm.objExists(high_name):
                 text = mesh.name() + ' has no high poly equivalent! ' + high_name

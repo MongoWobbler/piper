@@ -7,7 +7,7 @@ from Qt import QtWidgets, QtCore, QtCompat
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config.maya as mcfg
 
 
 if sys.version_info > (3,):
@@ -61,7 +61,7 @@ class Controller(object):
         Args:
             name (string): Name of the widget to pass to Maya to store.
         """
-        self.name = name + pcfg.maya_workspace_control_suffix
+        self.name = name + mcfg.workspace_control_suffix
         self.widget = None
 
     def create(self, label, widget, ui_script=None, close_script=None):

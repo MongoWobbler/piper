@@ -1,6 +1,6 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import piper_config as pcfg
+import piper.config as pcfg
 import piper.core.store as store
 
 

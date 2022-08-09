@@ -1,7 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.core.pipermath as pipermath
 import piper.mayapy.util as myu
 import piper.mayapy.attribute as attribute
@@ -77,9 +77,9 @@ def getAll(namespaces=None):
         (list): All controls sorted.
     """
     if namespaces:
-        sets = [pm.PyNode(n + ':' + pcfg.control_set) for n in namespaces if pm.objExists(n + ':' + pcfg.control_set)]
+        sets = [pm.PyNode(n + ':' + mcfg.control_set) for n in namespaces if pm.objExists(n + ':' + mcfg.control_set)]
     else:
-        sets = pm.ls(pcfg.control_set, recursive=True)
+        sets = pm.ls(mcfg.control_set, recursive=True)
 
     controls = {ctrl for control_set in sets for ctrl in control_set.members(flatten=True)}
     controls = list(controls)
@@ -109,7 +109,7 @@ def getAllInner():
     Returns:
         (set): All inner controls.
     """
-    return getAllOfType(pcfg.inner_controls_set)
+    return getAllOfType(mcfg.inner_controls_set)
 
 
 def getAllBendy():
@@ -119,7 +119,7 @@ def getAllBendy():
     Returns:
         (set): All inner controls.
     """
-    return getAllOfType(pcfg.bendy_control_set)
+    return getAllOfType(mcfg.bendy_control_set)
 
 
 def replaceShapes(path, controls=None, remove=True):
@@ -144,10 +144,10 @@ def replaceShapes(path, controls=None, remove=True):
         controls = getAll()
 
     shapes = []
-    reference = pm.createReference(path, namespace=pcfg.temp_namespace)
+    reference = pm.createReference(path, namespace=mcfg.temp_namespace)
 
     for target in controls:
-        source_name = pcfg.temp_namespace + ':' + target.name()
+        source_name = mcfg.temp_namespace + ':' + target.name()
 
         if not pm.objExists(source_name):
             continue
@@ -182,7 +182,7 @@ def calculateSize(joint, scale=1, use_skins=True, try_root=True):
     skin_clusters = joint.future(type='skinCluster')
     joint_name = joint.name(stripNamespace=True)
 
-    if try_root and joint_name == pcfg.root_joint_name:
+    if try_root and joint_name == mcfg.root_joint_name:
         skins = {skin for bone in joint.getChildren(ad=True) for skin in bone.future(type='skinCluster')}
         meshes = {geo.getParent() for skin in skins for geo in skin.getGeometry()}
 
@@ -277,7 +277,7 @@ def create(transform,
     Returns:
         (pm.nodetypes.Transform): Control made.
     """
-    name = name + pcfg.control_suffix
+    name = name + mcfg.control_suffix
     kwargs['name'] = name
     control = bone.createShaped(shape, *args, **kwargs) if joint else shape(*args, **kwargs)
     curve.color(control, color)

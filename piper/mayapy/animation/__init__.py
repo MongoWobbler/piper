@@ -5,7 +5,7 @@ import copy
 
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.control as control
 import piper.mayapy.pipernode as pipernode
@@ -30,7 +30,7 @@ def referenceRig(path):
     rigs = pipernode.get('piperRig', search=False)
 
     if not rigs:
-        return pm.createReference(path, namespace=pcfg.rig_namespace)  # create a new reference
+        return pm.createReference(path, namespace=mcfg.rig_namespace)  # create a new reference
 
     references = []
     high_poly = resolution.removeHigh(rigs=rigs, warn=False)
@@ -39,7 +39,7 @@ def referenceRig(path):
     # swap out references with the skinned mesh file in the given path
     for rig in rigs:
         rig_namespace = rig.namespace()
-        skins_grp = rig_namespace + pcfg.skinned_mesh_grp
+        skins_grp = rig_namespace + mcfg.skinned_mesh_grp
         skins_grp = pm.PyNode(skins_grp) if pm.objExists(skins_grp) else pm.group(n=skins_grp, em=True, p=rig)
 
         for skinned_mesh in rig.getChildren(ad=True, type='piperSkinnedMesh'):
@@ -64,7 +64,7 @@ def referenceRig(path):
             except RuntimeError:
                 pass
 
-            if pcfg.bind_namespace in skinned_mesh_namespace:
+            if mcfg.bind_namespace in skinned_mesh_namespace:
                 [new_skinned_mesh.visibility.set(False) for new_skinned_mesh in new_skinned_meshes]
 
     if high_poly:

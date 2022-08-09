@@ -1,7 +1,7 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config.maya as mcfg
 import piper.mayapy.util as myu
 import piper.mayapy.convert as convert
 
@@ -132,7 +132,7 @@ def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
     bind_transform = convert.toBind(transform, fail_display)
 
     if ctrl_parent:
-        mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + pcfg.bind_matrix_suffix)
+        mult_matrix = pm.createNode('multMatrix', n=ctrl.name(stripNamespace=True) + mcfg.bind_matrix_suffix)
         bind_transform.matrix >> mult_matrix.matrixIn[0]
         ctrl_parent.worldMatrix >> mult_matrix.matrixIn[1]
         mult_matrix.matrixSum >> ctrl.offsetParentMatrix
@@ -140,7 +140,7 @@ def bindConnect(transform, ctrl, ctrl_parent=None, fail_display=pm.warning):
         bind_transform.worldMatrix >> ctrl.offsetParentMatrix
 
 
-def addSeparator(transform, character=pcfg.separator_character):
+def addSeparator(transform, character=mcfg.separator_character):
     """
     Adds the given character attribute to help visually separate attributes in channel box to specified transform.
 
@@ -179,7 +179,7 @@ def addDelete(transforms=None):
 
     for transform in transforms:
         addSeparator(transform)
-        transform.addAttr(pcfg.delete_node_attribute, at='bool', k=True, dv=1, max=1, min=1)
+        transform.addAttr(mcfg.delete_node_attribute, at='bool', k=True, dv=1, max=1, min=1)
         nonKeyable(transform.delete)
 
 
@@ -196,10 +196,10 @@ def addMessage(source, target, source_message, target_message):
 
         target_message (string): Name of target message attribute to add.
     """
-    if not source.hasAttr(pcfg.message_source):
+    if not source.hasAttr(mcfg.message_source):
         source.addAttr(source_message, at='message')
 
-    if not target.hasAttr(pcfg.message_target):
+    if not target.hasAttr(mcfg.message_target):
         target.addAttr(target_message, at='message')
 
     source.attr(source_message) >> target.attr(target_message)
@@ -214,7 +214,7 @@ def addDrivenMessage(source, target):
 
         target (pm.nodetypes.DependNode): Node that will have the target attribute added to it.
     """
-    addMessage(source, target, pcfg.message_source, pcfg.message_target)
+    addMessage(source, target, mcfg.message_source, mcfg.message_target)
 
 
 def addSpaceMessage(source, target):
@@ -226,7 +226,7 @@ def addSpaceMessage(source, target):
 
         target (pm.nodetypes.DependNode): Node that will have the space target attribute added to it.
     """
-    addMessage(source, target, pcfg.message_space_blender, pcfg.message_space_target)
+    addMessage(source, target, mcfg.message_space_blender, mcfg.message_space_target)
 
 
 def addReverseMessage(source, target):
@@ -238,7 +238,7 @@ def addReverseMessage(source, target):
 
         target (pm.nodetypes.DependNode): Node that will have the target attribute added to it.
     """
-    addMessage(source, target, pcfg.message_reverse_driver, pcfg.message_reverse_target)
+    addMessage(source, target, mcfg.message_reverse_driver, mcfg.message_reverse_target)
 
 
 def getMessagedReverseTarget(reverse_driver):
@@ -251,7 +251,7 @@ def getMessagedReverseTarget(reverse_driver):
     Returns:
         (pm.nodetypes.DependNode): Node being driven by reverse driver.
     """
-    return reverse_driver.attr(pcfg.message_reverse_driver).connections(scn=True, source=False)[0]
+    return reverse_driver.attr(mcfg.message_reverse_driver).connections(scn=True, source=False)[0]
 
 
 def getMessagedTarget(driver):
@@ -264,7 +264,7 @@ def getMessagedTarget(driver):
     Returns:
         (pm.nodetypes.DependNode): Node being driven by driver.
     """
-    return driver.attr(pcfg.message_source).connections(scn=True, source=False)[0]
+    return driver.attr(mcfg.message_source).connections(scn=True, source=False)[0]
 
 
 def getMessagedSpacesBlender(target):
@@ -277,10 +277,10 @@ def getMessagedSpacesBlender(target):
     Returns:
         (pm.nodetypes.DependNode): Blender matrix node if target has attribute and is connected, else None.
     """
-    if not target.hasAttr(pcfg.message_space_target):
+    if not target.hasAttr(mcfg.message_space_target):
         return None
 
-    connection = target.attr(pcfg.message_space_target).connections(scn=True, plugs=True, destination=False)
+    connection = target.attr(mcfg.message_space_target).connections(scn=True, plugs=True, destination=False)
     return connection[0].node() if connection else None
 
 
@@ -328,7 +328,7 @@ def getDecomposeMatrix(attribute):
     if decompose:
         return decompose
 
-    name = attribute.name().split(':')[-1].split('[')[0].replace('.', '_') + pcfg.decompose_matrix_suffix
+    name = attribute.name().split(':')[-1].split('[')[0].replace('.', '_') + mcfg.decompose_matrix_suffix
     decompose = pm.createNode('decomposeMatrix', name=name)
     attribute >> decompose.inputMatrix
     return decompose

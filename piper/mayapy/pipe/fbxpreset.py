@@ -1,7 +1,8 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 from piper.mayapy.pipe.store import store
 
 
@@ -29,7 +30,7 @@ def default(  # geometry
                 instances=1,
                 log=0,
                 scene_name=0,
-                version=pcfg.fbx_default_version,
+                version=mcfg.fbx_default_version,
                 ascii_format=None):
     """
     Default Piper settings for the FBX options.

@@ -1,105 +1,34 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-# Documentation
-documentation_link = 'https://github.com/MongoWobbler/piper'
+# Unwanted plug-ins
+unwanted_plugins = ['xgenToolkit',
+                    'AbcExport',
+                    'AbcImport',
+                    'hairPhysicalShader',
+                    'mayaCharacterization',
+                    'mayaHIK',
+                    'gameVertexCount'
+                    'OpenEXRLoader',
+                    'retargeterNodes',
+                    'sceneAssembly',
+                    'stereoCamera',
+                    'Turtle',
+                    'svgFileTranslator',
+                    'VectorRender',
+                    'Type',
+                    'mtoa',
+                    'MASH']
 
-# Digital Content Creation (DCC) names
-maya_name = 'Maya'
-houdini_name = 'Houdini'
-unreal_name = 'UnrealEngine'
-max_3ds_name = '3dsMax'
-dcc_agnostic_name = 'agnostic'
-
-# Maths
-axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
-
-# Sides
-left_suffix = '_l'
-right_suffix = '_r'
-left_name = 'Left '
-right_name = 'Right '
-default_mirror_axis = 'x'
-
-# vendors
-vendors = {dcc_agnostic_name: ['Qt', 'p4'],
-           maya_name: ['fbx'],
-           houdini_name: [],
-           unreal_name: [],
-           max_3ds_name: []
-           }
-
-# Store
-art_directory = 'art_directory'
-game_directory = 'game_directory'
-use_piper_units = 'use_piper_units'
-use_perforce = 'use_p4'
-p4_add_after_save = 'p4_add_after_save'
-export_ascii = 'export_ascii'
-hdr_image_path = 'hdr_image_path'
-unload_unwanted = 'unload_unwanted_plugins'
-use_piper_render = 'use_tone_map'
-previous_widgets = 'previous_widgets'  # used when reloading, to re-open any previously opened widgets.
-switcher_update_box = 'switcher_update_box'
-switcher_key_box = 'switcher_key_box'
-switcher_match_box = 'switcher_match_box'
-switcher_translate_box = 'switcher_translate_box'
-switcher_rotate_box = 'switcher_rotate_box'
-switcher_orient_box = 'switcher_orient_box'
-switcher_scale_box = 'switcher_scale_box'
-
-store_defaults = {art_directory: None,
-                  game_directory: None,
-                  use_piper_units: True,
-                  use_piper_render: True,
-                  use_perforce: False,
-                  p4_add_after_save: False,
-                  unload_unwanted: True,
-                  export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
-                  hdr_image_path: '',
-                  previous_widgets: [],
-                  switcher_update_box: True,
-                  switcher_key_box: True,
-                  switcher_match_box: False,
-                  switcher_translate_box: True,
-                  switcher_rotate_box: True,
-                  switcher_orient_box: False,
-                  switcher_scale_box: True}
-
-# Maya unwanted plug-ins
-maya_unwanted_plugins = ['xgenToolkit',
-                         'AbcExport',
-                         'AbcImport',
-                         'hairPhysicalShader',
-                         'mayaCharacterization',
-                         'mayaHIK',
-                         'gameVertexCount'
-                         'OpenEXRLoader',
-                         'retargeterNodes',
-                         'sceneAssembly',
-                         'stereoCamera',
-                         'Turtle',
-                         'svgFileTranslator',
-                         'VectorRender',
-                         'Type',
-                         'mtoa',
-                         'MASH']
-
-# Maya units
+# Units
 hotkey_set_name = 'PiperKeySet'
-maya_default_time = 'ntsc'
-maya_default_length = 'cm'
-maya_workspace_control_suffix = 'WorkspaceControl'
+default_time = 'ntsc'
+default_length = 'cm'
+workspace_control_suffix = 'WorkspaceControl'
 
-# Maya graphics
-maya_default_rendering_api = 'DirectX11'
-maya_default_tone_map = 'Un-tone-mapped (sRGB)'
-maya_default_initial_material = 'lambert'
-
-# Geometry
-low_poly_suffix = '_low'
-high_poly_suffix = '_high'
-high_poly_namespace = 'HIGH'
-high_poly_file_suffix = '_High'
+# Graphics
+default_rendering_api = 'DirectX11'
+default_tone_map = 'Un-tone-mapped (sRGB)'
+default_initial_material = 'lambert'
 
 # Skeleton
 skeleton_namespace = 'SKL'
@@ -167,7 +96,7 @@ squash_stretch_weight_attribute = 'squashStretchWeight'
 root_scale_up = 'scaleUp'
 root_scale_sides = 'scaleSides'
 
-# messages
+# Messages
 message_source = 'msgSource'
 message_target = 'msgTarget'
 message_reverse_driver = 'msgReverseDriver'
@@ -233,23 +162,3 @@ bendy_suffix = '_bendy'
 bendy_control_set = 'bendy'
 bendy_aim_attribute = 'aimWeight'
 bendy_locator_suffix = '_driven'
-
-# Textures
-art_textures_directory_name = '/Textures'
-game_textures_directory_name = '/Materials'
-textures_directory = '../..' + art_textures_directory_name
-texture_file_types = ('.png', '.tga')
-diffuse_suffix = '_D'
-normal_suffix = '_N'
-ambient_occlusion_suffix = '_AO'
-roughness_suffix = '_R'
-metal_suffix = '_M'
-emissive_suffix = '_E'
-ao_r_m_suffix = ambient_occlusion_suffix + roughness_suffix + metal_suffix
-
-# Materials
-material_prefix = 'MI_'
-piper_material_attribute = 'piperMaterial'
-norrsken_name = 'Norrsken'
-shader_engine_suffix = '_SG'
-geometry_to_mat_suffixes = (low_poly_suffix, high_poly_suffix)

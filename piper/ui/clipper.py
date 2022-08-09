@@ -1,7 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import copy
-from Qt import QtWidgets, QtCore
+from Qt import QtWidgets, QtCore, QtGui
 import piper.ui.widget as widget
 
 
@@ -79,32 +79,22 @@ class AnimClip(QtWidgets.QWidget):
             self.setData(clip_data)
 
     def build(self):
+        # layout
         main_layout = QtWidgets.QGridLayout(self)
-        buttons_layout = QtWidgets.QVBoxLayout()
 
+        # clip name
         label = QtWidgets.QLabel(self.animation_name)
         main_layout.addWidget(label, 0, 0)
 
+        # table
         self.table = QtWidgets.QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels(self.column_labels)
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.table.setShowGrid(True)
         self.onAddLinePressed()  # creating first line
 
-        main_layout.addWidget(self.table, 1, 0)
-
-        # add button
-        add_line_button = QtWidgets.QPushButton('+')
-        add_line_button.clicked.connect(self.onAddLinePressed)
-        buttons_layout.addWidget(add_line_button)
-
-        # remove button
-        remove_line_button = QtWidgets.QPushButton('-')
-        remove_line_button.clicked.connect(self.onRemoveLinePressed)
-        buttons_layout.addWidget(remove_line_button, 1)
-
-        buttons_layout.addStretch(1)
-
+        # add/remove buttons
+        buttons_layout = widget.addRemoveButtons(self.onAddLinePressed, self.onRemoveLinePressed)
         main_layout.addLayout(buttons_layout, 1, 1)
 
     def getSelectedRows(self):

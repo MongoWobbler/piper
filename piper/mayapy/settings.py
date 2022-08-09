@@ -3,7 +3,8 @@
 import maya.OpenMaya as om
 import pymel.core as pm
 
-import piper_config as pcfg
+import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.ui
 import piper.core.util as pcu
 import piper.mayapy.util as myu
@@ -63,25 +64,25 @@ def loadDefaults():
     Loads the settings to use in Maya
     """
     # change grid, time, units, and playback options
-    pm.currentUnit(time=pcfg.maya_default_time)
+    pm.currentUnit(time=mcfg.default_time)
     pm.grid(size=1200, spacing=500, divisions=5)
     pm.playbackOptions(min=0, max=30)
     pm.currentTime(0)
-    pm.currentUnit(linear=pcfg.maya_default_length)
+    pm.currentUnit(linear=mcfg.default_length)
 
 
 def loadRender():
     """
     Sets the viewport's render engine to DirectX11 and the tone map to use Stingray
     """
-    pm.mel.eval('setRenderingEngineInModelPanel "{}";'.format(pcfg.maya_default_rendering_api))
+    pm.mel.eval('setRenderingEngineInModelPanel "{}";'.format(mcfg.default_rendering_api))
     tone_maps = pm.colorManagementPrefs(q=True, vts=True)
 
-    if pcfg.maya_default_tone_map not in tone_maps:
+    if mcfg.default_tone_map not in tone_maps:
         return
 
-    pm.colorManagementPrefs(e=True, vtn=pcfg.maya_default_tone_map)
-    pm.modelEditor('modelPanel4', e=True, vtn=pcfg.maya_default_tone_map)
+    pm.colorManagementPrefs(e=True, vtn=mcfg.default_tone_map)
+    pm.modelEditor('modelPanel4', e=True, vtn=mcfg.default_tone_map)
 
 
 @myu.saveSelection(clear=True)
@@ -99,7 +100,7 @@ def reloadPiperReferences():
             continue
 
         ref = pm.FileReference(namespace=namespace)
-        [sub_ref.load() for namespace, sub_ref in ref.subReferences().items() if pcfg.bind_namespace not in namespace]
+        [sub_ref.load() for namespace, sub_ref in ref.subReferences().items() if mcfg.bind_namespace not in namespace]
 
 
 def hotkeys():
@@ -107,11 +108,11 @@ def hotkeys():
     Creates hotkeys that make use of piper scripts.
     """
     # make a custom key set since Maya's default is locked.
-    if not pm.hotkeySet(pcfg.hotkey_set_name, exists=True):
-        pm.hotkeySet(pcfg.hotkey_set_name, source='Maya_Default')
+    if not pm.hotkeySet(mcfg.hotkey_set_name, exists=True):
+        pm.hotkeySet(mcfg.hotkey_set_name, source='Maya_Default')
 
     # set the current hotkey set to be piper's hotkey set
-    pm.hotkeySet(pcfg.hotkey_set_name, current=True, edit=True)
+    pm.hotkeySet(mcfg.hotkey_set_name, current=True, edit=True)
 
     # CLEAR EXISTING HOTKEY(s)
     # if key is being used, clear it so we can assign a new one.

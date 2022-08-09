@@ -1,8 +1,9 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import math
+
 import pymel.core as pm
-import piper_config as pcfg
+import piper.config.maya as mcfg
 
 
 COLORS_INDEX = {0: 'default',
@@ -311,18 +312,18 @@ def toBind(node, fail_display=None, return_node=False):
     Returns:
         node (pm.nodetypes.DependNode): Node with bind namespace.
     """
-    bind_name = node.name().replace(pcfg.skeleton_namespace + ':', pcfg.bind_namespace + ':')
+    bind_name = node.name().replace(mcfg.skeleton_namespace + ':', mcfg.bind_namespace + ':')
 
-    if bind_name.startswith(pcfg.fk_prefix):
-        bind_name = bind_name.split(pcfg.fk_prefix)[-1]
-    elif bind_name.startswith(pcfg.ik_prefix):
-        bind_name = bind_name.split(pcfg.ik_prefix)[-1]
+    if bind_name.startswith(mcfg.fk_prefix):
+        bind_name = bind_name.split(mcfg.fk_prefix)[-1]
+    elif bind_name.startswith(mcfg.ik_prefix):
+        bind_name = bind_name.split(mcfg.ik_prefix)[-1]
 
-    if not bind_name.startswith(pcfg.bind_namespace):
-        bind_name = pcfg.bind_namespace + ':' + bind_name
+    if not bind_name.startswith(mcfg.bind_namespace):
+        bind_name = mcfg.bind_namespace + ':' + bind_name
 
-    if bind_name.endswith(pcfg.control_suffix):
-        bind_name = bind_name.split(pcfg.control_suffix)[0]
+    if bind_name.endswith(mcfg.control_suffix):
+        bind_name = bind_name.split(mcfg.control_suffix)[0]
 
     if not pm.objExists(bind_name) and fail_display:
         fail_display(bind_name + ' does not exist!')
