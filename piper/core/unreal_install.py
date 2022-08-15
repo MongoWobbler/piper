@@ -32,7 +32,30 @@ def validateEngineConfig(project_path):
     return default_engine
 
 
-def runInstaller(project_path, piper_directory):
+def validatePythonDirectory(project_path):
+    """
+    Validates the python directory in the Unreal project's content directory.
+
+    Args:
+        project_path (string): Path to unreal project which includes all source code, ending in .uproject
+
+    Returns:
+        (string): Full path to the python directory in the project's content directory.
+    """
+    if not os.path.exists(project_path):
+        raise ValueError(f'{project_path} does not exist! Please use valid .uproject path')
+
+    project_directory = os.path.dirname(project_path)
+    python_directory = os.path.join(project_directory, 'Content', 'Python')
+
+    if os.path.exists(python_directory):
+        return python_directory
+
+    os.mkdir(python_directory)
+    return python_directory
+
+
+def defaultConfig(project_path, piper_directory):
     """
     Writes piper's init_unreal.py to the given project's DefaultEngine.ini config. This allows piper to be part of
     the python path on the given unreal project start up.
@@ -70,3 +93,32 @@ def runInstaller(project_path, piper_directory):
     lines = [piper_paragraph if ucfg.python_section in line else line for line in data]
     with open(engine_config, 'w') as open_file:
         open_file.writelines(lines)
+
+
+def symlink(project_path, piper_directory):
+    """
+    Creates a symlink between the init_unreal.py and setup.py scripts in the piper directory and the Unreal project's
+    python directory in the content folder.
+
+    Args:
+        project_path (string): Path to unreal project which includes all source code, ending in .uproject
+
+        piper_directory (string): Path to piper's main package folder. Usually same as os.environ['PIPER_DIR'].
+    """
+    python_directory = validatePythonDirectory(project_path)
+    target_init_unreal_script = os.path.join(python_directory, ucfg.init_unreal_name).replace('\\', '/')
+    target_setup_script = os.path.join(python_directory, ucfg.setup_name).replace('\\', '/')
+
+    script_directory = os.path.join(piper_directory, 'unreal', 'scripts')
+    source_init_unreal_script = os.path.join(script_directory, ucfg.init_unreal_name).replace('\\', '/')
+    source_setup_script = os.path.join(script_directory, ucfg.setup_name).replace('\\', '/')
+
+    try:
+        os.symlink(source_init_unreal_script, target_init_unreal_script)
+        print(f'Linking {source_init_unreal_script} to {target_init_unreal_script}')
+
+        os.symlink(source_setup_script, target_setup_script)
+        print(f'Linking {source_setup_script} to {target_setup_script}')
+    except OSError as error:
+        print('WARNING: Run piper_installer.exe as administrator to symlink!')
+        raise error

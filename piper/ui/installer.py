@@ -24,6 +24,7 @@ class DCC(QtWidgets.QWidget):
 
         self.tree = None
         self.layout = None
+        self.symlink_checkbox = None
         self.name = name
         self.defaults = {}
 
@@ -32,10 +33,18 @@ class DCC(QtWidgets.QWidget):
     def build(self):
         # layouts
         self.layout = QtWidgets.QGridLayout(self)
+        label_layout = QtWidgets.QHBoxLayout()
+        self.layout.addLayout(label_layout, 0, 0)
 
         # DCC name label
         label = QtWidgets.QLabel(self.name)
-        self.layout.addWidget(label, 0, 0)
+        label_layout.addWidget(label, 0)
+
+        # symlink checkbox
+        self.symlink_checkbox = QtWidgets.QCheckBox('Symlink')
+        self.symlink_checkbox.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.symlink_checkbox.setVisible(False)
+        label_layout.addWidget(self.symlink_checkbox, stretch=1)
 
         # tree widget
         self.tree = TreeWidget()
@@ -200,7 +209,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.widget_dccs = {}
         self.dcc_installers = {pcfg.maya_name: Maya(),
                                pcfg.houdini_name: Houdini()}
-        self.dcc_install_methods = {pcfg.unreal_name: ue_install.runInstaller}
+        self.dcc_install_methods = {pcfg.unreal_name: ue_install.defaultConfig}
+        self.dcc_symlink_methods = {pcfg.unreal_name: ue_install.symlink}
 
         self.build()
 
@@ -232,6 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # allow context to add/remove paths in unreal install
             if dcc == pcfg.unreal_name:
                 dcc_widget.allow_context = True
+                dcc_widget.symlink_checkbox.setVisible(True)
 
         # install button
         separator(main_layout)
@@ -249,6 +260,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for dcc, dcc_widget in self.widget_dccs.items():
             installer = self.dcc_installers.get(dcc)
             installer_method = self.dcc_install_methods.get(dcc)
+            symlink_method = self.dcc_symlink_methods.get(dcc)
+            is_symlink = dcc_widget.symlink_checkbox.isChecked()
             paths = dcc_widget.getPaths()
 
             if not paths:
@@ -261,6 +274,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 versions = list(paths.values())
                 install_script = pcu.getInstallScriptPath(dcc)
                 installer.runInstaller(install_script, install_directory, versions)
+            elif is_symlink and symlink_method:
+                [symlink_method(path, install_directory) for path in paths]
             elif installer_method:
                 [installer_method(path, install_directory) for path in paths]
             else:
