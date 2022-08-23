@@ -10,6 +10,7 @@ unreal_name = 'Unreal Engine'
 max_3ds_name = '3dsMax'
 dcc_agnostic_name = 'agnostic'
 valid_dccs = [maya_name, houdini_name, unreal_name]  # DCCs that piper currently supports
+install_script_path = 'piper/core/install'
 install_scripts = {maya_name:    'maya_install.py',
                    houdini_name: 'houdini_install.py'}
 dcc_tooltips = {maya_name:    'Path to Maya Install directory, such as C:/Program Files/Autodesk/Maya2022/',
@@ -25,6 +26,8 @@ left_suffix = '_l'
 right_suffix = '_r'
 left_name = 'Left '
 right_name = 'Right '
+sides = {left_suffix: left_name,
+         right_suffix: right_name}
 default_mirror_axis = 'x'
 
 # vendors

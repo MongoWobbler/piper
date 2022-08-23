@@ -3,8 +3,10 @@
 import os
 import copy
 
+import piper.core
 import piper.config as pcfg
-import piper.core.util as pcu
+import piper.core.dcc as dcc
+import piper.core.pythoner as python
 
 
 class Store(object):
@@ -12,7 +14,7 @@ class Store(object):
     instance = None
 
     def __init__(self):
-        self._app_name = pcu.getApp()
+        self._app_name = dcc.get()
         self._app = None
         self._version = ''
         self._path = None
@@ -51,7 +53,7 @@ class Store(object):
         if self._path:
             return self._path
 
-        piper_directory = pcu.getPiperDirectory()
+        piper_directory = piper.core.getPiperDirectory()
         app = self.getApp()
         self._path = os.path.join(piper_directory, 'settings', app + '.json')
         return self._path
@@ -67,7 +69,7 @@ class Store(object):
             raise ValueError('Settings already exist! Please pass "force" as True to overwrite.')
 
         self._settings = copy.deepcopy(self._default_settings)
-        pcu.writeJson(self.getPath(), self._settings)
+        python.writeJson(self.getPath(), self._settings)
 
     def getSettings(self):
         """
@@ -82,7 +84,7 @@ class Store(object):
 
         settings_path = self.getPath()
         if os.path.exists(settings_path):
-            self._settings = pcu.readJson(settings_path)
+            self._settings = python.readJson(settings_path)
             return self._settings
 
         self.create()
@@ -140,7 +142,7 @@ class Store(object):
         """
         Convenience method for writing settings to disk file.
         """
-        pcu.writeJson(self.getPath(), self._settings)
+        python.writeJson(self.getPath(), self._settings)
 
 
 def get():

@@ -3,8 +3,10 @@
 import os
 import sys
 
+import piper.core
 import piper.config as pcfg
-import piper.core.util as pcu
+import piper.core.dcc as dcc
+import piper.core.pather as pather
 
 
 def getPath():
@@ -14,7 +16,7 @@ def getPath():
     Returns:
         (string): Incomplete path to vendor directory.
     """
-    piper_directory = pcu.getPiperDirectory()
+    piper_directory = piper.core.getPiperDirectory()
     return os.path.join(piper_directory, 'vendor', 'py')
 
 
@@ -49,10 +51,10 @@ def getAll():
         (list): full path to vendor directories that all apps use.
     """
     versioned_path = getVersionedPath()
-    versioned_paths = pcu.listFullDirectory(versioned_path)
+    versioned_paths = pather.listFullDirectory(versioned_path)
 
     version_less_path = getVersionLessPath()
-    version_less_paths = pcu.listFullDirectory(version_less_path)
+    version_less_paths = pather.listFullDirectory(version_less_path)
 
     return filter(lambda path: os.path.isdir(path), versioned_paths + version_less_paths)
 
@@ -70,7 +72,7 @@ def getMatchingPaths(directory, error=True):
         (list): Full path to directories that exist within given directory and are part of the app's piper_config.
     """
     paths = []
-    app = pcu.getApp(error=error)
+    app = dcc.get(error=error)
     vendors = set(pcfg.vendors.get(app, []) + pcfg.vendors[pcfg.dcc_agnostic_name])
 
     for vendor in vendors:

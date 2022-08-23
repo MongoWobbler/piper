@@ -2,11 +2,13 @@
 
 import sys
 from PySide2.QtWidgets import QApplication
-import piper.core.util as pcu
+
+import piper.core
+import piper.core.dcc.unreal_dcc
 import piper.core.vendor as vendor
 
 
-pcu.setPiperDirectory()
+piper.core.setPiperDirectory()
 vendor.addPaths(error=False)
 
 if __name__ == '__main__':

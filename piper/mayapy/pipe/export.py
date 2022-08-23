@@ -9,8 +9,10 @@ import shutil
 import pymel.core as pm
 
 import piper.config.maya as mcfg
-import piper.core.util as pcu
+import piper.core.filer as filer
+import piper.core.pather as pather
 import piper.core.fbx_sdk as fbx_sdk
+
 import piper.mayapy.rig as rig
 import piper.mayapy.plugin as plugin
 import piper.mayapy.graphics as graphics
@@ -113,7 +115,7 @@ class Export(ABC):
 
         for texture in textures:
             export_path = paths.getGameTextureExport(texture)
-            pcu.validateDirectory(os.path.dirname(export_path))
+            pather.validateDirectory(os.path.dirname(export_path))
             shutil.copyfile(texture, export_path)
             print('Copying ' + texture + ' to ' + export_path)
 
@@ -353,7 +355,7 @@ class Export(ABC):
         exports = mesh_export + skin_export + anim_export
 
         if len(exports) > 0:
-            size = sum([pcu.getFileSize(export_path, string=False) for export_path in exports])
+            size = sum([filer.getFileSize(export_path, string=False) for export_path in exports])
             text = 'Finished exporting {} file(s) for a total of {} MB '.format(str(len(exports)), str(round(size, 2)))
             display = pm.displayInfo
 
@@ -377,7 +379,7 @@ class Export(ABC):
         """
         # make export directory if it does not exist already
         export_directory = os.path.dirname(export_path)
-        pcu.validateDirectory(export_directory)
+        pather.validateDirectory(export_directory)
 
     @staticmethod
     def onFinished(export_path):
@@ -390,7 +392,7 @@ class Export(ABC):
         if not os.path.exists(export_path):
             pm.error(export_path + ' does not exist! Did you specify the export_method of the class?')
 
-        size = pcu.getFileSize(export_path)
+        size = filer.getFileSize(export_path)
         pm.displayInfo(size + ' exported to: ' + export_path)
 
 

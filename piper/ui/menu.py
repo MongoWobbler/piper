@@ -2,9 +2,14 @@
 
 import os
 import sys
+
 from Qt import QtWidgets, QtGui
+
+import piper.core
+import piper.core.filer as filer
+import piper.core.namer as namer
+import piper.core.pythoner as python
 from piper.ui.widget import SecondaryAction, setTips, manager
-import piper.core.util as pcu
 
 
 class PiperMenu(QtWidgets.QMenu):
@@ -13,7 +18,7 @@ class PiperMenu(QtWidgets.QMenu):
         super(PiperMenu, self).__init__(*args, **kwargs)
         self.setTearOffEnabled(True)
         self.setToolTipsVisible(True)
-        self.icon = QtGui.QIcon(os.path.join(pcu.getPiperDirectory(), 'icons', 'piper.png'))
+        self.icon = QtGui.QIcon(os.path.join(piper.core.getPiperDirectory(), 'icons', 'piper.png'))
         self.parent_menu = None
         self.actions = []  # stores QWidgets so that they are not garbage collected
 
@@ -40,7 +45,7 @@ class PiperMenu(QtWidgets.QMenu):
         Returns:
             (string): Name validated.
         """
-        name = pcu.toSentenceCase(on_pressed.__name__) if name is None else name
+        name = namer.toSentenceCase(on_pressed.__name__) if name is None else name
         return name.decode('utf-8') if sys.version.startswith('2') else name
 
     def add(self, on_pressed, name=None, *args, **kwargs):
@@ -176,8 +181,8 @@ class PiperSceneMenu(PiperMenu):
 
     @staticmethod
     def openPiperDirectoryInOS():
-        piper_directory = pcu.getPiperDirectory()
-        pcu.openWithOS(piper_directory)
+        piper_directory = piper.core.getPiperDirectory()
+        filer.openWithOS(piper_directory)
 
     def copyCurrentSceneToClipboard(self):
         pass
@@ -187,7 +192,7 @@ class PiperSceneMenu(PiperMenu):
 
     @staticmethod
     def openDocumentation():
-        pcu.openDocumentation()
+        piper.core.openDocumentation()
 
 
 class PiperPerforceMenu(PiperMenu):
@@ -290,7 +295,7 @@ class _PiperMainMenu(PiperMenu):
         """
         manager.closeAll()
         self.on_before_reload()
-        pcu.removeModules(path=pcu.getPiperDirectory())
+        python.removeModules(path=piper.core.getPiperDirectory())
         self.deleteLater()
 
         import setup

@@ -1,11 +1,14 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
 import pymel.core as pm
 import maya.cmds as cmds
-import piper.core.util as pcu
-import piper.mayapy.util as myu
 import maya.internal.nodes.proximitywrap.node_interface as node_interface
+
+import piper.core
+import piper.core.pather as pather
+import piper.core.pythoner as python
+import piper.mayapy.selection as selection
 
 
 def selectInfluencingVerts(joints=None):
@@ -18,7 +21,7 @@ def selectInfluencingVerts(joints=None):
     Returns:
         (list): Verts selected.
     """
-    joints = myu.validateSelect(joints, find='joint', minimum=1)
+    joints = selection.validate(joints, find='joint', minimum=1)
     pm.select(cl=True)
     [pm.skinCluster(skin, siv=joint, ats=True, e=True) for joint in joints for skin in joint.future(type='skinCluster')]
     verts = pm.selected()
@@ -40,7 +43,7 @@ def selectWeightedVerts(joints=None, operator='< ', threshold=1.0):
     Returns:
         (list): Verts selected.
     """
-    joints = myu.validateSelect(joints, find='joint', minimum=1)
+    joints = selection.validate(joints, find='joint', minimum=1)
     pm.select(cl=True)
     verts = []
 
@@ -53,7 +56,7 @@ def selectWeightedVerts(joints=None, operator='< ', threshold=1.0):
 
             for vert in weighted_verts:
                 weight = pm.skinPercent(skin, vert, transform=joint, q=True)
-                if pcu.operators[operator](weight, threshold):
+                if python.operators[operator](weight, threshold):
                     verts.append(vert)
 
     pm.select(verts)
@@ -72,7 +75,7 @@ def returnToBindPose(joints=None):
         (set): Bind poses restored.
     """
     # Get joints, find all the bind poses all the joints are using, restore the bind poses for each pose found.
-    joints = myu.validateSelect(joints, find='joint')
+    joints = selection.validate(joints, find='joint')
     poses = {pose for joint in joints for pose in pm.dagPose(joint, bp=True, q=True)}
     [pm.dagPose(pose, g=True, restore=True) for pose in poses]
     return poses
@@ -118,7 +121,7 @@ def createTensionDisplay(transforms=None, shape_display=pm.warning, skin_display
         (list): Tension nodes created.
     """
     tension_nodes = []
-    transforms = myu.validateSelect(transforms, find='mesh', parent=True)
+    transforms = selection.validate(transforms, find='mesh', parent=True)
 
     for transform in transforms:
         original_shape = None
@@ -166,7 +169,7 @@ class Binder(object):
             binder.rebind()
         """
         self.info = {}
-        self.directory = os.path.join(pcu.getPiperDirectory(), 'temp').replace('\\', '/')
+        self.directory = os.path.join(piper.core.getPiperDirectory(), 'temp').replace('\\', '/')
 
     def unbind(self, meshes=None, bind_pose=True):
         """
@@ -185,8 +188,8 @@ class Binder(object):
         self.info = {}
         scene_path = pm.sceneName()
         scene_name = os.path.splitext(scene_path.name)[0] + '_' if scene_path else ''
-        meshes = myu.validateSelect(meshes, find='mesh', parent=True)
-        pcu.validateDirectory(self.directory)
+        meshes = selection.validate(meshes, find='mesh', parent=True)
+        pather.validateDirectory(self.directory)
 
         for mesh in meshes:
             # get the skin of the mesh, if it doesnt exist then we don't need to store skin weights

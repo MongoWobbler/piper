@@ -1,26 +1,32 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+from functools import partial
 
 from Qt import QtWidgets, QtCore
 
 import piper.config as pcfg
-import piper.core.util as pcu
+import piper.core
+import piper.core.install
+import piper.core.pather as pather
+
 from piper.ui.widget import TreeWidget, TreeNodeItem, separator
-from piper.core.maya_dcc import Maya
-from piper.core.houdini_dcc import Houdini
-import piper.core.unreal_install as ue_install
+from piper.core.dcc.maya_dcc import Maya
+from piper.core.dcc.houdini_dcc import Houdini
+import piper.core.dcc.unreal_dcc as ue_dcc
+import piper.core.install.unreal_install as ue_install
 
 
 class DCC(QtWidgets.QWidget):
 
-    def __init__(self, name=''):
+    def __init__(self, name='', print_python_paths=None):
         super(DCC, self).__init__()
 
         # initial
         self.setWhatsThis('Right click to add or remove paths for Piper to install to the DCC')
         self.headers = ['Install', 'Version', 'Path']
         self.allow_context = False
+        self.print_python_paths = print_python_paths
 
         self.tree = None
         self.layout = None
@@ -122,17 +128,32 @@ class DCC(QtWidgets.QWidget):
 
         add_action = QtWidgets.QAction(f'Add {self.name} path')
         add_action.triggered.connect(self.onAddLinePressed)
+        menu.addAction(add_action)
 
         remove_action = QtWidgets.QAction('Remove Selected path(s)')
         remove_action.triggered.connect(self.onRemoveLinePressed)
+        menu.addAction(remove_action)
+
+        menu.addSeparator()
 
         reset_action = QtWidgets.QAction('Reset back to defaults')
         reset_action.triggered.connect(self.resetToDefaults)
-
-        menu.addAction(add_action)
-        menu.addAction(remove_action)
-        menu.addSeparator()
         menu.addAction(reset_action)
+
+        if self.print_python_paths:
+            root = self.tree.invisibleRootItem()
+            rows = self.getSelectedRows()
+            projects = []
+            editors = []
+            for row in rows:
+                item = root.child(row)
+                projects.append(item.text(2))
+                editors.append(item.text(4))
+
+            menu.addSeparator()
+            print_paths_action = QtWidgets.QAction('Print Python Paths')
+            print_paths_action.triggered.connect(partial(self.print_python_paths, editors, projects))
+            menu.addAction(print_paths_action)
 
         menu.exec_(self.tree.mapToGlobal(position))
 
@@ -188,12 +209,21 @@ class DCC(QtWidgets.QWidget):
 
         for i in range(items_length):
             item = root.child(i)
+            version = item.text(1)
             path = item.text(2)
+            symlink = item.text(3)
+            editor = item.text(4)
 
-            if item.checkState(0) != QtCore.Qt.Checked or not os.path.exists(path):
+            if item.checkState(0) != QtCore.Qt.Checked:
                 continue
 
-            paths[path] = item.text(1)
+            if not symlink and not os.path.exists(path):
+                print(f'{path} does not exist! Skipping.')
+                continue
+
+            paths[path] = {'version': version,
+                           'symlink': symlink,
+                           'editor': editor}
 
         return paths
 
@@ -211,6 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                pcfg.houdini_name: Houdini()}
         self.dcc_install_methods = {pcfg.unreal_name: ue_install.defaultConfig}
         self.dcc_symlink_methods = {pcfg.unreal_name: ue_install.symlink}
+        self.dcc_print_python_path_methods = {pcfg.unreal_name: ue_dcc.printPythonPaths}
 
         self.build()
 
@@ -226,14 +257,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add documentation to menu bar
         self.documentation_action = QtWidgets.QAction('Open Documentation')
-        self.documentation_action.triggered.connect(pcu.openDocumentation)
+        self.documentation_action.triggered.connect(piper.core.openDocumentation)
         file_menu.addAction(self.documentation_action)
 
         # fill out DCC information with what the user has installed
         installed = self.getInstalledDCCs()
         for dcc in pcfg.valid_dccs:
             installed_dcc = installed.get(dcc, {})
-            dcc_widget = DCC(dcc)
+            print_python_path_method = self.dcc_print_python_path_methods.get(dcc, None)
+            dcc_widget = DCC(name=dcc, print_python_paths=print_python_path_method)
             dcc_widget.defaults = installed_dcc
             dcc_widget.addDefaults()
             self.widget_dccs[dcc] = dcc_widget
@@ -241,6 +273,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # allow context to add/remove paths in unreal install
             if dcc == pcfg.unreal_name:
+                headers = dcc_widget.headers
+                headers[2] = 'Path to .uproject'
+                headers = headers + ['Symlink Target Path', 'Unreal Editor']
+                dcc_widget.tree.setColumnCount(len(headers))
+                dcc_widget.tree.setHeaderLabels(headers)
                 dcc_widget.allow_context = True
                 dcc_widget.symlink_checkbox.setVisible(True)
 
@@ -254,8 +291,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Runs the installers/installer methods for each DCC checked on the widget tree.
         """
-        install_directory = pcu.getPiperDirectory()
-        pcu.deleteCompiledScripts(install_directory)
+        install_directory = piper.core.getPiperDirectory()
+        pather.deleteCompiledScripts(install_directory)
 
         for dcc, dcc_widget in self.widget_dccs.items():
             installer = self.dcc_installers.get(dcc)
@@ -271,11 +308,11 @@ class MainWindow(QtWidgets.QMainWindow):
             print(dcc)
 
             if installer:
-                versions = list(paths.values())
-                install_script = pcu.getInstallScriptPath(dcc)
+                versions = [row.get('version') for row in paths.values()]
+                install_script = piper.core.install.getScriptPath(dcc)
                 installer.runInstaller(install_script, install_directory, versions)
             elif is_symlink and symlink_method:
-                [symlink_method(path, install_directory) for path in paths]
+                [symlink_method(install_directory, path, paths[path].get('symlink')) for path in paths]
             elif installer_method:
                 [installer_method(path, install_directory) for path in paths]
             else:

@@ -1,15 +1,16 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+import pymel.core as pm
 
 from Qt import QtWidgets
 
-import pymel.core as pm
-
 import piper.config as pcfg
 import piper.config.maya as mcfg
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+
+import piper.core.filer as filer
+import piper.core.pather as pather
+
 import piper.mayapy.rig as rig
 import piper.mayapy.rig.bone as bone
 import piper.mayapy.rig.skin as skin
@@ -27,6 +28,7 @@ import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.pipe.perforce as perforce
+import piper.mayapy.modifier as modifier
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
 import piper.mayapy.animation as animation
@@ -59,19 +61,19 @@ class MayaSceneMenu(PiperSceneMenu):
         """
         Opens the current scene in a OS window.
         """
-        pcu.openWithOS(os.path.dirname(pm.sceneName()))
+        filer.openWithOS(os.path.dirname(pm.sceneName()))
 
     def openArtDirectoryInOS(self):
         """
         Opens the art directory in a OS window.
         """
-        pcu.openWithOS(store.get(pcfg.art_directory))
+        filer.openWithOS(store.get(pcfg.art_directory))
 
     def openGameDirectoryInOS(self):
         """
         Opens the game directory in a OS window.
         """
-        pcu.openWithOS(store.get(pcfg.game_directory))
+        filer.openWithOS(store.get(pcfg.game_directory))
 
     def copyCurrentSceneToClipboard(self):
         """
@@ -82,7 +84,7 @@ class MayaSceneMenu(PiperSceneMenu):
         if not scene_path:
             pm.error('Scene is not saved!')
 
-        pcu.copyToClipboard(scene_path)
+        filer.copyToClipboard(scene_path)
 
     def reloadCurrentScene(self):
         """
@@ -261,7 +263,7 @@ class MayaReferenceMenu(MayaPiperMenu):
         Returns:
             (pm.nodetypes.FileReference or list): Reference(s) created.
         """
-        return control.replaceShapes(path) if myu.isCtrlHeld() else animation.referenceRig(path)
+        return control.replaceShapes(path) if modifier.isCtrlHeld() else animation.referenceRig(path)
 
     def build(self):
         # cannot build menu without art directory
@@ -269,7 +271,7 @@ class MayaReferenceMenu(MayaPiperMenu):
         if not art_directory:
             return
 
-        rigs = pcu.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, art_directory)
+        rigs = pather.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, art_directory)
         for rig in rigs:
             name = os.path.basename(os.path.abspath(rig + '/../..'))
             rig = paths.getRelativeArt(rig)

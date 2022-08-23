@@ -5,9 +5,12 @@ import pymel.core as pm
 
 import piper.config as pcfg
 import piper.config.maya as mcfg
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+
+import piper.core.namer as namer
 import piper.mayapy.convert as convert
+import piper.mayapy.modifier as modifier
+import piper.mayapy.selection as selection
+import piper.mayapy.manipulator as manipulator
 
 from . import xform
 from . import curve
@@ -44,17 +47,17 @@ def assignLabels(joints=None):
     Args:
         joints (list): Joints to assign labels to.
     """
-    joints = myu.validateSelect(joints, find='joint')
+    joints = selection.validate(joints, find='joint')
 
     for joint in joints:
         joint_name = joint.nodeName()
 
         if joint_name.endswith(pcfg.left_suffix):
             joint.side.set(1)
-            joint_name = pcu.removeSuffixes(joint_name, pcfg.left_suffix)
+            joint_name = namer.removeSuffixes(joint_name, pcfg.left_suffix)
         elif joint_name.endswith(pcfg.right_suffix):
             joint.side.set(2)
-            joint_name = pcu.removeSuffixes(joint_name, pcfg.right_suffix)
+            joint_name = namer.removeSuffixes(joint_name, pcfg.right_suffix)
 
         # have to do string "type" because type is a built-in python function
         if joint_name in convert.JOINT_LABELS:
@@ -73,7 +76,7 @@ def assignBindAttributes(joints=None):
     Args:
         joints (list): Joints to assign bind matrix attribute to. If None given, will use selected or all joints.
     """
-    joints = myu.validateSelect(joints, find='joint')
+    joints = selection.validate(joints, find='joint')
 
     for joint in joints:
 
@@ -102,7 +105,7 @@ def setSegmentScaleCompensateOff(joints=None):
     Args:
         joints (list): Joints to set segment scale compensate to False.
     """
-    joints = myu.validateSelect(joints, find='joint')
+    joints = selection.validate(joints, find='joint')
     [joint.segmentScaleCompensate.set(False) for joint in joints]
 
 
@@ -129,9 +132,9 @@ def _createAtPivot(transform, name='', i=None, component_prefix=None, joints=Non
     if i is not None and component_prefix is not None:
         shape_name = transform.node().name()
         component = pm.PyNode(shape_name + '.{}[{}]'.format(component_prefix, str(i)))
-        position = myu.getManipulatorPosition(component)
+        position = manipulator.getManipulatorPosition(component)
     else:
-        position = myu.getManipulatorPosition(transform)
+        position = manipulator.getManipulatorPosition(transform)
 
     joint = pm.joint(p=position, n=name)
 
@@ -162,10 +165,10 @@ def createAtPivot(selected=None, each=False, orient=False, name=False):
         (list): Joints created.
     """
     joints = []
-    shift_held = myu.isShiftHeld() or each
-    ctrl_held = myu.isCtrlHeld() or orient
-    alt_held = myu.isAltHeld() or name
-    selected = myu.validateSelect(selected, minimum=1)
+    shift_held = modifier.isShiftHeld() or each
+    ctrl_held = modifier.isCtrlHeld() or orient
+    alt_held = modifier.isAltHeld() or name
+    selected = selection.validate(selected, minimum=1)
 
     if shift_held:
         for transform in selected:

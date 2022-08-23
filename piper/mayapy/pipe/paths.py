@@ -2,9 +2,11 @@
 
 import os
 import pymel.core as pm
+
 import piper.config as pcfg
 import piper.config.maya as mcfg
-import piper.core.util as pcu
+
+import piper.core.pather as pather
 from piper.mayapy.pipe.store import store
 
 
@@ -131,5 +133,5 @@ def getRigPath(path):
         (string): Path to rig associated with given path.
     """
     directory = path if os.path.isdir(path) else os.path.dirname(path)
-    rigs = pcu.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, directory)
+    rigs = pather.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, directory)
     return rigs[0] if rigs else None

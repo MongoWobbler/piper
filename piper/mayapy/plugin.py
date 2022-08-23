@@ -1,10 +1,11 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
-
 import pymel.core as pm
+
+import piper.core
 import piper.config.maya as mcfg
-import piper.core.util as pcu
+import piper.core.pather as pather
 
 
 def load(plugin):
@@ -46,10 +47,10 @@ def loadAll():
     """
     Loads all the plug-ins in the plug-ins directory inside Piper.
     """
-    piper_directory = pcu.getPiperDirectory()
+    piper_directory = piper.core.getPiperDirectory()
     plugins_directory = os.path.join(piper_directory, 'maya', 'plug-ins', str(pm.about(version=True)))
     extensions = ('.mll', '.py')
-    plugins = pcu.getAllFilesEndingWithWord(extensions, plugins_directory)
+    plugins = pather.getAllFilesEndingWithWord(extensions, plugins_directory)
     [load(os.path.basename(plugin)) for plugin in plugins]
 
 

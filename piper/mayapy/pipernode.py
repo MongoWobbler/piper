@@ -3,8 +3,10 @@
 import pymel.core as pm
 
 import piper.config.maya as mcfg
-import piper.mayapy.util as myu
+import piper.mayapy.mesh as mesh
 import piper.mayapy.convert as convert
+import piper.mayapy.modifier as modifier
+import piper.mayapy.hierarchy as hierarchy
 import piper.mayapy.attribute as attribute
 from .rig import curve  # must do relative import in python 2
 
@@ -34,7 +36,7 @@ def get(node_type, ignore=None, search=True):
         if not piper_nodes:
             piper_nodes = set()
             for node in selected:
-                first_type_parent = myu.getFirstTypeParent(node, node_type)
+                first_type_parent = hierarchy.getFirstTypeParent(node, node_type)
                 piper_nodes.add(first_type_parent) if first_type_parent else None
 
     # search the whole scene for the piper node
@@ -43,7 +45,7 @@ def get(node_type, ignore=None, search=True):
 
     # don't include any nodes that are a child of the given ignore type
     if ignore:
-        piper_nodes = [node for node in piper_nodes if not myu.getFirstTypeParent(node, ignore)]
+        piper_nodes = [node for node in piper_nodes if not hierarchy.getFirstTypeParent(node, ignore)]
 
     return piper_nodes
 
@@ -342,7 +344,7 @@ def createMesh():
 
     if selected:
         # if shift held, create a a piper mesh for each selected object.
-        if myu.isShiftHeld():
+        if modifier.isShiftHeld():
             piper_meshes = []
             for node in selected:
                 parent = node.getParent()
@@ -362,7 +364,7 @@ def createMesh():
             name = mcfg.mesh_prefix
             name += scene_name if scene_name else selected[-1].nodeName()
             piper_mesh = create('piperMesh', 'cyan', name=name)
-            parents = myu.getRootParents(selected)
+            parents = hierarchy.getRootParents(selected)
             pm.parent(parents, piper_mesh)
 
             return piper_mesh
@@ -371,7 +373,7 @@ def createMesh():
     name += scene_name if scene_name else 'piperMesh'
     piper_mesh = create('piperMesh', 'cyan', name=name)
     meshes = pm.ls(type='mesh')
-    parents = myu.getRootParents(meshes)
+    parents = hierarchy.getRootParents(meshes)
     pm.parent(parents, piper_mesh)
 
     return piper_mesh
@@ -400,14 +402,14 @@ def createSkinnedMesh():
         return [piper_skinned_mesh]
 
     piper_skinned_meshes = []
-    skinned_meshes = myu.getSkinnedMeshes(skin_clusters)
+    skinned_meshes = mesh.getSkinned(skin_clusters)
     for root_joint, geometry in skinned_meshes.items():
         name = '' if scene_name.startswith(
             mcfg.skinned_mesh_prefix) else mcfg.skinned_mesh_prefix
         name += scene_name if scene_name else next(iter(geometry)).nodeName()
         piper_skinned_mesh = create('piperSkinnedMesh', 'pink', name=name)
         piper_skinned_meshes.append(piper_skinned_mesh)
-        geometry_parents = myu.getRootParents(geometry)
+        geometry_parents = hierarchy.getRootParents(geometry)
         pm.parent(root_joint, geometry_parents, piper_skinned_mesh)
 
     return piper_skinned_meshes

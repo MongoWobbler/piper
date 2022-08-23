@@ -1,9 +1,12 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import unreal as ue
+
 import piper.config.unreal as ucfg
-import piper.core.util as pcu
-import piper.unrealpy.util as ueu
+import piper.core
+import piper.core.namer as namer
+import piper.core.pythoner as python
+import piper.unrealpy.copier as copier
 
 
 class _PiperMenu(object):
@@ -24,6 +27,7 @@ class _PiperMenu(object):
         self.actor_context_menu_name = 'LevelEditor.ActorContextMenu'
         self.piper_main_menu_name = self.main_menu_name + '.' + self.label
         self.piper_context_menu_name = self.context_menu_name + '.' + self.label
+        self.piper_folder_menu_name = self.folder_context_menu_name + '.' + self.label
         self.tool = ue.ToolMenus.get()
 
         if section:
@@ -37,6 +41,7 @@ class _PiperMenu(object):
             (piper.uepy.ui.menu._PiperMenu): Class that holds all methods for creating menu in Unreal.
         """
         self.buildContext()
+        self.buildFolder()
         self.buildMain()
         return self.instance
 
@@ -78,6 +83,12 @@ class _PiperMenu(object):
         """
         return self.setOwner(self.context_menu_name, section)
 
+    def setFolderContextMenuAsOwner(self, section):
+        """
+        Convenience method for setting Unreal Right Click Folder Context Menu as the owner.
+        """
+        return self.setOwner(self.folder_context_menu_name, section)
+
     def setPiperMainMenuAsOwner(self, section):
         """
         Convenience method for setting Piper Main Menu as the owner.
@@ -89,6 +100,12 @@ class _PiperMenu(object):
         Convenience method for setting Piper Right Click Asset Browser Context Menu as the owner.
         """
         return self.setOwner(self.piper_context_menu_name, section)
+
+    def setPiperFolderMenuAsOwner(self, section):
+        """
+        Convenience method for setting Piper Right Click Folder Browser Context Menu as the owner.
+        """
+        return self.setOwner(self.piper_folder_menu_name, section)
 
     def _build(self, method, section):
         """
@@ -116,6 +133,12 @@ class _PiperMenu(object):
         """
         self._build(self.setContextMenuAsOwner, 'Common')
 
+    def buildFolder(self):
+        """
+        Convenience method for building the Piper Right Click Folder Browser Context Menu.
+        """
+        self._build(self.setFolderContextMenuAsOwner, 'Common')
+
     def add(self, method, label=None):
         """
         Adds an entry to the currently set owning menu.
@@ -131,7 +154,7 @@ class _PiperMenu(object):
         module = method.__module__
         full_method = module + '.' + method.__name__
         command = f'import {module}; {full_method}()'
-        label = pcu.toSentenceCase(method.__name__) if label is None else label
+        label = namer.toSentenceCase(method.__name__) if label is None else label
         entry = ue.ToolMenuEntry(name=full_method, type=ue.MultiBlockType.MENU_ENTRY)
 
         entry.set_label(ue.Text(label))
@@ -161,7 +184,7 @@ class _PiperMenu(object):
         """
         Unregisters and removes all menus added by _PiperMenu.
         """
-        [self.remove(menu.menu_name) for menu in reversed(self.menus)]
+        [self.remove(menu) for menu in reversed(self.menus)]
         self.menus = []
         self.refresh()
 
@@ -183,7 +206,7 @@ def reloadPiper():
     """
     menu = getPiperMenu()
     menu.removeAll()
-    pcu.removeModules(path=pcu.getPiperDirectory())
+    python.removeModules(path=piper.core.getPiperDirectory())
 
     import setup
     setup.piperTools()
@@ -199,5 +222,10 @@ def create():
         menu.add(reloadPiper)
 
         menu.setPiperContextMenuAsOwner('Scripts')
-        menu.add(ueu.copyAssetNames)
-        menu.add(ueu.copyPackageNames)
+        menu.add(copier.assetNames, 'Copy Asset Names')
+        menu.add(copier.packageNames, 'Copy Package Names')
+
+        menu.setPiperFolderMenuAsOwner('Scripts')
+        menu.add(copier.directoryPaths, 'Copy Directories\' Paths')
+        menu.add(copier.directoryAssetNames, 'Copy Directories\' Asset Names')
+        menu.add(copier.directoryPackageNames, 'Copy Directories\' Package Names')

@@ -2,7 +2,7 @@
 
 import pymel.core as pm
 import piper.config.maya as mcfg
-import piper.mayapy.util as myu
+import piper.mayapy.selection
 import piper.mayapy.convert as convert
 
 
@@ -25,6 +25,21 @@ def exists(node, attributes, error=False):
             return pm.error(node + ' is missing the ' + attribute + ' attribute!') if error else False
 
     return True
+
+
+def freezeTransformations(transform, history=True):
+    """
+    Convenience method for making current transform the identity matrix.
+
+    Args:
+        transform (string or PyNode): Transform to freeze transformations on
+
+        history (boolean): If True, will delete construction history of given transform.
+    """
+    pm.makeIdentity(transform, apply=True, t=True, r=True, s=True)
+
+    if history:
+        pm.delete(transform, ch=True)
 
 
 def lockAndHide(attribute):
@@ -175,7 +190,7 @@ def addDelete(transforms=None):
     Args:
         transforms (list): List of pm.nodetypes.transform to add "delete" attribute to.
     """
-    transforms = myu.validateSelect(transforms, display=pm.warning)
+    transforms = piper.mayapy.selection.validate(transforms, display=pm.warning)
 
     for transform in transforms:
         addSeparator(transform)

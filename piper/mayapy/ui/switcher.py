@@ -4,10 +4,13 @@ import maya.OpenMaya as om
 import pymel.core as pm
 
 from Qt import QtCompat
+
 import piper.config.maya as mcfg
-import piper.core.util as pcu
+import piper.core.pythoner as python
+
 from piper.ui.widget import manager
 from piper.ui.switcher import Switcher
+
 from piper.mayapy.pipe.store import store
 from piper.mayapy.ui.widget import Controller
 import piper.mayapy.rig as rig
@@ -93,10 +96,10 @@ class MayaSwitcher(Switcher):
         names = []
         inners_state = []
         self.inners.clear()
-        spaces = pcu.OrderedSet(['local'])
+        spaces = python.OrderedSet(['local'])
         switchers = set()
-        self.pivots = pcu.OrderedSet()
-        self.rests = pcu.OrderedSet()
+        self.pivots = python.OrderedSet()
+        self.rests = python.OrderedSet()
         self.selected = pm.selected()
 
         # gather info we need

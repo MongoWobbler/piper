@@ -2,9 +2,15 @@
 
 import os
 import pymel.core as pm
+
 import piper.config as pcfg
 import piper.config.maya as mcfg
-import piper.core.util as pcu
+
+import piper.core
+import piper.core.namer as namer
+import piper.core.pather as pather
+import piper.core.pythoner as python
+
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipe.paths as paths
 from piper.mayapy.pipe.store import store
@@ -57,7 +63,7 @@ class PiperShader(object):
         if not os.path.exists(self.textures_directory):
             return pm.warning(self.textures_directory + ' does not exist!') if warn else None
 
-        self.texture_paths = pcu.getAllFilesEndingWithWord(pcfg.texture_file_types, self.textures_directory)
+        self.texture_paths = pather.getAllFilesEndingWithWord(pcfg.texture_file_types, self.textures_directory)
         return self.texture_paths
 
     def createMaterial(self):
@@ -70,7 +76,7 @@ class PiperShader(object):
         """
         # get the path to the material to import
         hdr_image_path = self.getHdrImagePath()
-        piper_directory = pcu.getPiperDirectory()
+        piper_directory = piper.core.getPiperDirectory()
         norrsken_material_path = os.path.join(piper_directory, 'maya', 'scenes', 'NorrskenPBR.mb')
         nodes = pm.importFile(norrsken_material_path, rnn=True)
 
@@ -159,8 +165,7 @@ class PiperShader(object):
         Returns:
             (list): Materials that match prefix.
         """
-        return [material for material in pm.ls(mat=True) if material.nodeName().startswith(
-            pcfg.material_prefix)]
+        return [material for material in pm.ls(mat=True) if material.nodeName().startswith(pcfg.material_prefix)]
 
     def updateMaterials(self, warn=True):
         """
@@ -222,7 +227,7 @@ def getConnectedMaterialsAndShaders(transform, include_default=True):
                                  shader.surfaceShader.listConnections() if material.nodeName() != 'lambert1']
 
     # not 100% sure that maya returns duplicates or not, so turning list into set to remove duplicates
-    materials_and_shaders = pcu.flatten(materials_and_shaders)
+    materials_and_shaders = python.flatten(materials_and_shaders)
     return set(materials_and_shaders)
 
 
@@ -258,7 +263,7 @@ def createInitialMaterial(transforms=None, delete_old=True):
 
     # Use the scene name if scene saved and no objects selected else use the name of the last object selected
     material_name = os.path.splitext(scene_name)[0] if scene_name else transforms[-1].nodeName()
-    material_name = pcu.removeSuffixes(material_name, pcfg.geometry_to_mat_suffixes).title()
+    material_name = namer.removeSuffixes(material_name, pcfg.geometry_to_mat_suffixes).title()
     shader = pm.sets(renderable=True, noSurfaceShader=True, empty=True, name=material_name + pcfg.shader_engine_suffix)
 
     # add material prefix to material name, create material, material to shader engine to view, and assign

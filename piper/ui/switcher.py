@@ -4,8 +4,8 @@ import os
 
 from Qt import QtWidgets, QtCore, QtGui
 
+import piper.core
 import piper.config as pcfg
-import piper.core.util as pcu
 
 
 class Switcher(QtWidgets.QDialog):
@@ -13,7 +13,7 @@ class Switcher(QtWidgets.QDialog):
     def __init__(self, dcc_store=None, *args, **kwargs):
         super(Switcher, self).__init__(*args, **kwargs)
 
-        piper_directory = pcu.getPiperDirectory()
+        piper_directory = piper.core.getPiperDirectory()
         self.icons_directory = os.path.join(piper_directory, 'maya', 'icons')
 
         self.setWindowTitle('Switcher')

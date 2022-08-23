@@ -4,7 +4,7 @@
 import pymel.core as pm
 
 import piper.config as pcfg
-import piper.core.util as pcu
+import piper.core.namer as namer
 
 
 def _validateMirrorArg(arg, success):
@@ -35,15 +35,15 @@ def _validateMirrorArg(arg, success):
     # swapping out full names
     if pcfg.left_name in arg or pcfg.right_name in arg:
         success[0] = True
-        arg = pcu.swapText(arg, pcfg.left_name, pcfg.right_name)
+        arg = namer.swapText(arg, pcfg.left_name, pcfg.right_name)
 
     if arg.endswith((pcfg.left_suffix, pcfg.right_suffix)):
         success[0] = True
-        return pcu.swapText(arg)
+        return namer.swapText(arg)
 
     if pcfg.left_suffix + '_' in arg or pcfg.right_suffix + '_' in arg:
         success[0] = True
-        return pcu.swapText(arg, pcfg.left_suffix + '_', pcfg.right_suffix + '_')
+        return namer.swapText(arg, pcfg.left_suffix + '_', pcfg.right_suffix + '_')
 
     return arg
 

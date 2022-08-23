@@ -2,7 +2,8 @@
 
 from functools import partial
 from Qt import QtWidgets
-import piper.core.util as pcu
+
+import piper.core.pythoner as python
 import piper.ui.widget as widget
 
 
@@ -26,7 +27,7 @@ class VertSelector(QtWidgets.QDialog):
 
         # combo box with operators
         self.combobox = QtWidgets.QComboBox()
-        self.combobox.addItems(pcu.operators.keys())
+        self.combobox.addItems(python.operators.keys())
         input_layout.addWidget(self.combobox)
 
         # slider with threshold value

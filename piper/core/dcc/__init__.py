@@ -3,8 +3,37 @@
 import os
 import copy
 import winreg
+import sysconfig
 import subprocess
-import piper.core.util as pcu
+
+import piper.config as pcfg
+import piper.core.pather as pather
+
+
+def get(error=True):
+    """
+    Gets the application that is running the current python script.
+
+    Args:
+        error (boolean): Raises ValueError if no valid DCC app found.
+
+    Returns:
+        (string): Maya, Houdini, UnrealEngine, or 3dsMax.
+    """
+    path = sysconfig.get_path('scripts')
+
+    if 'Maya' in path:
+        return pcfg.maya_name
+    elif 'HOUDIN' in path:
+        return pcfg.houdini_name
+    elif 'Engine\\Binaries\\' in path:
+        return pcfg.unreal_name
+    elif '3ds' in path and 'Max' in path:
+        return pcfg.max_3ds_name
+    elif not error:
+        return None
+    else:
+        raise ValueError('No compatible software found in ' + path + '. Please see piper_config for compatible DCCs.')
 
 
 class DCC(object):
@@ -282,7 +311,7 @@ class DCC(object):
             paths = [self.getPythonPath(version) for version in versions]
 
         if clean:
-            pcu.deleteCompiledScripts(install_directory)
+            pather.deleteCompiledScripts(install_directory)
 
         self.onBeforeInstalling()
         [self._runInstaller(python, install_script, install_directory) for python in paths]

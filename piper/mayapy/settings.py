@@ -5,10 +5,14 @@ import pymel.core as pm
 
 import piper.config as pcfg
 import piper.config.maya as mcfg
+
 import piper.ui
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+import piper.core
+import piper.core.filer as filer
+import piper.core.pather as pather
+
 import piper.mayapy.plugin as plugin
+import piper.mayapy.selection as selection
 import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.ui.window as window
@@ -24,7 +28,7 @@ def welcome():
     """
     Displays the welcome message.
     """
-    message = pcu.getWelcomeMessage()
+    message = piper.core.getWelcomeMessage()
     pm.displayInfo(message)
 
 
@@ -44,7 +48,7 @@ def setProject(directory):
     Args:
         directory (string): path where project will be set to.
     """
-    pcu.validateDirectory(directory)
+    pather.validateDirectory(directory)
     pm.workspace(directory, o=True)
     pm.workspace(fr=['scene', directory])
 
@@ -85,7 +89,7 @@ def loadRender():
     pm.modelEditor('modelPanel4', e=True, vtn=mcfg.default_tone_map)
 
 
-@myu.saveSelection(clear=True)
+@selection.save(clear=True)
 def reloadPiperReferences():
     """
     Used to reload any sub-references of a Piper Rig reference that is not part of the BIND namespace.
@@ -156,7 +160,7 @@ def onBeforeSave(*args):
 
     elif answer == 'Make Writeable':
         path = pm.sceneName()
-        pcu.clearReadOnlyFlag(path)
+        filer.clearReadOnlyFlag(path)
 
 
 def onAfterSave(*args):

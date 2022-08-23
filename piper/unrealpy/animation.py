@@ -2,7 +2,9 @@
 
 import os
 import unreal as ue
-import piper.core.util as pcu
+
+import piper.core.pather as pather
+import piper.core.pythoner as python
 
 
 class Dependencies(object):
@@ -43,7 +45,7 @@ class Dependencies(object):
         Writes the found names to the write_to_file path given.
         """
         directory = os.path.dirname(self.write_to_file)
-        pcu.validateDirectory(directory)
+        pather.validateDirectory(directory)
 
         with open(self.write_to_file, 'w') as open_file:
             [open_file.write("{}\n".format(name)) for name in self.found]
@@ -75,7 +77,7 @@ class Dependencies(object):
                       cls == self.offset_name):
                     self._getRecursive(data.package_name)
 
-    @pcu.measureTime
+    @python.measureTime
     def get(self, asset_data):
         """
         Gets all the dependencies from the given asset data

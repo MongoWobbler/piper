@@ -1,12 +1,14 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
+
 import piper.config.maya as mcfg
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+import piper.core.pythoner as python
+
 import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.selection as selection
 
 from . import xform
 from . import switcher
@@ -89,7 +91,7 @@ def getCurrent(transform):
     return None
 
 
-@myu.saveSelection()
+@selection.save()
 def create(transform=None, spaces=None, direct=False, warn=True):
     """
     Creates the given spaces on the given transform.
@@ -277,7 +279,7 @@ def switchFKIK(switcher_ctrl, key=True, match_only=False):
     # FK is being used, move IK to original joints
     if fk_ik_value <= 0.5:
         new_fk_ik_value = 1
-        mid = pcu.getMedian(transforms)
+        mid = python.getMedian(transforms)
 
         to_key = ik_controls + [switcher_ctrl] + reverses
 

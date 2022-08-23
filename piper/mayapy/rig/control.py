@@ -3,7 +3,8 @@
 import pymel.core as pm
 import piper.config.maya as mcfg
 import piper.core.pipermath as pipermath
-import piper.mayapy.util as myu
+
+import piper.mayapy.mesh as mesh
 import piper.mayapy.attribute as attribute
 
 from . import bone
@@ -193,8 +194,8 @@ def calculateSize(joint, scale=1, use_skins=True, try_root=True):
         length = 0
         positions = []
 
-        for mesh in meshes:
-            positions += myu.getVertexPositions(mesh)
+        for static_mesh in meshes:
+            positions += mesh.getVertexPositions(static_mesh)
 
         for position in positions:
             projection = [position[0], 0, position[2]]  # project onto XZ plane
@@ -298,7 +299,7 @@ def create(transform,
     elif axis == 'nz':
         control.rx.set(control.rx.get() - 90)
 
-    myu.freezeTransformations(control)
+    attribute.freezeTransformations(control)
 
     if parent:
         if matrix_offset:

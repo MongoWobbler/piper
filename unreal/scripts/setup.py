@@ -17,5 +17,7 @@ def piperTools():
     import piper.unrealpy.ui.menu as uemenu
     import piper.unrealpy.settings as settings
 
-    uemenu.create()
+    if not settings.isHeadless():
+        uemenu.create()
+
     settings.welcome()

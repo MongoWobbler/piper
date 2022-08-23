@@ -1,14 +1,17 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
+
 import piper.config as pcfg
 import piper.config.maya as mcfg
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+import piper.core.namer as namer
+
 import piper.mayapy.convert as convert
 import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.selection as selection
+import piper.mayapy.manipulator as manipulator
 
 
 def isUniformlyScaled(transform):
@@ -46,7 +49,7 @@ def parent(transforms=None, world=False):
 
         world (boolean): If True, will parent all the given transforms to world
     """
-    transforms = myu.validateSelect(transforms, minimum=1)
+    transforms = selection.validate(transforms, minimum=1)
 
     if world:
         for transform in transforms:
@@ -165,7 +168,7 @@ def mirrorTranslate(transforms=None, axis=pcfg.default_mirror_axis, swap=None, d
     Returns:
         (list): Transforms mirrored.
     """
-    transforms = myu.validateSelect(transforms)
+    transforms = selection.validate(transforms)
     axis_vector = convert.axisToVector(axis, absolute=True)
     mirrored_axis = [value * -1 for value in axis_vector]
     mirrored_axis.append(1)
@@ -177,7 +180,7 @@ def mirrorTranslate(transforms=None, axis=pcfg.default_mirror_axis, swap=None, d
     if duplicate:
         for transform in transforms:
             name = transform.nodeName()
-            new_name = pcu.swapText(name, *swap)
+            new_name = namer.swapText(name, *swap)
             new_transform = pm.duplicate(transform, ic=False, un=False, n=new_name)[0]
             to_mirror.append(new_transform)
     else:
@@ -209,7 +212,7 @@ def mirrorRotate(transforms=None, axis=pcfg.default_mirror_axis, swap=None):
         (list): Joints that were mirrored. Note that all their children get mirrored as well.
     """
     mirrored_transforms = []
-    transforms = myu.validateSelect(transforms)
+    transforms = selection.validate(transforms)
     options = {'mxy': False, 'myz': False, 'mxz': False, 'mb': True, 'sr': swap}
 
     if axis == 'x':
@@ -761,7 +764,7 @@ def orientToFace(transform, face, position=None, condition=True):
 
     edges = face.getEdges()
     edge = pm.PyNode(face.node().name() + '.e[{}]'.format(str(edges[0])))
-    edge_position = myu.getManipulatorPosition(edge)
+    edge_position = manipulator.getManipulatorPosition(edge)
 
     normal = face.getNormal(space='world')
     up = mayamath.getDirection(position, edge_position)

@@ -1,13 +1,15 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 #  Thanks to Jennifer Conley for figuring out all the coordinates to create most of these curve shapes.
 
 import os
 import pymel.core as pm
 
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+import piper.core
+import piper.mayapy.mesh as mesh
 import piper.mayapy.plugin as plugin
 import piper.mayapy.convert as convert
+import piper.mayapy.attribute as attribute
+import piper.mayapy.selection as selection
 
 
 def copy(source, target):
@@ -650,13 +652,13 @@ def crossSection(meshes=None):
     Returns:
         (pm.nodetypes.houdiniAsset): Asset that generates the curve(s)
     """
-    meshes = myu.validateSelect(meshes, find='mesh', parent=True)
+    meshes = selection.validate(meshes, find='mesh', parent=True)
 
-    piper_directory = pcu.getPiperDirectory()
+    piper_directory = piper.core.getPiperDirectory()
     cross_section_path = os.path.join(piper_directory, 'houdini', 'otls', 'curveFromCrossSection.hdalc')
     asset = pm.houdiniAsset(loadAsset=[cross_section_path, 'Sop/curveFromCrossSection'])
 
-    input_geometries = [mesh.getShape().nodeName() for mesh in meshes]
+    input_geometries = [static_mesh.getShape().nodeName() for static_mesh in meshes]
     geometries = '{{ {} }}'.format(', '.join(['"{}"'.format(shape) for shape in input_geometries]))
 
     pm.mel.eval('source houdiniEngineAssetInput')
@@ -687,11 +689,11 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
     side = side.lower()
 
     # get all/selected meshes
-    meshes = myu.validateSelect(meshes, find='mesh', parent=True)
+    meshes = selection.validate(meshes, find='mesh', parent=True)
 
     # get meshes that are pretty close to y=0. iterate through all the meshes vertices, use bounding box Y tolerance
-    for mesh in meshes:
-        bounding_box = pm.exactWorldBoundingBox(mesh)
+    for static_mesh in meshes:
+        bounding_box = pm.exactWorldBoundingBox(static_mesh)
         min_height = bounding_box[1]
         height = bounding_box[4]  # height is measured from y = 0 to y = infinity
         step = height / tolerance
@@ -727,22 +729,22 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
         # make it bigger than the mesh in x and z axis.
         plane.sx.set(abs(max(bounding_box[0], bounding_box[3])) * 2)
         plane.sz.set(abs(max(bounding_box[2], bounding_box[5])) * 2)
-        myu.freezeTransformations(plane)
+        attribute.freezeTransformations(plane)
 
         # create duplicate of mesh and use a boolean difference with the plane to make edges cross section
-        duplicate_mesh = pm.duplicate(mesh)[0]
+        duplicate_mesh = pm.duplicate(static_mesh)[0]
         pm.select(duplicate_mesh, plane)
         new_mesh, _ = pm.polyCBoolOp(*pm.selected(), op=2, classification=2)
-        myu.freezeTransformations(new_mesh)
+        attribute.freezeTransformations(new_mesh)
         mesh_name = new_mesh.nodeName()
 
         # select verts, convert selection to edges, make curve from edges, delete duplicate mesh
-        vertices = myu.getVerticesAtHeight(mesh_name, step)
+        vertices = mesh.getVerticesAtHeight(mesh_name, step)
         pm.select(vertices)
         pm.mel.eval('ConvertSelectionToContainedEdges')
 
         if not name:
-            name = mesh.nodeName() + '_crossSection'
+            name = static_mesh.nodeName() + '_crossSection'
 
         # form = 1 kwarg makes the curve periodic, a.k.a closed.
         curve, _ = pm.polyToCurve(form=1, degree=1, usm=True, name=name)
@@ -750,7 +752,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
         curves.append(curve)
         curve.ty.set(step * -1)
         pm.xform(curve, centerPivots=True)
-        myu.freezeTransformations(curve)
+        attribute.freezeTransformations(curve)
 
         if clean_up:
             [pm.delete(node) for node in [mesh_name, plane_name, duplicate_mesh] if pm.objExists(node)]

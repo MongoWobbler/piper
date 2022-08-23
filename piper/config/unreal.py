@@ -1,6 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-# Script Names
+# Scripts
+scripts_path = 'unreal/scripts'
 init_unreal_name = 'init_unreal.py'
 setup_name = 'setup.py'
 

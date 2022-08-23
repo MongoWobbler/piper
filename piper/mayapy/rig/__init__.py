@@ -8,12 +8,17 @@ import pymel.core as pm
 
 import piper.config as pcfg
 import piper.config.maya as mcfg
-import piper.core.util as pcu
-import piper.mayapy.util as myu
+
+import piper.core
+import piper.core.namer as namer
+import piper.core.pythoner as python
+
+import piper.mayapy
 import piper.mayapy.convert as convert
 import piper.mayapy.mayamath as mayamath
-import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
+import piper.mayapy.hierarchy as hierarchy
+import piper.mayapy.pipernode as pipernode
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.ui.window as uiwindow
 from piper.mayapy.mirror import _mirror, _ignoreMirror
@@ -285,7 +290,7 @@ class Rig(object):
             transform = spaced if pm.objExists(spaced) or needs_formatting else transform
 
         if needs_formatting:
-            return [pm.PyNode(node) for node in myu.getIncrementalNodes(transform, i)]
+            return [pm.PyNode(node) for node in piper.mayapy.getIncrementalNodes(transform, i)]
 
         return pm.PyNode(transform)
 
@@ -359,7 +364,7 @@ class Rig(object):
         """
         found = False
         group_parent = None
-        transform_parent = myu.getRootParent(reference_transform)
+        transform_parent = hierarchy.getRootParent(reference_transform)
 
         # try to find the reference transform's parent in the group stack to figure out where it should be parented to
         for parent, children in self.group_stack.items():
@@ -374,7 +379,7 @@ class Rig(object):
 
         # else get the first parent that is either a piperRig or is a group
         else:
-            parent = myu.getFirstTypeOrEndsWithParent(reference_transform, 'piperRig', mcfg.group_suffix)
+            parent = hierarchy.getFirstTypeOrEndsWithParent(reference_transform, 'piperRig', mcfg.group_suffix)
             if parent:
                 self.addToGroupStack(parent, transforms)
                 found = True
@@ -387,7 +392,7 @@ class Rig(object):
         Parents all the given children to their corresponding parent key in the group stack dictionary.
         """
         for parent, children in self.group_stack.items():
-            children = [myu.getRootParent(child) for child in children]
+            children = [hierarchy.getRootParent(child) for child in children]
             pm.parent(children, parent)
 
         self.group_stack = {}
@@ -483,7 +488,7 @@ class Rig(object):
         """
         Colors all the controls according to setting in piper.config.maya.py
         """
-        controls = pcu.flatten(list(self.controls.values()))
+        controls = python.flatten(list(self.controls.values()))
 
         left_control = pcfg.left_suffix + mcfg.control_suffix
         left_banker = pcfg.left_suffix + mcfg.banker_suffix + mcfg.control_suffix
@@ -658,7 +663,7 @@ class Rig(object):
             axis = convert.axisToString(axis_vector)
 
         # attempt to deduce axis if transform only has one child and axis is not given
-        children = myu.getSingleChildren(transforms[0])
+        children = hierarchy.getSingleChildren(transforms[0])
         if children and len(transforms) == 1:
 
             # iterate through all the children until we find something we can aim at
@@ -933,8 +938,8 @@ class Rig(object):
         global_ctrl = self.root_control
         transforms = xform.getChain(start, end)
         duplicates = xform.duplicateChain(transforms, prefix=mcfg.ik_prefix, color='purple', scale=0.5)
-        mid = pcu.getMedian(transforms)
-        mid_duplicate = pcu.getMedian(duplicates)
+        mid = python.getMedian(transforms)
+        mid_duplicate = python.getMedian(duplicates)
 
         if mid == start or mid == end:
             pm.error('Not enough joints given! {} is the mid joint?'.format(mid.name()))
@@ -1113,7 +1118,7 @@ class Rig(object):
         [switcher_attribute >> ik.lodVisibility for ik in ik_ctrls]
 
         # having to force graph evaluation in order for spaces to work correctly
-        myu.evaluateGraph()
+        piper.mayapy.evaluateGraph()
 
         # use spaces to drive original chain with fk and ik transforms and hook up switcher attributes
         for og_transform, fk_transform, ik_transform in zip(transforms, fk_transforms, ik_transforms):
@@ -1478,7 +1483,7 @@ class Rig(object):
         axes = convert.axisToTriAxis(axis)
 
         if not side:
-            side = pcu.getSide(joint_name)
+            side = piper.core.getSide(joint_name)
 
         # get the IK handle and validate there is only one
         ik_handle = list(set(ik_control.connections(skipConversionNodes=True, type='ikHandle')))
@@ -1492,7 +1497,7 @@ class Rig(object):
 
             # if IK joint given, get the name of the regular joint by stripping the ik prefix
             if joint_name.startswith(mcfg.ik_prefix):
-                stripped_name = pcu.removePrefixes(joint_name, mcfg.ik_prefix)
+                stripped_name = namer.removePrefixes(joint_name, mcfg.ik_prefix)
                 namespace_name = mcfg.skeleton_namespace + ':' + stripped_name
                 search_joint = pm.PyNode(stripped_name) if pm.objExists(stripped_name) else pm.PyNode(namespace_name)
             else:
@@ -1578,7 +1583,7 @@ class Rig(object):
         # move normalized track to joint, then to floor, and freeze transforms
         pm.matchTransform(normalized_track, joint, pos=True, rot=False, scale=False)
         normalized_track.ty.set(0)
-        myu.freezeTransformations(normalized_track)
+        attribute.freezeTransformations(normalized_track)
 
         decomposed_matrix = pm.createNode('decomposeMatrix', n=normalize_node + '_decompose')
         normalized_pivot.worldMatrix >> decomposed_matrix.inputMatrix

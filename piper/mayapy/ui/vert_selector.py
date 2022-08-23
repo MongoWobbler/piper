@@ -3,11 +3,12 @@
 import pymel.core as pm
 
 from Qt import QtCompat
+
 from piper.ui.vert_selector import VertSelector
 from piper.ui.widget import manager
 from piper.mayapy.ui.widget import Controller
 import piper.mayapy.rig.skin as skin
-import piper.mayapy.util as myu
+import piper.mayapy.selection as selection
 
 
 class MayaVertSelector(VertSelector):
@@ -44,7 +45,7 @@ class MayaVertSelector(VertSelector):
         """
         threshold = self.slider.value()
         operator = self.combobox.currentText()
-        joints = myu.validateSelect(find='joint', minimum=1)
+        joints = selection.validate(find='joint', minimum=1)
         skin.selectWeightedVerts(joints=joints, operator=operator, threshold=threshold)
         self.last_selected = joints
         self.last_selected_button.setText('Previously: ' + ', '.join([joint.name() for joint in joints]))

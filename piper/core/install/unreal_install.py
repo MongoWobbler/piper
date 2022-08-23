@@ -2,57 +2,20 @@
 
 import os
 import piper.config.unreal as ucfg
+import piper.core.dcc.unreal_dcc as ue_dcc
 
 
-def validateEngineConfig(project_path):
+def getScriptsDirectory(piper_directory):
     """
-    Validates that a Config/DefaultEngine.ini file exists in the given project directory.
-    If Config/DefaultEngine.ini file does not exist, creates a new empty DefaultEngine.ini file.
+    Gets the path that holds the unreal python startup/setup scripts for piper.
 
     Args:
-        project_path (string): Path to unreal project which includes all source code, ending in .uproject
+        piper_directory (string): Path to piper's main package folder. Usually same as os.environ['PIPER_DIR'].
 
     Returns:
-        (string): Full path to the DefaultEngine.ini of the given project.
+        (string): Path to directory that holds init_unreal.py and setup.py in piper.
     """
-    if not os.path.exists(project_path):
-        raise ValueError(f'{project_path} does not exist! Please use valid .uproject path')
-
-    project_directory = os.path.dirname(project_path)
-    default_engine = os.path.join(project_directory, 'Config', 'DefaultEngine.ini')
-
-    if os.path.exists(default_engine):
-        return default_engine
-
-    # make a DefaultEngine.ini file since it does not exist
-    print(f'Creating {default_engine} since it was not found!')
-    with open(default_engine, 'w') as _:
-        pass
-
-    return default_engine
-
-
-def validatePythonDirectory(project_path):
-    """
-    Validates the python directory in the Unreal project's content directory.
-
-    Args:
-        project_path (string): Path to unreal project which includes all source code, ending in .uproject
-
-    Returns:
-        (string): Full path to the python directory in the project's content directory.
-    """
-    if not os.path.exists(project_path):
-        raise ValueError(f'{project_path} does not exist! Please use valid .uproject path')
-
-    project_directory = os.path.dirname(project_path)
-    python_directory = os.path.join(project_directory, 'Content', 'Python')
-
-    if os.path.exists(python_directory):
-        return python_directory
-
-    os.mkdir(python_directory)
-    return python_directory
+    return os.path.join(piper_directory, ucfg.scripts_path).replace('\\', '/')
 
 
 def defaultConfig(project_path, piper_directory):
@@ -69,8 +32,8 @@ def defaultConfig(project_path, piper_directory):
         install('D:/Projects/UE5/Hawaii', 'D:/Projects/piper')
     """
     print('-' * 50)
-    engine_config = validateEngineConfig(project_path)
-    script_directory = os.path.join(piper_directory, 'unreal', 'scripts').replace('\\', '/')
+    engine_config = ue_dcc.validateEngineConfig(project_path)
+    script_directory = getScriptsDirectory(piper_directory)
     additional_line = ucfg.python_additional_key + script_directory + '")\n'
     piper_paragraph = ucfg.python_section + additional_line
 
@@ -95,7 +58,32 @@ def defaultConfig(project_path, piper_directory):
         open_file.writelines(lines)
 
 
-def symlink(project_path, piper_directory):
+def validateSymlinkPath(directory, name):
+    """
+    Validates the path created by joining the given directory and name as a valid symlink path.
+
+    Args:
+        directory (string): Directory where symlink will be made to, the target.
+
+        name (string): Name of target file.
+
+    Returns:
+        (string): Full path validated to make sure it does not already exist.
+    """
+    path = os.path.join(directory, name).replace('\\', '/')
+
+    if os.path.islink(path):
+        print(f'{path} link already exists! Removing...')
+        os.remove(path)
+
+    if os.path.exists(path):
+        message = f'{path} already exists! Please specify another python path or manually remove file.'
+        raise FileExistsError(message)
+
+    return path
+
+
+def symlink(piper_directory, project_path=None, target_directory=None):
     """
     Creates a symlink between the init_unreal.py and setup.py scripts in the piper directory and the Unreal project's
     python directory in the content folder.
@@ -104,14 +92,19 @@ def symlink(project_path, piper_directory):
         project_path (string): Path to unreal project which includes all source code, ending in .uproject
 
         piper_directory (string): Path to piper's main package folder. Usually same as os.environ['PIPER_DIR'].
-    """
-    python_directory = validatePythonDirectory(project_path)
-    target_init_unreal_script = os.path.join(python_directory, ucfg.init_unreal_name).replace('\\', '/')
-    target_setup_script = os.path.join(python_directory, ucfg.setup_name).replace('\\', '/')
 
-    script_directory = os.path.join(piper_directory, 'unreal', 'scripts')
+        target_directory (string): Path to where symlink will end up at. If None given, will use unreal
+        project's Content/Python directory.
+    """
+    if not target_directory:
+        target_directory = ue_dcc.validatePythonDirectory(project_path)
+
+    script_directory = getScriptsDirectory(piper_directory)
     source_init_unreal_script = os.path.join(script_directory, ucfg.init_unreal_name).replace('\\', '/')
     source_setup_script = os.path.join(script_directory, ucfg.setup_name).replace('\\', '/')
+
+    target_init_unreal_script = validateSymlinkPath(target_directory, ucfg.init_unreal_name)
+    target_setup_script = validateSymlinkPath(target_directory, ucfg.setup_name)
 
     try:
         os.symlink(source_init_unreal_script, target_init_unreal_script)
