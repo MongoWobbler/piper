@@ -17,4 +17,3 @@ def piperTools():
     import piper.core.vendor
 
     piper.core.vendor.addPaths()  # sets up vendor paths for dcc
-    print('loading VENDORS!')

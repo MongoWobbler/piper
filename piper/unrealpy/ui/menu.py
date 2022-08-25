@@ -7,6 +7,7 @@ import piper.core
 import piper.core.namer as namer
 import piper.core.pythoner as python
 import piper.unrealpy.copier as copier
+import piper.unrealpy.animation as animation
 
 
 class _PiperMenu(object):
@@ -28,6 +29,7 @@ class _PiperMenu(object):
         self.piper_main_menu_name = self.main_menu_name + '.' + self.label
         self.piper_context_menu_name = self.context_menu_name + '.' + self.label
         self.piper_folder_menu_name = self.folder_context_menu_name + '.' + self.label
+        self.piper_animation_menu_name = self.piper_main_menu_name + '.' + 'Animation'
         self.tool = ue.ToolMenus.get()
 
         if section:
@@ -43,6 +45,7 @@ class _PiperMenu(object):
         self.buildContext()
         self.buildFolder()
         self.buildMain()
+        self.buildAnimation()
         return self.instance
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -107,6 +110,12 @@ class _PiperMenu(object):
         """
         return self.setOwner(self.piper_folder_menu_name, section)
 
+    def setPiperAnimationMenuAsOwner(self, section):
+        """
+        Convenience method for setting Piper Animation Submenu as the owner.
+        """
+        return self.setOwner(self.piper_animation_menu_name, section)
+
     def _build(self, method, section):
         """
         Used to build main menus
@@ -126,6 +135,13 @@ class _PiperMenu(object):
         Convenience method for building the Piper Main Menu.
         """
         self._build(self.setMainMenuAsOwner, 'Main')
+
+    def buildAnimation(self):
+        """
+        Convenience method for building the Piper Animation Submenu.
+        """
+        self.label = 'Animation'
+        self._build(self.setPiperMainMenuAsOwner, 'Main')
 
     def buildContext(self):
         """
@@ -220,6 +236,10 @@ def create():
     with menu:
         menu.setPiperMainMenuAsOwner('Developer')
         menu.add(reloadPiper)
+
+        menu.setPiperAnimationMenuAsOwner('Scripts')
+        menu.add(animation.printUnusedSequences)
+        menu.add(animation.printUnusedSelectedSequences)
 
         menu.setPiperContextMenuAsOwner('Scripts')
         menu.add(copier.assetNames, 'Copy Asset Names')
