@@ -5,6 +5,7 @@ import unreal as ue
 
 import piper.core.pather as pather
 import piper.core.pythoner as python
+import piper.unrealpy.browser as browser
 
 
 class Hierarchy(object):
@@ -109,12 +110,12 @@ class References(Hierarchy):
         """
         Convenience method to get all references data from the selected assets.
         """
-        assets = self.utilities.get_selected_asset_data()
+        assets = browser.getSelectedAssetData(recursive=True)
         self.get(assets)
 
     def getFromDirectory(self):
         """
-        Convenience method to get all the animation sequences not being referenced in the animation directory.
+        Convenience method to get all the animation sequences not being referenced in the specified directory.
         """
         assets = self.registry.get_assets_by_path(ue.Name(self.starting_directory), True)
         self.get(assets)

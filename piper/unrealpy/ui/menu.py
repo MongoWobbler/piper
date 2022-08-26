@@ -246,6 +246,5 @@ def create():
         menu.add(copier.packageNames, 'Copy Package Names')
 
         menu.setPiperFolderMenuAsOwner('Scripts')
-        menu.add(copier.directoryPaths, 'Copy Directories\' Paths')
-        menu.add(copier.directoryAssetNames, 'Copy Directories\' Asset Names')
-        menu.add(copier.directoryPackageNames, 'Copy Directories\' Package Names')
+        menu.add(copier.assetNames, 'Copy Asset Names')
+        menu.add(copier.packageNames, 'Copy Package Names')
