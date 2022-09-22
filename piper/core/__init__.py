@@ -19,6 +19,34 @@ def getPiperDirectory():
     return os.environ['PIPER_DIR']
 
 
+def getTempDirectory(create=True):
+    """
+    Gets a temp directory. User/dev is responsible for cleaning up this directory!
+
+    Args:
+        create (boolean): If True, creates the directory if it does not already exist.
+
+    Returns:
+        (string): Full path to temp directory.
+    """
+    directory = os.path.join(getPiperDirectory(), 'temp').replace('\\', '/')
+
+    if not os.path.exists(directory) and create:
+        os.makedirs(directory)
+
+    return directory
+
+
+def deleteTempDirectory():
+    """
+    Deletes the temp directory associated with getPiperTempDirectory.
+    """
+    directory = getTempDirectory(create=False)
+
+    if os.path.exists(directory) and not os.listdir(directory):
+        os.rmdir(directory)
+
+
 def setPiperDirectory():
     """
     Sets the directory for the environment key "PIPER_DIR".
@@ -43,7 +71,13 @@ def getSide(name):
     Returns:
         (string): Full name of side.
     """
-    return pcfg.sides.get(name, '').strip().lower()
+    name = name.lower()
+    if name.endswith(pcfg.left_suffix):
+        return pcfg.left_name.strip().lower()
+    elif name.endswith(pcfg.right_suffix):
+        return pcfg.right_name.strip().lower()
+    else:
+        return ''
 
 
 def openDocumentation():

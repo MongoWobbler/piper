@@ -30,7 +30,7 @@ sides = {left_suffix: left_name,
          right_suffix: right_name}
 default_mirror_axis = 'x'
 
-# vendors
+# Vendors
 vendors = {dcc_agnostic_name: ['Qt', 'p4'],
            maya_name: ['fbx'],
            houdini_name: [],
@@ -41,38 +41,14 @@ vendors = {dcc_agnostic_name: ['Qt', 'p4'],
 # Store
 art_directory = 'art_directory'
 game_directory = 'game_directory'
-use_piper_units = 'use_piper_units'
 use_perforce = 'use_p4'
 p4_add_after_save = 'p4_add_after_save'
-export_ascii = 'export_ascii'
-hdr_image_path = 'hdr_image_path'
-unload_unwanted = 'unload_unwanted_plugins'
-use_piper_render = 'use_tone_map'
 previous_widgets = 'previous_widgets'  # used when reloading, to re-open any previously opened widgets.
-switcher_update_box = 'switcher_update_box'
-switcher_key_box = 'switcher_key_box'
-switcher_match_box = 'switcher_match_box'
-switcher_translate_box = 'switcher_translate_box'
-switcher_rotate_box = 'switcher_rotate_box'
-switcher_orient_box = 'switcher_orient_box'
-switcher_scale_box = 'switcher_scale_box'
 store_defaults = {art_directory: None,
                   game_directory: None,
-                  use_piper_units: True,
-                  use_piper_render: True,
                   use_perforce: False,
                   p4_add_after_save: False,
-                  unload_unwanted: True,
-                  export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
-                  hdr_image_path: '',
-                  previous_widgets: [],
-                  switcher_update_box: True,
-                  switcher_key_box: True,
-                  switcher_match_box: False,
-                  switcher_translate_box: True,
-                  switcher_rotate_box: True,
-                  switcher_orient_box: False,
-                  switcher_scale_box: True}
+                  previous_widgets: []}  # previous widgets are reloaded in piper agnostic file, so storing globally
 
 # Geometry
 low_poly_suffix = '_low'
@@ -99,3 +75,15 @@ roughness_suffix = '_R'
 metal_suffix = '_M'
 emissive_suffix = '_E'
 ao_r_m_suffix = ambient_occlusion_suffix + roughness_suffix + metal_suffix
+
+# Skeleton
+root_joint_name = 'root'
+
+# Export Attributes
+dcc_attribute = 'DCC'
+relative_attribute = 'relative_source'
+pipernode_attribute = 'piper_node'
+method_attribute = 'export_method'
+export_attributes = [dcc_attribute, relative_attribute, pipernode_attribute, method_attribute]
+mesh_with_attribute_name = 'body_low'  # due to UE metadata limitations, a mesh name will be shared across characters
+export_file_name = 'export.json'

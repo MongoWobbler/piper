@@ -6,10 +6,10 @@ import copy
 import pymel.core as pm
 
 import piper.config.maya as mcfg
+import piper.mayapy.pipe.paths as paths
 import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.control as control
-import piper.mayapy.pipernode as pipernode
-import piper.mayapy.pipe.paths as paths
+import piper.mayapy.selection as selection
 
 from . import key
 from . import resolution
@@ -27,7 +27,7 @@ def referenceRig(path):
         (pm.nodetypes.FileReference or list): Reference(s) created.
     """
     # looks for rigs we might have selected
-    rigs = pipernode.get('piperRig', search=False)
+    rigs = selection.get('piperRig', search=False)
 
     if not rigs:
         return pm.createReference(path, namespace=mcfg.rig_namespace)  # create a new reference

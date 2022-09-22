@@ -5,7 +5,7 @@ import os
 from Qt import QtWidgets, QtCore, QtGui
 
 import piper.core
-import piper.config as pcfg
+import piper.config.maya as mcfg
 
 
 class Switcher(QtWidgets.QDialog):
@@ -37,13 +37,13 @@ class Switcher(QtWidgets.QDialog):
         self.hide_play_button = None
         self.build()
 
-        self.store_data = {self.self_update: pcfg.switcher_update_box,
-                           self.keyframe_box: pcfg.switcher_key_box,
-                           self.match_only: pcfg.switcher_match_box,
-                           self.translate: pcfg.switcher_translate_box,
-                           self.rotate: pcfg.switcher_rotate_box,
-                           self.orient: pcfg.switcher_orient_box,
-                           self.scale: pcfg.switcher_scale_box}
+        self.store_data = {self.self_update: mcfg.switcher_update_box,
+                           self.keyframe_box: mcfg.switcher_key_box,
+                           self.match_only: mcfg.switcher_match_box,
+                           self.translate: mcfg.switcher_translate_box,
+                           self.rotate: mcfg.switcher_rotate_box,
+                           self.orient: mcfg.switcher_orient_box,
+                           self.scale: mcfg.switcher_scale_box}
 
         self.restorePrevious()
 

@@ -4,55 +4,17 @@ import pymel.core as pm
 
 import piper.config.maya as mcfg
 import piper.mayapy.mesh as mesh
-import piper.mayapy.convert as convert
-import piper.mayapy.modifier as modifier
-import piper.mayapy.hierarchy as hierarchy
 import piper.mayapy.attribute as attribute
+import piper.mayapy.convert as convert
+import piper.mayapy.hierarchy as hierarchy
+import piper.mayapy.modifier as modifier
+import piper.mayapy.selection as selection
 from .rig import curve  # must do relative import in python 2
-
-
-def get(node_type, ignore=None, search=True):
-    """
-    Gets the selected given node type or all the given node types in the scene if none selected.
-
-    Args:
-        node_type (string): Type of node to get.
-
-        ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
-
-        search (boolean): If True, and nothing is selected, will attempt to search the scene for all of the given type.
-
-    Returns:
-        (list) All nodes of the given node type.
-    """
-    piper_nodes = []
-    selected = pm.selected()
-
-    if selected:
-        # get only the piper nodes from selection
-        piper_nodes = pm.ls(selected, type=node_type)
-
-        # traverse hierarchy for piper nodes
-        if not piper_nodes:
-            piper_nodes = set()
-            for node in selected:
-                first_type_parent = hierarchy.getFirstTypeParent(node, node_type)
-                piper_nodes.add(first_type_parent) if first_type_parent else None
-
-    # search the whole scene for the piper node
-    elif search:
-        piper_nodes = pm.ls(type=node_type)
-
-    # don't include any nodes that are a child of the given ignore type
-    if ignore:
-        piper_nodes = [node for node in piper_nodes if not hierarchy.getFirstTypeParent(node, ignore)]
-
-    return piper_nodes
 
 
 def multiply(transform, main_term=None, weight=None, inputs=None):
     """
-    Creates the multiply node and hooks up all the given given inputs to the given transform's scale.
+    Creates the multiply node and hooks up all the given inputs to the given transform's scale.
 
     Args:
         transform (pm.nodetypes.Transform): Node to hook multiply onto its scale.
@@ -343,7 +305,7 @@ def createMesh():
     scene_name = pm.sceneName().namebase
 
     if selected:
-        # if shift held, create a a piper mesh for each selected object.
+        # if shift held, create a piper mesh for each selected object.
         if modifier.isShiftHeld():
             piper_meshes = []
             for node in selected:
@@ -445,7 +407,7 @@ def createAnimation():
     piper_animations = []
     scene_name = pm.sceneName().namebase
     base_name = scene_name if scene_name else 'piperAnimation'
-    rigs = get('piperRig', ignore='piperAnimation')
+    rigs = selection.get('piperRig', ignore='piperAnimation')
 
     if not rigs:
         pm.warning('No rigs found!')
@@ -461,3 +423,21 @@ def createAnimation():
         piper_animations.append(piper_animation)
 
     return piper_animations
+
+
+@selection.save(clear=True)
+def reloadRigReferences():
+    """
+    Used to reload any sub-references of a Piper Rig reference that is not part of the BIND namespace.
+    Mostly used for a 2022 bug where a few piper rigs don't finish loading their references correctly.
+    """
+    rigs = selection.get('piperRig')
+
+    for rig in rigs:
+        namespace = rig.namespace()
+
+        if not namespace:
+            continue
+
+        ref = pm.FileReference(namespace=namespace)
+        [sub_ref.load() for namespace, sub_ref in ref.subReferences().items() if mcfg.bind_namespace not in namespace]

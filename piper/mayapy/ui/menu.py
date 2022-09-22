@@ -29,13 +29,15 @@ import piper.mayapy.pipe.export as export
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.modifier as modifier
+import piper.mayapy.plugin as plugin
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.attribute as attribute
 import piper.mayapy.animation as animation
 import piper.mayapy.animation.key as key
 import piper.mayapy.animation.resolution as resolution
 
-from piper.mayapy.pipe.store import store
+from piper.core.store import piper_store
+from piper.mayapy.pipe.store import maya_store
 from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperPerforceMenu, PiperExportMenu, getPiperMainMenu
 
 
@@ -62,18 +64,6 @@ class MayaSceneMenu(PiperSceneMenu):
         Opens the current scene in a OS window.
         """
         filer.openWithOS(os.path.dirname(pm.sceneName()))
-
-    def openArtDirectoryInOS(self):
-        """
-        Opens the art directory in a OS window.
-        """
-        filer.openWithOS(store.get(pcfg.art_directory))
-
-    def openGameDirectoryInOS(self):
-        """
-        Opens the game directory in a OS window.
-        """
-        filer.openWithOS(store.get(pcfg.game_directory))
 
     def copyCurrentSceneToClipboard(self):
         """
@@ -127,7 +117,7 @@ class MayaSceneMenu(PiperSceneMenu):
 class MayaPerforceMenu(PiperPerforceMenu):
 
     def afterAdded(self):
-        state = store.get(pcfg.use_perforce)
+        state = piper_store.get(pcfg.use_perforce)
         self.menuAction().setVisible(state)
 
     def addScene(self):
@@ -140,10 +130,10 @@ class MayaPerforceMenu(PiperPerforceMenu):
         Returns:
             (boolean): Setting stored in store.
         """
-        return store.get(pcfg.p4_add_after_save)
+        return piper_store.get(pcfg.p4_add_after_save)
 
     def onAddSceneAfterSavingPressed(self, state):
-        store.set(pcfg.p4_add_after_save, state)
+        piper_store.set(pcfg.p4_add_after_save, state)
 
 
 class MayaExportMenu(PiperExportMenu):
@@ -158,25 +148,12 @@ class MayaExportMenu(PiperExportMenu):
         export.piperMeshToSelfAsOBJ()
 
     def setArtDirectory(self):
-        dialog = QtWidgets.QFileDialog()
-        starting_directory = pm.workspace(q=True, dir=True)
-        directory = dialog.getExistingDirectory(self, 'Choose directory to export from', starting_directory)
+        directory = super(MayaExportMenu, self).setArtDirectory()
 
         if not directory:
             return
 
         settings.setProject(directory)
-        store.set(pcfg.art_directory, directory)
-
-    def setGameDirectory(self):
-        dialog = QtWidgets.QFileDialog()
-        starting_directory = store.get(pcfg.game_directory)
-        directory = dialog.getExistingDirectory(self, 'Choose directory to export to', starting_directory)
-
-        if not directory:
-            return
-
-        store.set(pcfg.game_directory, directory)
 
 
 class MayaCurvesMenu(MayaPiperMenu):
@@ -267,7 +244,7 @@ class MayaReferenceMenu(MayaPiperMenu):
 
     def build(self):
         # cannot build menu without art directory
-        art_directory = store.get(pcfg.art_directory)
+        art_directory = piper_store.get(pcfg.art_directory)
         if not art_directory:
             return
 
@@ -316,12 +293,13 @@ class MayaSettingsMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.addCheckbox(store.get(pcfg.use_perforce), self.onUsePerforcePressed, 'Use Perforce')
+        self.addCheckbox(piper_store.get(pcfg.use_perforce), self.onUsePerforcePressed, 'Use Perforce')
         self.addSeparator()
-        self.addCheckbox(store.get(pcfg.use_piper_units), self.onUseUnitsPressed, 'Use Piper Units')
-        self.addCheckbox(store.get(pcfg.use_piper_render), self.onUseRenderPressed, 'Use Piper Render')
-        self.addCheckbox(store.get(pcfg.export_ascii), self.onExportInAsciiPressed, 'Export In Ascii')
-        self.addCheckbox(store.get(pcfg.unload_unwanted), self.onUnloadUnwantedPressed, 'Unload Unwanted Plug-ins')
+        self.addCheckbox(maya_store.get(mcfg.use_piper_units), self.onUseUnitsPressed, 'Use Piper Units')
+        self.addCheckbox(maya_store.get(mcfg.use_piper_render), self.onUseRenderPressed, 'Use Piper Render')
+        self.addCheckbox(maya_store.get(mcfg.export_ascii), self.onExportInAsciiPressed, 'Export In Ascii')
+        self.addCheckbox(maya_store.get(mcfg.unload_unwanted), self.onUnloadUnwantedPressed, 'Unload Unwanted Plug-ins')
+        self.addCheckbox(maya_store.get(mcfg.open_port), self.onPortPressed, 'Open Port')
         self.add(self.onSetHdrImagePressed, 'Set HDR Image')
         self.addSeparator()
         self.add(settings.hotkeys, 'Assign Hotkeys')
@@ -336,34 +314,45 @@ class MayaSettingsMenu(MayaPiperMenu):
         Args:
             state (boolean): Whether to use perforce or not.
         """
-        store.set(pcfg.use_perforce, state)
+        piper_store.set(pcfg.use_perforce, state)
         self.parent_menu.perforce_menu.menuAction().setVisible(state)
 
     @staticmethod
     def onUseUnitsPressed(state):
-        store.set(pcfg.use_piper_units, state)
+        maya_store.set(mcfg.use_piper_units, state)
+        if state:
+            settings.loadDefaults()
 
     @staticmethod
     def onUseRenderPressed(state):
-        store.set(pcfg.use_piper_render, state)
+        maya_store.set(mcfg.use_piper_render, state)
+        if state:
+            settings.loadRender()
 
     @staticmethod
     def onExportInAsciiPressed(state):
-        store.set(pcfg.export_ascii, state)
+        maya_store.set(mcfg.export_ascii, state)
 
     @staticmethod
     def onUnloadUnwantedPressed(state):
-        store.set(pcfg.unload_unwanted, state)
+        maya_store.set(mcfg.unload_unwanted, state)
+        if state:
+            plugin.unloadUnwanted()
+
+    @staticmethod
+    def onPortPressed(state):
+        maya_store.set(mcfg.open_port, state)
+        settings.openPort() if state else settings.closePort()
 
     def onSetHdrImagePressed(self):
         dialog = QtWidgets.QFileDialog()
-        starting_directory = store.get(pcfg.art_directory)
+        starting_directory = piper_store.get(pcfg.art_directory)
         file_path = dialog.getOpenFileName(self, 'Choose HDR Image', starting_directory)
 
         if not file_path:
             return
 
-        store.set(pcfg.hdr_image_path, file_path[0])
+        maya_store.set(mcfg.hdr_image_path, file_path[0])
 
     @staticmethod
     def uninstall():

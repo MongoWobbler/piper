@@ -1,7 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import piper.config as pcfg
-import piper.core.store as store
+from piper.core.store import piper_store
 
 
 def openPrevious(reset=True):
@@ -11,8 +11,7 @@ def openPrevious(reset=True):
     Args:
         reset (boolean): If true, will set the previous widgets in settings back to an empty list.
     """
-    settings = store.get()
-    previous_widgets = settings.get(pcfg.previous_widgets)
+    previous_widgets = piper_store.get(pcfg.previous_widgets)
 
     # exec doesn't work in list comprehension because of scope issues due to it being a statement in 2.x
     # however, exec is a function in 3.x so list comprehension does work on it in that version.
@@ -20,4 +19,4 @@ def openPrevious(reset=True):
         exec(create_command)
 
     if reset:
-        settings.set(pcfg.previous_widgets, [])
+        piper_store.set(pcfg.previous_widgets, [])

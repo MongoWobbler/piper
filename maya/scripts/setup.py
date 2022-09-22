@@ -10,7 +10,7 @@ if piper_directory not in sys.path:
     sys.path.append(piper_directory)
 
 
-def piperTools():
+def piperTools(is_headless=False):
     """
     Loads all piper plug-ins, loads piper settings, creates the menu, and welcomes the user.
     """
@@ -19,10 +19,13 @@ def piperTools():
     piper.core.vendor.addPaths()  # sets up vendor paths for dcc
 
     import piper.mayapy.plugin as plugin
-    import piper.mayapy.ui.menu as mymenu
     import piper.mayapy.settings as settings
 
     plugin.loadAll()
     settings.startup()
-    mymenu.create()
+
+    if not is_headless:
+        import piper.mayapy.ui.menu as mymenu
+        mymenu.create()
+
     settings.welcome()

@@ -13,13 +13,13 @@ class Store(object):
     # turning store into a singleton
     instance = None
 
-    def __init__(self):
-        self._app_name = dcc.get()
+    def __init__(self, app_name=None, defaults=pcfg.store_defaults):
+        self._app_name = dcc.get() if app_name is None else app_name
         self._app = None
         self._version = ''
         self._path = None
         self._settings = {}
-        self._default_settings = copy.deepcopy(pcfg.store_defaults)
+        self._default_settings = copy.deepcopy(defaults)
 
     def getVersion(self):
         """
@@ -149,5 +149,8 @@ def get():
     """
     Gets the instance to the store since it is meant to be a singleton.
     """
-    Store.instance = Store() if Store.instance is None else Store.instance
+    Store.instance = Store(app_name='Piper') if Store.instance is None else Store.instance
     return Store.instance
+
+
+piper_store = get()

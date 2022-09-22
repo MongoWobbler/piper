@@ -1,13 +1,17 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
-from piper.core.dcc import DCC
+import piper.config as pcfg
+import piper.config.houdini as hcfg
+from piper.core.dcc.bundle import DCC
 
 
 class Houdini(DCC):
 
     def __init__(self):
         super(Houdini, self).__init__()
+        self.name = pcfg.houdini_name
+        self.address = hcfg.address
         self.process_name = 'houdini.exe'
         self.registry_path = 'SOFTWARE\\Side Effects Software'
         self.registry_exclude = ['Houdini', 'Houdini Launcher']

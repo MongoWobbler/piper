@@ -11,13 +11,13 @@ import piper.core.pythoner as python
 from piper.ui.widget import manager
 from piper.ui.switcher import Switcher
 
-from piper.mayapy.pipe.store import store
+from piper.mayapy.pipe.store import maya_store
 from piper.mayapy.ui.widget import Controller
 import piper.mayapy.rig as rig
 import piper.mayapy.rig.space as space
 import piper.mayapy.rig.control as control
 import piper.mayapy.rig.switcher as switcher
-import piper.mayapy.pipernode as pipernode
+import piper.mayapy.selection as selection
 
 
 class MayaSwitcher(Switcher):
@@ -28,8 +28,8 @@ class MayaSwitcher(Switcher):
     create_command = 'import {0}; {0}.show()'.format(__name__)
     closed_command = 'import {0}; {0}.unregister()'.format(__name__)
 
-    def __init__(self, maya_store=None, *args, **kwargs):
-        super(MayaSwitcher, self).__init__(dcc_store=maya_store, *args, **kwargs)
+    def __init__(self, dcc_store=None, *args, **kwargs):
+        super(MayaSwitcher, self).__init__(dcc_store=dcc_store, *args, **kwargs)
         manager.register(self, self.create_command)
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
@@ -292,7 +292,7 @@ class MayaSwitcher(Switcher):
         """
         Selects the rigs associated with current selection. If nothing selected, selects all piperRigs in scene.
         """
-        rigs = pipernode.get('piperRig')
+        rigs = selection.get('piperRig')
         pm.select(rigs)
 
     def close(self, *args, **kwargs):
@@ -312,7 +312,7 @@ def get():
     Returns:
         (MayaSwitcher): Widget created.
     """
-    MayaSwitcher.instance = MayaSwitcher(maya_store=store) if MayaSwitcher.instance is None else MayaSwitcher.instance
+    MayaSwitcher.instance = MayaSwitcher(dcc_store=maya_store) if MayaSwitcher.instance is None else MayaSwitcher.instance
     return MayaSwitcher.instance
 
 

@@ -1,6 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import pymel.core as pm
+import piper.config as pcfg
 import piper.config.maya as mcfg
 import piper.core.pipermath as pipermath
 
@@ -125,7 +126,7 @@ def getAllBendy():
 
 def replaceShapes(path, controls=None, remove=True):
     """
-    Replaces all the the given control shapes with controls of the same name in the given path file.
+    Replaces all the given control shapes with controls of the same name in the given path file.
     If no controls given, will use selected. If none selected, will use all controls in the scene.
 
     Args:
@@ -169,7 +170,7 @@ def calculateSize(joint, scale=1, use_skins=True, try_root=True):
     Calculates the size a control should be based on verts affected bounds or joint radius.
 
     Args:
-        joint (pm.nodetypes.Transform): Uses it's affecting verts or radius to calculate size.
+        joint (pm.nodetypes.Transform): Uses its affecting verts or radius to calculate size.
 
         scale (float): Number to scale result by.
 
@@ -183,8 +184,8 @@ def calculateSize(joint, scale=1, use_skins=True, try_root=True):
     skin_clusters = joint.future(type='skinCluster')
     joint_name = joint.name(stripNamespace=True)
 
-    if try_root and joint_name == mcfg.root_joint_name:
-        skins = {skin for bone in joint.getChildren(ad=True) for skin in bone.future(type='skinCluster')}
+    if try_root and joint_name == pcfg.root_joint_name:
+        skins = {skin for child in joint.getChildren(ad=True) for skin in child.future(type='skinCluster')}
         meshes = {geo.getParent() for skin in skins for geo in skin.getGeometry()}
 
         # no mesh is not bound
@@ -213,7 +214,7 @@ def calculateSize(joint, scale=1, use_skins=True, try_root=True):
         selected = pm.selected()
         selected = list(filter(lambda x: not isinstance(x, pm.nodetypes.Mesh), selected))
 
-        # if mesh is selected, its because joint is not influencing any verts, so call itself without doing skins calc
+        # if mesh is selected, it's because joint is not influencing any verts, so call itself without doing skins calc
         if not selected:
             return calculateSize(joint, scale, use_skins=False)
 

@@ -38,7 +38,7 @@ def getRootParents(nodes):
 
 def getFirstTypeParent(start, node_type):
     """
-    Gets the first type of parent found in all of the parents from the given start.
+    Gets the first type of parent found in all the parents from the given start.
 
     Args:
         start (pm.nodetypes.Transform): Transform to find type of parent.
@@ -58,7 +58,7 @@ def getFirstTypeParent(start, node_type):
 
 def getFirstTypeOrEndsWithParent(start, node_type, ends_with):
     """
-    Gets the first type of parent found in all of the parents from the given start.
+    Gets the first type of parent found in all the parents from the given start.
 
     Args:
         start (pm.nodetypes.Transform): Transform to find type of parent.

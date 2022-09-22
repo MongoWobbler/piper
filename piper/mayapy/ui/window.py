@@ -4,7 +4,7 @@ import os
 
 import pymel.core as pm
 import piper.config as pcfg
-from piper.mayapy.pipe.store import store
+from piper.core.store import piper_store
 
 
 def save():
@@ -65,7 +65,7 @@ def beforeSave():
     buttons = ['Make Writeable', 'Cancel']
     default_button = 'Make Writeable'
 
-    use_p4 = store.get(pcfg.use_perforce)
+    use_p4 = piper_store.get(pcfg.use_perforce)
     if use_p4:
         buttons.insert(0, 'Checkout')
         default_button = 'Checkout'

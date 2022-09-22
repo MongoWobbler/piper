@@ -5,10 +5,12 @@ import sys
 
 from Qt import QtWidgets, QtGui
 
+import piper.config as pcfg
 import piper.core
-import piper.core.filer as filer
 import piper.core.namer as namer
 import piper.core.pythoner as python
+import piper.core.settings as piper_settings
+from piper.core.store import piper_store
 from piper.ui.widget import SecondaryAction, setTips, manager
 
 
@@ -155,9 +157,9 @@ class PiperSceneMenu(PiperMenu):
 
     def build(self):
         self.add(self.openSceneInOS, 'Open Current Scene in OS')
-        self.add(self.openArtDirectoryInOS, 'Open Art Directory in OS')
-        self.add(self.openGameDirectoryInOS, 'Open Game Directory in OS')
-        self.add(self.openPiperDirectoryInOS, 'Open Piper Directory in OS')
+        self.add(piper_settings.openArtDirectoryInOS, 'Open Art Directory in OS')
+        self.add(piper_settings.openGameDirectoryInOS, 'Open Game Directory in OS')
+        self.add(piper_settings.openPiperDirectoryInOS, 'Open Piper Directory in OS')
         self.add(self.openSelectedReference, 'Open Selected Reference File')
         self.addSeparator()
 
@@ -170,19 +172,8 @@ class PiperSceneMenu(PiperMenu):
     def openSceneInOS(self):
         pass
 
-    def openArtDirectoryInOS(self):
-        pass
-
-    def openGameDirectoryInOS(self):
-        pass
-
     def openSelectedReference(self):
         pass
-
-    @staticmethod
-    def openPiperDirectoryInOS():
-        piper_directory = piper.core.getPiperDirectory()
-        filer.openWithOS(piper_directory)
 
     def copyCurrentSceneToClipboard(self):
         pass
@@ -246,10 +237,26 @@ class PiperExportMenu(PiperMenu):
         pass
 
     def setArtDirectory(self):
-        pass
+        dialog = QtWidgets.QFileDialog()
+        starting_directory = piper_store.get(pcfg.art_directory)
+        directory = dialog.getExistingDirectory(self, 'Choose directory to export from', starting_directory)
+
+        if not directory:
+            return
+
+        piper_store.set(pcfg.art_directory, directory)
+        return directory
 
     def setGameDirectory(self):
-        pass
+        dialog = QtWidgets.QFileDialog()
+        starting_directory = piper_store.get(pcfg.game_directory)
+        directory = dialog.getExistingDirectory(self, 'Choose directory to export to', starting_directory)
+
+        if not directory:
+            return
+
+        piper_store.set(pcfg.game_directory, directory)
+        return directory
 
 
 class _PiperMainMenu(PiperMenu):

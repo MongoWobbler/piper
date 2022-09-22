@@ -11,8 +11,7 @@ import piper.core.install
 import piper.core.pather as pather
 
 from piper.ui.widget import TreeWidget, TreeNodeItem, separator
-from piper.core.dcc.maya_dcc import Maya
-from piper.core.dcc.houdini_dcc import Houdini
+import piper.core.dcc as dcc
 import piper.core.dcc.unreal_dcc as ue_dcc
 import piper.core.install.unreal_install as ue_install
 
@@ -178,7 +177,7 @@ class DCC(QtWidgets.QWidget):
         Args:
             item (QtWidgets.QTreeWidgetItem): Item to get and set flags from to allow/lock edits.
 
-            column (int): Column that was double clicked.
+            column (int): Column that was double-clicked.
         """
         flags = item.flags()
 
@@ -237,8 +236,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.headers = ['Digital Content Creation (DCC)', 'Install']
         self.documentation_action = None  # must store action so it's not garbage collected
         self.widget_dccs = {}
-        self.dcc_installers = {pcfg.maya_name: Maya(),
-                               pcfg.houdini_name: Houdini()}
+        # self.dcc_installers = {pcfg.maya_name: Maya(),
+        #                        pcfg.houdini_name: Houdini()}
         self.dcc_install_methods = {pcfg.unreal_name: ue_install.defaultConfig}
         self.dcc_symlink_methods = {pcfg.unreal_name: ue_install.symlink}
         self.dcc_print_python_path_methods = {pcfg.unreal_name: ue_dcc.printPythonPaths}
@@ -261,18 +260,18 @@ class MainWindow(QtWidgets.QMainWindow):
         file_menu.addAction(self.documentation_action)
 
         # fill out DCC information with what the user has installed
-        installed = self.getInstalledDCCs()
-        for dcc in pcfg.valid_dccs:
-            installed_dcc = installed.get(dcc, {})
-            print_python_path_method = self.dcc_print_python_path_methods.get(dcc, None)
-            dcc_widget = DCC(name=dcc, print_python_paths=print_python_path_method)
+        installed = dcc.getInstalled()
+        for dcc_name in pcfg.valid_dccs:
+            installed_dcc = installed.get(dcc_name, {})
+            print_python_path_method = self.dcc_print_python_path_methods.get(dcc_name, None)
+            dcc_widget = DCC(name=dcc_name, print_python_paths=print_python_path_method)
             dcc_widget.defaults = installed_dcc
             dcc_widget.addDefaults()
-            self.widget_dccs[dcc] = dcc_widget
+            self.widget_dccs[dcc_name] = dcc_widget
             main_layout.addWidget(dcc_widget)
 
             # allow context to add/remove paths in unreal install
-            if dcc == pcfg.unreal_name:
+            if dcc_name == pcfg.unreal_name:
                 headers = dcc_widget.headers
                 headers[2] = 'Path to .uproject'
                 headers = headers + ['Symlink Target Path', 'Unreal Editor']
@@ -294,10 +293,10 @@ class MainWindow(QtWidgets.QMainWindow):
         install_directory = piper.core.getPiperDirectory()
         pather.deleteCompiledScripts(install_directory)
 
-        for dcc, dcc_widget in self.widget_dccs.items():
-            installer = self.dcc_installers.get(dcc)
-            installer_method = self.dcc_install_methods.get(dcc)
-            symlink_method = self.dcc_symlink_methods.get(dcc)
+        for dcc_name, dcc_widget in self.widget_dccs.items():
+            installer = dcc.mapping.get(dcc_name)
+            installer_method = self.dcc_install_methods.get(dcc_name)
+            symlink_method = self.dcc_symlink_methods.get(dcc_name)
             is_symlink = dcc_widget.symlink_checkbox.isChecked()
             paths = dcc_widget.getPaths()
 
@@ -305,26 +304,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 continue
 
             print('=' * 50)
-            print(dcc)
+            print(dcc_name)
 
             if installer:
                 versions = [row.get('version') for row in paths.values()]
-                install_script = piper.core.install.getScriptPath(dcc)
-                installer.runInstaller(install_script, install_directory, versions)
+                install_script = piper.core.install.getScriptPath(dcc_name)
+                installer().runInstaller(install_script, install_directory, versions)
             elif is_symlink and symlink_method:
                 [symlink_method(install_directory, path, paths[path].get('symlink')) for path in paths]
             elif installer_method:
                 [installer_method(path, install_directory) for path in paths]
             else:
-                print(f'{dcc} DCC has no associated installer!')
+                print(f'{dcc_name} DCC has no associated installer!')
 
         print('\nFinished Piper Install')
-
-    def getInstalledDCCs(self):
-        """
-        Gets all the installed DCCs versions and paths.
-
-        Returns:
-            (Dictionary): Name of DCC as key, then dictionary of path as key and version as value as value.
-        """
-        return {dcc: installer.getInstallDirectories() for dcc, installer in self.dcc_installers.items()}

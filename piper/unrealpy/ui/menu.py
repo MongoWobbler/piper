@@ -6,8 +6,11 @@ import piper.config.unreal as ucfg
 import piper.core
 import piper.core.namer as namer
 import piper.core.pythoner as python
-import piper.unrealpy.copier as copier
+import piper.core.settings as piper_settings
+
 import piper.unrealpy.animation as animation
+import piper.unrealpy.copier as copier
+import piper.unrealpy.pipe as pipe
 
 
 class _PiperMenu(object):
@@ -30,6 +33,7 @@ class _PiperMenu(object):
         self.piper_context_menu_name = self.context_menu_name + '.' + self.label
         self.piper_folder_menu_name = self.folder_context_menu_name + '.' + self.label
         self.piper_animation_menu_name = self.piper_main_menu_name + '.' + 'Animation'
+        self.piper_settings_menu_name = self.piper_main_menu_name + '.' + 'Settings'
         self.tool = ue.ToolMenus.get()
 
         if section:
@@ -46,6 +50,7 @@ class _PiperMenu(object):
         self.buildFolder()
         self.buildMain()
         self.buildAnimation()
+        self.buildSettings()
         return self.instance
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -116,6 +121,12 @@ class _PiperMenu(object):
         """
         return self.setOwner(self.piper_animation_menu_name, section)
 
+    def setPiperSettingsMenuAsOwner(self, section):
+        """
+        Convenience method for setting Piper Settings Submenu as the owner.
+        """
+        return self.setOwner(self.piper_settings_menu_name, section)
+
     def _build(self, method, section):
         """
         Used to build main menus
@@ -141,6 +152,13 @@ class _PiperMenu(object):
         Convenience method for building the Piper Animation Submenu.
         """
         self.label = 'Animation'
+        self._build(self.setPiperMainMenuAsOwner, 'Main')
+
+    def buildSettings(self):
+        """
+        Convenience method for building the Piper Settings Submenu.
+        """
+        self.label = 'Settings'
         self._build(self.setPiperMainMenuAsOwner, 'Main')
 
     def buildContext(self):
@@ -241,10 +259,20 @@ def create():
         menu.add(animation.printUnusedSequences)
         menu.add(animation.printUnusedSelectedSequences)
 
+        menu.setPiperSettingsMenuAsOwner('Scripts')
+        menu.add(piper_settings.openArtDirectoryInOS, 'Open Art Directory in OS')
+        menu.add(piper_settings.openGameDirectoryInOS, 'Open Game Directory in OS')
+        menu.add(piper_settings.openPiperDirectoryInOS, 'Open Piper Directory in OS')
+        menu.add(piper_settings.setArtDirectory)
+        menu.add(piper_settings.setGameDirectory)
+
         menu.setPiperContextMenuAsOwner('Scripts')
         menu.add(copier.assetNames, 'Copy Asset Names')
         menu.add(copier.packageNames, 'Copy Package Names')
+        menu.add(pipe.openInDCC, 'Open In DCC')
+        menu.add(pipe.reexport, 'Re-Export from DCC')
 
         menu.setPiperFolderMenuAsOwner('Scripts')
         menu.add(copier.assetNames, 'Copy Asset Names')
         menu.add(copier.packageNames, 'Copy Package Names')
+        menu.add(copier.folderPaths, 'Copy Folder Paths')

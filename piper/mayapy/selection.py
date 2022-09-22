@@ -2,6 +2,7 @@
 
 import pymel.core as pm
 import piper.core.pythoner as python
+import piper.mayapy.hierarchy as hierarchy
 
 
 def validate(nodes=None, minimum=0, maximum=0, find=None, parent=False, display=pm.error):
@@ -77,3 +78,43 @@ def save(method, clear=False):
         return result
 
     return wrapper
+
+
+def get(node_type, ignore=None, search=True):
+    """
+    Gets the selected given node type or all the given node types in the scene if none selected.
+
+    Args:
+        node_type (string): Type of node to get.
+
+        ignore (string): If given and piper node is a child of given ignore type, do not return the piper node.
+
+        search (boolean): If True, and nothing is selected, will attempt to search the scene for all the given type.
+
+    Returns:
+        (list) All nodes of the given node type.
+    """
+    nodes = []
+    selected = pm.selected()
+
+    if selected:
+        # get only the piper nodes from selection
+        nodes = pm.ls(selected, type=node_type)
+
+        # traverse hierarchy for piper nodes
+        if not nodes:
+            nodes = set()
+            for node in selected:
+                first_type_parent = hierarchy.getFirstTypeParent(node, node_type)
+                nodes.add(first_type_parent) if first_type_parent else None
+
+    # search the whole scene for the piper node
+    elif search:
+        nodes = pm.ls(type=node_type)
+
+    # don't include any nodes that are a child of the given ignore type
+    if ignore:
+        nodes = [node for node in nodes if not hierarchy.getFirstTypeParent(node, ignore)]
+
+    return nodes
+

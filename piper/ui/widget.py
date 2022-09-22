@@ -3,7 +3,7 @@
 from Qt import QtWidgets, QtCore, QtGui
 
 import piper.config as pcfg
-import piper.core.store as store
+from piper.core.store import piper_store
 
 
 BOX_ICON = [
@@ -77,8 +77,7 @@ class _Manager(object):
 
         if store_previous:
             commands = list(self.widgets.values())
-            settings = store.get()
-            settings.set(pcfg.previous_widgets, commands)
+            piper_store.set(pcfg.previous_widgets, commands)
 
         [widget.close() for widget in self.widgets]
         self.widgets = {}

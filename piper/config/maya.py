@@ -19,6 +19,39 @@ unwanted_plugins = ['xgenToolkit',
                     'mtoa',
                     'MASH']
 
+# Port/Socket/Pipe connections
+host = '127.0.0.1'
+port = 4439
+address = (host, port)
+
+# Store
+use_piper_units = 'use_piper_units'
+export_ascii = 'export_ascii'
+hdr_image_path = 'hdr_image_path'
+unload_unwanted = 'unload_unwanted_plugins'
+use_piper_render = 'use_tone_map'
+open_port = 'open_port'  # whether to open a port on DCC start-up or not if DCC supports it
+switcher_update_box = 'switcher_update_box'
+switcher_key_box = 'switcher_key_box'
+switcher_match_box = 'switcher_match_box'
+switcher_translate_box = 'switcher_translate_box'
+switcher_rotate_box = 'switcher_rotate_box'
+switcher_orient_box = 'switcher_orient_box'
+switcher_scale_box = 'switcher_scale_box'
+store_defaults = {use_piper_units: False,
+                  use_piper_render: False,
+                  unload_unwanted: False,
+                  export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
+                  hdr_image_path: '',
+                  open_port: False,
+                  switcher_update_box: True,
+                  switcher_key_box: True,
+                  switcher_match_box: False,
+                  switcher_translate_box: True,
+                  switcher_rotate_box: True,
+                  switcher_orient_box: False,
+                  switcher_scale_box: True}
+
 # Units
 hotkey_set_name = 'PiperKeySet'
 default_time = 'ntsc'
@@ -54,7 +87,6 @@ skinned_mesh_grp = 'Skinned_Mesh_grp'
 inner_suffix = '_inner'
 banker_suffix = '_bank'
 reverse_suffix = '_reverse'
-root_joint_name = 'root'
 body_base_joint_name = 'pelvis'
 dynamic_pivot_suffix = '_dPivot'
 dynamic_pivot_rest = 'pivotRest'
@@ -89,6 +121,8 @@ animation_prefix = 'A_'
 delete_node_attribute = 'delete'
 check_anim_health_on_export = True
 export_root_scale_curves = True
+delete_fbx_attributes = True
+fbx_attributes_to_delete = ['filmboxTypeID', 'lockInfluenceWeights', length_attribute, 'currentUVSet']
 
 # Root Squash/Stretch attributes
 squash_stretch_attribute = 'squashStretch'
@@ -135,7 +169,12 @@ space_use_rotate = 'useRotate'
 space_use_orient = 'useOrient'
 space_use_scale = 'useScale'
 space_blend_matrix_suffix = '_Spaces' + blend_matrix_suffix
-use_attributes = (space_use_translate, space_use_rotate, space_use_scale, separator_character)
+use_attributes = (space_use_translate,
+                  space_use_rotate,
+                  space_use_scale,
+                  space_use_orient,
+                  separator_character,
+                  spaces_name)
 
 # FKIK
 banker_attribute = 'banker'

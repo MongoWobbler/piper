@@ -19,6 +19,7 @@ import piper.mayapy.mayamath as mayamath
 import piper.mayapy.attribute as attribute
 import piper.mayapy.hierarchy as hierarchy
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.selection as selection
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.ui.window as uiwindow
 from piper.mayapy.mirror import _mirror, _ignoreMirror
@@ -44,14 +45,14 @@ def getRootControl(rig):
     return attribute.getDestinationNode(rig.attr(mcfg.message_root_control))
 
 
-def getMeshes():
+def getMeshes(skinned_meshes=None):
     """
     Gets all the meshes inside all the piper skinned nodes in the scene.
 
     Returns:
         (set): Piper transforms that hold mesh shapes grouped under piper skinned nodes.
     """
-    nodes = pipernode.get('piperSkinnedMesh')
+    nodes = selection.get('piperSkinnedMesh') if skinned_meshes is None else skinned_meshes
     return {mesh.getParent() for skin in nodes for mesh in skin.getChildren(ad=True, type='mesh') if mesh.getParent()}
 
 
@@ -66,7 +67,7 @@ def getSkeletonNodes(rigs=None):
         (dictionary): piperSkinnedMesh nodes in rig(s) that start with skeleton namespace. Rig as value
     """
     if not rigs:
-        rigs = pipernode.get('piperRig')
+        rigs = selection.get('piperRig')
 
     return {child: rig for rig in rigs for child in rig.getChildren(ad=True, type='piperSkinnedMesh') if
             mcfg.skeleton_namespace in child.namespace()}
@@ -256,9 +257,8 @@ class Rig(object):
         one_minus = pipernode.oneMinus(self.rig.highPolyVisibility)
         pm.createReference(skeleton_path, namespace=mcfg.skeleton_namespace)
         pm.createReference(skeleton_path, namespace=mcfg.bind_namespace)
-        skinned_nodes = pipernode.get('piperSkinnedMesh')
-        [node.visibility.set(False) for node in skinned_nodes if node.name().startswith(
-            mcfg.bind_namespace)]
+        skinned_nodes = selection.get('piperSkinnedMesh')
+        [node.visibility.set(False) for node in skinned_nodes if node.name().startswith(mcfg.bind_namespace)]
         pm.parent(skinned_nodes, self.rig)
         [one_minus.output >> mesh.visibility for mesh in getSkeletonMeshes()]
         lockMeshes()
@@ -270,7 +270,7 @@ class Rig(object):
         Validates the joint by casting to a PyNode with namespace if it's not already a PyNode with namespace.
 
         Args:
-            transform (string or PyNode): Transform to validate to make sure its a PyNode with namespace.
+            transform (string or PyNode): Transform to validate to make sure it's a PyNode with namespace.
 
             i (string): Digit format to incremental nodes to find with given i as the starting digit.
 
@@ -318,7 +318,7 @@ class Rig(object):
 
     def addControls(self, controls, inner=None, name=''):
         """
-        Adds controls to the self.controls stack to be added into the controls set
+        Adds controls to the class' controls stack to be added into the controls set
 
         Args:
             controls (list): Control(s) to be added to controls set.
@@ -399,7 +399,7 @@ class Rig(object):
 
     def runControlStack(self):
         """
-        Adds all the controls in self.controls to the control set node.
+        Adds all the controls in class' controls to the control set node.
         """
         pm.select(cl=True)
         control_members = []
@@ -674,7 +674,8 @@ class Rig(object):
                     break
 
             if not axis_vector:
-                pm.error('All joints are stacked on top of each other! Please specify axis.')
+                name = transforms[0].name()
+                pm.error('All joints are stacked on top of each other for {}! Please specify axis.'.format(name))
 
             axis = convert.axisToString(axis_vector)
 
@@ -683,7 +684,7 @@ class Rig(object):
     @_mirror
     def createSpace(self, transform=None, spaces=None, direct=False, warn=True):
         """
-        Wrapper around space.create but with mirror functionality.
+        Wrapper around create function in space module but with mirror functionality.
         Creates the given spaces on the given transform.
 
         Args:
@@ -705,7 +706,7 @@ class Rig(object):
     @_mirror
     def switchSpace(self, transform, new_space=None, t=True, r=True, o=False, s=True, key=False):
         """
-        Wrapper around space.switch but with mirror functionality.
+        Wrapper around switch function in space module but with mirror functionality.
         Switches the given transform to the given new_space maintaining the world transform of the given transform.
         Choose to switch driving translate, rotate, or scale attributes on or off too.
 
@@ -728,7 +729,7 @@ class Rig(object):
         return space.switch(transform, new_space=new_space, t=t, r=r, o=o, s=s, key=key)
 
     @_ignoreMirror
-    def root(self, transform=mcfg.root_joint_name, name=mcfg.root_joint_name):
+    def root(self, transform=pcfg.root_joint_name, name=pcfg.root_joint_name):
         """
         Creates a root control with a squash and stretch attribute.
 
@@ -764,14 +765,12 @@ class Rig(object):
         reciprocal = xform.squashStretch(self.root_control.attr(mcfg.squash_stretch_attribute), blender, 'a2')
         transform.addAttr(mcfg.root_scale_up, k=True, dv=1)
         transform.addAttr(mcfg.root_scale_sides, k=True, dv=1)
-        self.root_control.attr(mcfg.squash_stretch_attribute) >> transform.attr(
-            mcfg.root_scale_up)
+        self.root_control.attr(mcfg.squash_stretch_attribute) >> transform.attr(mcfg.root_scale_up)
         reciprocal.output >> transform.attr(mcfg.root_scale_sides)
 
         # connect root and rig with message for easy look up
         self.root_control.addAttr(mcfg.message_root_control, at='message')
-        self.rig.attr(mcfg.message_root_control) >> self.root_control.attr(
-            mcfg.message_root_control)
+        self.rig.attr(mcfg.message_root_control) >> self.root_control.attr(mcfg.message_root_control)
 
         return controls
 
@@ -838,7 +837,7 @@ class Rig(object):
             decomposes.append(decompose)
             in_controls.append(in_ctrl)
 
-            transform_parent = None if transform.name() == mcfg.root_joint_name else transform.getParent()
+            transform_parent = None if transform.name() == pcfg.root_joint_name else transform.getParent()
             bind_transform = convert.toBind(transform, return_node=True)
             bind_transform.attr(mcfg.length_attribute) >> ctrl.initialLength
             spaces = [transform_parent, ctrl_parent]
@@ -1470,7 +1469,7 @@ class Rig(object):
             pivot_track (pm.nodetypes.Transform or string): NurbsCurve shape as child that will act as the
             track for the pivot.
 
-            side (string or None): Side to generate cross section
+            side (string or None): Side to generate cross-section
 
             use_track_shape (boolean): If True, will use the pivot track shape as the control shape
 
@@ -1492,7 +1491,7 @@ class Rig(object):
 
         ik_handle = ik_handle[0]
 
-        # create a pivot track (cross section curve) if no pivot track (curve) is given
+        # create a pivot track (cross-section curve) if no pivot track (curve) is given
         if not pivot_track:
 
             # if IK joint given, get the name of the regular joint by stripping the ik prefix
@@ -1564,7 +1563,7 @@ class Rig(object):
         normalize_input_attribute >> normalize_node.attr('input1' + axes[1].upper())
         normalize_node.output >> normalized_pivot.translate
 
-        # creating the normalized (circle) version of the cross section
+        # creating the normalized (circle) version of the cross-section
         positions = []
         duplicate_curve = pm.duplicate(pivot_track)[0]
         pm.move(0, 0, 0, duplicate_curve, rpr=True)
@@ -1574,7 +1573,7 @@ class Rig(object):
             position.normalize()
             positions.append(position)
 
-        # delete the duplicate and finally make the normalize track. Make sure to close the curve and center pivots
+        # delete the duplicate and finally make the normalized track. Make sure to close the curve and center pivots
         pm.delete(duplicate_curve)
         normalized_track = pm.curve(d=1, p=positions, k=range(len(positions)), ws=True, n=joint_name + '_normalTrack')
         normalized_track = pm.closeCurve(normalized_track, replaceOriginal=True)[0]
@@ -1618,7 +1617,7 @@ class Rig(object):
         ik_control.addAttr(mcfg.banker_attribute, dt='string', k=False, h=True, s=True)
         ik_control.attr(mcfg.banker_attribute).set(ctrl.name())
 
-        # hook up pivot control with fk_ik attribute if ik has an fk-ik proxy
+        # hook up pivot control with fk_ik attribute if ik has a fk-ik proxy
         if ik_control.hasAttr(mcfg.proxy_fk_ik):
             switcher_control = switcher.get(ik_control)
             switcher_attribute = switcher_control.attr(mcfg.fk_ik_attribute)

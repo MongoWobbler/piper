@@ -7,7 +7,7 @@ import piper.config as pcfg
 import piper.config.maya as mcfg
 
 import piper.core.pather as pather
-from piper.mayapy.pipe.store import store
+from piper.core.store import piper_store
 
 
 def getRelativeArt(path='', name=''):
@@ -29,7 +29,7 @@ def getRelativeArt(path='', name=''):
         pm.error('Scene is not saved! ')
 
     path = path.replace('\\', '/')
-    art_directory = store.get(pcfg.art_directory)
+    art_directory = piper_store.get(pcfg.art_directory)
     if not path.startswith(art_directory):
         pm.error(path + ' is not in the art directory: ' + art_directory)
 
@@ -56,7 +56,7 @@ def getSelfExport(name=''):
     if scene_path:
         export_directory = os.path.dirname(scene_path)
     else:
-        art_directory = store.get(pcfg.art_directory)
+        art_directory = piper_store.get(pcfg.art_directory)
         if not art_directory:
             pm.error('Please save the scene or set the Art Directory before exporting to self.')
 
@@ -77,7 +77,7 @@ def getGameExport(name=''):
         (string): Full path with given name.
     """
     scene_path = pm.sceneName()
-    game_directory = store.get(pcfg.game_directory)
+    game_directory = piper_store.get(pcfg.game_directory)
     relative_directory = ''
 
     if not game_directory:
@@ -85,7 +85,7 @@ def getGameExport(name=''):
 
     if scene_path:
         source_directory = os.path.dirname(scene_path)
-        art_directory = store.get(pcfg.art_directory)
+        art_directory = piper_store.get(pcfg.art_directory)
 
         # gets the relative path using the art directory
         if scene_path.startswith(art_directory):
@@ -108,8 +108,8 @@ def getGameTextureExport(texture):
         (string): Full game directory path of where given texture would export to.
     """
     relative_directory = ''
-    art_directory = store.get(pcfg.art_directory)
-    game_directory = store.get(pcfg.game_directory)
+    art_directory = piper_store.get(pcfg.art_directory)
+    game_directory = piper_store.get(pcfg.game_directory)
 
     if texture.startswith(art_directory):
         relative_directory = os.path.relpath(texture, art_directory)

@@ -41,25 +41,31 @@ class Hierarchy(object):
         """
         Writes the found names to the write_to_file path given.
         """
+        found = list(self.found)
+        found.sort()
+
         directory = os.path.dirname(self.write_to_file)
         pather.validateDirectory(directory)
 
         with open(self.write_to_file, 'w') as open_file:
-            [open_file.write("{}\n".format(str(name))) for name in self.found]
+            [open_file.write("{}\n".format(str(name))) for name in found]
 
-        ue.log(f'Finished writing {str(len(self.found))} assets to {self.write_to_file}')
+        ue.log(f'Finished writing {str(len(found))} assets to {self.write_to_file}')
 
     def displayFound(self):
         """
         Logs all the paths found, if any.
         """
-        found_count = len(self.found)
+        found = list(self.found)
+        found.sort()
+
+        found_count = len(found)
         if not found_count:
             ue.log(self.no_found_message)
             return
 
         ue.log(f'Found {str(found_count)} assets.')
-        [ue.log(path) for path in self.found]
+        [ue.log(path) for path in found]
 
     def get(self, assets):
         pass
@@ -97,7 +103,7 @@ class References(Hierarchy):
                 task.enter_progress_frame(1)
                 name = asset.package_name
 
-                if not self.registry.get_referencers(name, self.options):
+                if not self.registry.get_referencers(name, self.options) and not asset.is_redirector():
                     self.found.add(name)
 
         if self.write_to_file:

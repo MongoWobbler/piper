@@ -241,7 +241,7 @@ def toVector(transform, invalid_default=None, error=False):
     Args:
         transform (Any): Node or list to convert to Vector.
 
-        invalid_default (any): If True and given transform is not a valid type, will return a zero Vector or given vector.
+        invalid_default (any): If True and given transform is not a valid type, return a zero Vector or given vector.
 
         error (boolean): If given transform is not a valid type and given invalid_zero is False, will return error.
 
@@ -300,7 +300,7 @@ def toDegrees(transform):
 
 def toBind(node, fail_display=None, return_node=False):
     """
-    Converts the given node to the its bind namespace equivalent.
+    Converts the given node to its bind namespace equivalent.
 
     Args:
         node (pm.nodetypes.DependNode):
@@ -330,3 +330,18 @@ def toBind(node, fail_display=None, return_node=False):
         return node if return_node else None
 
     return pm.PyNode(bind_name)
+
+
+def toPythonCommand(method):
+    """
+    Converts the given method to a python command string that maya's MEL can use.
+
+    Args:
+        method (method): Method to convert to a python command string.
+
+    Returns:
+        (string): MEL command calling given python method.
+    """
+    module = method.__module__
+    full_method = module + '.' + method.__name__
+    return 'python("import {module}; {full_method}()")'.format(module=module, full_method=full_method)

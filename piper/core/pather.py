@@ -2,6 +2,7 @@
 
 import os
 import sys
+import tkinter as tk
 
 
 def getCurrent():
@@ -40,6 +41,30 @@ def validateDirectory(directory):
     """
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+    return directory
+
+
+def getDirectoryDialog(start=None, title='Select Directory', error=True):
+    """
+    Opens a dialog that asks the user to select a directory.
+
+    Args:
+        start (string): Path to directory to start from.
+
+        title (string): Title to add to dialog window.
+
+        error (boolean): If True and no directory is selected then an error will be raised.
+
+    Returns:
+        (string): Directory user has selected.
+    """
+    root = tk.Tk()
+    root.withdraw()
+    directory = tk.filedialog.askdirectory(initialdir=start, title=title)
+
+    if not directory and error:
+        raise NotADirectoryError('No directory selected!')
 
     return directory
 

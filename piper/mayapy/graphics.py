@@ -13,7 +13,7 @@ import piper.core.pythoner as python
 
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipe.paths as paths
-from piper.mayapy.pipe.store import store
+from piper.mayapy.pipe.store import maya_store
 
 
 # shader FX needed for materials
@@ -40,7 +40,7 @@ class PiperShader(object):
             (string): Path to the user set HDR image. Empty string if not set.
         """
         # get user defined settings
-        hdr_image_path = store.get(pcfg.hdr_image_path)
+        hdr_image_path = maya_store.get(mcfg.hdr_image_path)
         return paths.getRelativeArt(hdr_image_path) if hdr_image_path else ''
 
     def getTextures(self, warn=True):
@@ -106,7 +106,7 @@ class PiperShader(object):
         if not self.texture_paths:
             self.getTextures(warn=warn)
 
-        # odd check to make sure we dont over warn user if textures are not found by getting textures
+        # odd check to make sure we don't over warn user if textures are not found by getting textures
         if not self.texture_paths and self.texture_paths is not None:
             return pm.warning('No textures found in ' + self.textures_directory) if warn else None
 
@@ -186,7 +186,7 @@ class PiperShader(object):
         imported_material = self.createMaterial()
         for material in materials:
 
-            # if material is not connected to shader engine, then its not being used and its not worth updating
+            # if material is not connected to shader engine, then it's not being used, and it's not worth updating
             shading_engine = material.outColor.connections()
             if not shading_engine:
                 continue

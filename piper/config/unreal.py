@@ -11,3 +11,14 @@ python_additional_key = '+AdditionalPaths=(Path="'
 
 # Menu
 menu_label = 'Piper'
+
+# Metadata
+fbx_meta_prefix = 'FBX'
+meta_separator = '.'
+
+# Classes
+static_mesh = 'StaticMesh'
+skeleton = 'Skeleton'
+skeletal_mesh = 'SkeletalMesh'
+anim_sequence = 'AnimSequence'
+

@@ -16,6 +16,49 @@ from . import xform
 from . import curve
 
 
+def getRoot(skinned_mesh=None, start=None, namespace=None, warn=True):
+    """
+    Gets the root joint from a piper skinned mesh.
+
+    Args:
+        skinned_mesh (pm.nodetypes.Transform): Node to look for root joint under.
+
+        start (pm.nodetypes.Transform): Node to look for children that are of type piperSkinnedMesh to look for joints.
+
+        namespace (string): Used to filter skinned meshes to make sure we have the right one.
+
+        warn (boolean): If true, will warn about root joint not found or multiple skinned meshes found.
+
+    Returns:
+        (pm.nodetypes.Joint): Root joint for skeleton.
+    """
+    if not skinned_mesh:
+        if start:
+            skinned_meshes = start.getChildren(ad=True, type='piperSkinnedMesh')
+        else:
+            skinned_meshes = selection.get('piperSkinnedMesh')
+
+        if namespace:
+            skinned_meshes = list(filter(lambda node: namespace in node.namespace(), skinned_meshes))
+
+        if len(skinned_meshes) != 1:
+            pm.warning('Found {} skinned meshes trying to get root!'.format(str(len(skinned_meshes)))) if warn else None
+            return None
+
+        skinned_mesh = skinned_meshes[0]
+
+    root = skinned_mesh.getChildren(type='joint')
+    if len(root) != 1:
+        pm.warning('Found {} root joint(s) in {}!'.format(str(len(root)), skinned_mesh.name())) if warn else None
+        return None
+
+    root = root[0]
+    if root.name(stripNamespace=True) != pcfg.root_joint_name:
+        pm.warning('Root joint {} does not match config name {}'.format(root.name(), pcfg.root_joint_name))
+
+    return root
+
+
 def assignShape(joints, shape=curve.circle, *args, **kwargs):
     """
     Assigns a shape for given joints.
@@ -106,7 +149,8 @@ def setSegmentScaleCompensateOff(joints=None):
         joints (list): Joints to set segment scale compensate to False.
     """
     joints = selection.validate(joints, find='joint')
-    [joint.segmentScaleCompensate.set(False) for joint in joints]
+    turned_off = [joint.segmentScaleCompensate.set(False) for joint in joints if joint.segmentScaleCompensate.get()]
+    pm.displayInfo('Finished turning segment scale compensate off for ' + str(len(turned_off)) + ' joints.')
 
 
 def _createAtPivot(transform, name='', i=None, component_prefix=None, joints=None):
@@ -237,7 +281,8 @@ def health(parent_fail=pm.error,
            joint_orient_fail=pm.warning,
            segment_scale_fail=pm.error,
            preferred_angle_fail=pm.warning,
-           bind_attribute_fail=pm.warning):
+           bind_attribute_fail=pm.warning,
+           bind_connection_fail=pm.warning):
     """
     Performs a health check on the skeleton to catch anything that might cause trouble further down pipe.
 
@@ -256,6 +301,8 @@ def health(parent_fail=pm.error,
 
         bind_attribute_fail (method): How to display message when joint does not have bind matrix attribute.
 
+        bind_connection_fail (method): How to display message when joint does not have bind length attribute connected.
+
     Returns:
         (dictionary): Error causing nodes.
     """
@@ -265,24 +312,25 @@ def health(parent_fail=pm.error,
                           'segment_scale': [],
                           'preferred_angle': [],
                           'bind_attribute': [],
+                          'bind_connection': [],
                           'children': None}
     actionable = copy.deepcopy(actionable_default)
 
     # check if root joint exists and that there is only one
-    root_joint = pm.PyNode(mcfg.root_joint_name)
+    root_joint = pm.PyNode(pcfg.root_joint_name)
 
     # check if root has parent. Only valid parent is a skinned mesh node
     root_parent = root_joint.getParent()
     if root_parent and not isinstance(root_parent, pm.nodetypes.PiperSkinnedMesh):
         actionable['parent'] = root_joint
-        parent_fail(mcfg.root_joint_name + ' is parented to invalid transform!')
+        parent_fail(pcfg.root_joint_name + ' is parented to invalid transform!')
 
     joints = root_joint.getChildren(ad=True)
 
     # warn user about having only root joint
     if not joints:
         actionable['children'] = root_joint
-        no_children_fail('No skeleton hierarchy found! Only ' + mcfg.root_joint_name + ' found.')
+        no_children_fail('No skeleton hierarchy found! Only ' + pcfg.root_joint_name + ' found.')
 
     # set up hierarchy traversal, start with root joint by appending and reversing list
     joints.append(root_joint)
@@ -319,6 +367,11 @@ def health(parent_fail=pm.error,
         if not joint.hasAttr(mcfg.length_attribute):
             actionable['bind_attribute'].append(joint)
             bind_attribute_fail(joint_name + ' does not have the ' + mcfg.length_attribute + ' attribute!')
+
+        # check if joint has bind length attribute connected
+        elif not joint.attr(mcfg.length_attribute).connections(skipConversionNodes=True) and joint != root_joint:
+            actionable['bind_connection'].append(joint)
+            bind_connection_fail(joint_name + ' does not have the ' + mcfg.length_attribute + ' connected!')
 
     errors = {} if actionable == actionable_default else actionable
     pm.warning('Errors found in skeleton! Open Script Editor') if errors else pm.displayInfo('Skeleton is happy')

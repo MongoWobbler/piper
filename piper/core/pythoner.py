@@ -18,6 +18,21 @@ operators = {'< ': operator.lt,
              '> ': operator.gt}
 
 
+def methodToStringCommand(method):
+    """
+    Converts the given method to a string command that can execute the given method if passed to exec().
+
+    Args:
+        method (method): Method to turn to string command.
+
+    Returns:
+        (string): String that imports the method's module and then executes the method.
+    """
+    module = method.__module__
+    full_method = module + '.' + method.__name__
+    return f'import {module}; {full_method}()'
+
+
 def parametrized(decorator):
     """
     A decorator for decorators that allows decorators to have parameters.

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import sys
 import fbx
@@ -237,7 +237,7 @@ class PiperFBX(object):
     @staticmethod
     def getProperty(node, property_string):
         """
-        Gets a property from an Fbx node
+        Gets a property from a Fbx node
 
         export_property = fbx_file.getProperty(node, 'no_export')
         """
@@ -265,7 +265,7 @@ class PiperFBX(object):
         Args:
             property_string (string): Name of property to try and find.
 
-            match_value (any): Value to to match to delete node.
+            match_value (any): Value to match to delete node.
 
         Returns:
             (list): Nodes deleted.
@@ -285,6 +285,13 @@ class PiperFBX(object):
             deleted.append(node_name)
 
         return deleted
+
+    def printNodes(self):
+        """
+        Prints all nodes in the scene.
+        """
+        self.getSceneNodes()
+        [print(node.GetName() for node in self.scene_nodes)]
 
     def getNodeByName(self, name):
         """
@@ -314,7 +321,7 @@ class PiperFBX(object):
 
     def removeNodeProperty(self, node, property_string):
         """
-        Remove a property from an Fbx node
+        Remove a property from a Fbx node
 
         remove_property = fbx_file.remove_property(node, 'PropertyNameHere')
         """

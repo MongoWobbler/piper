@@ -46,3 +46,12 @@ def packageNames():
     asset_data = browser.getSelectedAssetData()
     names = formatPackageName(asset_data)
     return filer.copyToClipboard(names)
+
+
+def folderPaths():
+    """
+    Copies the selected folders relative game path to the clipboard.
+    """
+    folder_paths = browser.getSelectedFolders()
+    folder_paths = '\n'.join([str(path) for path in folder_paths])
+    return filer.copyToClipboard(folder_paths)

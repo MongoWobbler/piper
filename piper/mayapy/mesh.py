@@ -2,6 +2,8 @@
 
 import maya.OpenMaya as om
 import pymel.core as pm
+
+import piper.config as pcfg
 import piper.mayapy.hierarchy as hierarchy
 
 
@@ -66,7 +68,7 @@ def getVerticesAtHeight(mesh_name, height):
         height (float): Y axis value to find vertices that have that same y value.
 
     Returns:
-        (list): mesh_name.vtx[i] of all vertices that have given height in y axis.
+        (list): mesh_name.vtx[i] of all vertices that have given height in y-axis.
     """
     # Get Api MDagPath for object
     vertices = []
@@ -85,3 +87,24 @@ def getVerticesAtHeight(mesh_name, height):
         next(vertex_i)
 
     return vertices
+
+
+def getAttributed(parent=None):
+    """
+    Gets the mesh named accordingly to have export attributes written on to it.
+
+    Args:
+        parent (pm.nodetypes.Transform): Node to get children of to find mesh with export name.
+
+    Returns:
+        (pm.nodetypes.Transform): Transform with mesh shape named as specified in piper config.
+    """
+    children = parent.getChildren(ad=True, type='mesh') if parent else pm.ls(type='mesh')
+
+    for child in children:
+        transform = child.getParent()
+
+        if transform.name(stripNamespace=True) == pcfg.mesh_with_attribute_name:
+            return transform
+
+    pm.error('No meshes with name: "{}". Please name one mesh as such.'.format(pcfg.mesh_with_attribute_name))

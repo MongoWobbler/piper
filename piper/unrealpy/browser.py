@@ -28,7 +28,7 @@ def getSelectedFolderData(recursive=False):
     return data if data else []
 
 
-def getSelectedAssetData(recursive=False):
+def getSelectedAssetData(recursive=True):
     """
     Gets selected asset data from folders AND assets.
 

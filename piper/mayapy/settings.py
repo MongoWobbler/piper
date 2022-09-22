@@ -12,15 +12,15 @@ import piper.core.filer as filer
 import piper.core.pather as pather
 
 import piper.mayapy.plugin as plugin
-import piper.mayapy.selection as selection
-import piper.mayapy.pipe.perforce as perforce
+import piper.mayapy.convert as convert
+import piper.mayapy.manipulator as manipulator
 import piper.mayapy.pipernode as pipernode
+import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.ui.window as window
-from piper.mayapy.pipe.store import store
+from piper.core.store import piper_store
+from piper.mayapy.pipe.store import maya_store
 
 
-# DX11 required for rendering engine
-plugin.load('dx11Shader')
 callbacks = []
 
 
@@ -57,7 +57,7 @@ def setStartupProject():
     """
     Sets the art directory project
     """
-    art_directory = store.get(pcfg.art_directory)
+    art_directory = piper_store.get(pcfg.art_directory)
 
     if art_directory:
         setProject(art_directory)
@@ -79,6 +79,8 @@ def loadRender():
     """
     Sets the viewport's render engine to DirectX11 and the tone map to use Stingray
     """
+    # DX11 required for rendering engine
+    plugin.load('dx11Shader')
     pm.mel.eval('setRenderingEngineInModelPanel "{}";'.format(mcfg.default_rendering_api))
     tone_maps = pm.colorManagementPrefs(q=True, vts=True)
 
@@ -87,24 +89,6 @@ def loadRender():
 
     pm.colorManagementPrefs(e=True, vtn=mcfg.default_tone_map)
     pm.modelEditor('modelPanel4', e=True, vtn=mcfg.default_tone_map)
-
-
-@selection.save(clear=True)
-def reloadPiperReferences():
-    """
-    Used to reload any sub-references of a Piper Rig reference that is not part of the BIND namespace.
-    Mostly used for a 2022 bug where a few piper rigs don't finish loading their references correctly.
-    """
-    rigs = pipernode.get('piperRig')
-
-    for rig in rigs:
-        namespace = rig.namespace()
-
-        if not namespace:
-            continue
-
-        ref = pm.FileReference(namespace=namespace)
-        [sub_ref.load() for namespace, sub_ref in ref.subReferences().items() if mcfg.bind_namespace not in namespace]
 
 
 def hotkeys():
@@ -125,7 +109,7 @@ def hotkeys():
 
     # ASSIGN NEW HOTKEY(s)
     # create command and assign it to a hotkey
-    python_command = 'python("import piper.mayapy.util as myu; myu.cycleManipulatorSpace()")'
+    python_command = convert.toPythonCommand(manipulator.cycleManipulatorSpace)
     command = pm.nameCommand('cycleManipulator', command=python_command, annotation='Cycles Manipulator Space')
     pm.hotkey(keyShortcut='c', alt=True, name=command)
 
@@ -136,10 +120,10 @@ def onNewSceneOpened(*args):
     """
     Called when a new scene is opened, usually through a callback registed on startup.
     """
-    if store.get(pcfg.use_piper_units):
+    if maya_store.get(mcfg.use_piper_units):
         loadDefaults()
 
-    if store.get(pcfg.use_piper_render):
+    if maya_store.get(mcfg.use_piper_render):
         loadRender()
 
 
@@ -147,7 +131,9 @@ def onSceneOpened(*args):
     """
     Called AFTER a scene is opened and all references have been loaded, usually through a callback registed on startup.
     """
-    pm.evalDeferred(reloadPiperReferences, lp=True)
+    # reloading references breaks references during headless mode, so don't.
+    if not pm.about(batch=True):
+        pm.evalDeferred(pipernode.reloadRigReferences, lp=True)
 
 
 def onBeforeSave(*args):
@@ -167,7 +153,7 @@ def onAfterSave(*args):
     """
     Called after scene is saved.
     """
-    if store.get(pcfg.use_perforce) and store.get(pcfg.p4_add_after_save):
+    if piper_store.get(pcfg.use_perforce) and piper_store.get(pcfg.p4_add_after_save):
         perforce.makeAvailable()
 
 
@@ -190,19 +176,50 @@ def registerCallbacks():
     callbacks.append(callback)
 
 
+def openPort():
+    """
+    Opens a port to listen for commands.
+    """
+    port = ':' + str(mcfg.port)
+    if pm.commandPort(port, query=True):
+        return
+
+    pm.commandPort(name=port, sourceType='python')
+    pm.displayInfo('Port ' + mcfg.host + port + ' has been opened for Piper.')
+
+
+def closePort():
+    """
+    Closes port if is opened.
+    """
+    port = ':' + str(mcfg.port)
+    if not pm.commandPort(port, query=True):
+        return
+
+    pm.commandPort(name=port, close=True)
+    pm.displayInfo('Port ' + mcfg.host + port + ' has been closed.')
+
 def startup():
     """
     To be called when Maya starts up.
     """
-    if store.get(pcfg.use_piper_units):
+    has_gui = not pm.about(batch=True)
+
+    if maya_store.get(mcfg.use_piper_units):
         loadDefaults()
 
-    if store.get(pcfg.unload_unwanted):
+    if maya_store.get(mcfg.unload_unwanted):
         plugin.unloadUnwanted()
 
-    if store.get(pcfg.use_piper_render):
+    if has_gui and maya_store.get(mcfg.use_piper_render):
         loadRender()
+
+    # error is raised if port is opened headless
+    if has_gui and maya_store.get(mcfg.open_port):
+        openPort()
 
     setStartupProject()
     registerCallbacks()
-    piper.ui.openPrevious()
+
+    if has_gui:
+        piper.ui.openPrevious()

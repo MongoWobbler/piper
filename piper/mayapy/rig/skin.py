@@ -38,7 +38,7 @@ def selectWeightedVerts(joints=None, operator='< ', threshold=1.0):
 
         operator (string): Name of operator to perform on verts to filter them out (less, greater, equal, etc).
 
-        threshold (float): If vert has less than threshold and its influenced by a given joint, then it'll be selected.
+        threshold (float): If vert has less than threshold, and it's influenced by a given joint, then it'll be selected
 
     Returns:
         (list): Verts selected.
@@ -169,7 +169,7 @@ class Binder(object):
             binder.rebind()
         """
         self.info = {}
-        self.directory = os.path.join(piper.core.getPiperDirectory(), 'temp').replace('\\', '/')
+        self.directory = piper.core.getTempDirectory(create=False)
 
     def unbind(self, meshes=None, bind_pose=True):
         """
@@ -192,7 +192,7 @@ class Binder(object):
         pather.validateDirectory(self.directory)
 
         for mesh in meshes:
-            # get the skin of the mesh, if it doesnt exist then we don't need to store skin weights
+            # get the skin of the mesh, if it doesn't exist then we don't need to store skin weights
             mesh_name = mesh.name()
             skin = mesh.listHistory(type='skinCluster')
 
