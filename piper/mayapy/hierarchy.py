@@ -1,5 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
+import pymel.core as pm
+
 
 def getRootParent(node):
     """
@@ -114,3 +116,35 @@ def getSingleChildren(start):
         child = children[0]
         yield child
         children = child.getChildren()
+
+
+def save(nodes=None, unparent=True):
+    """
+    Saves the hierarchy of the given nodes into a dictionary and un-parents all of them to the world.
+
+    Args:
+        nodes (list): Nodes to save hierarchy of.
+
+        unparent (boolean): If True, will unparent given nodes to the world.
+
+    Returns:
+        (dictionary): Node as key, parent as value.
+    """
+    hierarchy = {node: node.getParent() for node in nodes if node.getParent()}
+
+    if unparent:
+        pm.parent(list(hierarchy.keys()), w=True)
+
+    return hierarchy
+
+
+def reparent(hierarchy_data, parent_method=pm.parent):
+    """
+    Re-parents the given hierarchy data using the given parent method.
+
+    Args:
+        hierarchy_data (dictionary): Child as key, parent as value.
+
+        parent_method (method): Function that parents child to parent.
+    """
+    {parent_method([child, parent]) for child, parent in hierarchy_data.items()}

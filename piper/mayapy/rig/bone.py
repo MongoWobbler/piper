@@ -8,6 +8,7 @@ import piper.config.maya as mcfg
 
 import piper.core.namer as namer
 import piper.mayapy.convert as convert
+import piper.mayapy.hierarchy as hierarchy
 import piper.mayapy.modifier as modifier
 import piper.mayapy.selection as selection
 import piper.mayapy.manipulator as manipulator
@@ -57,6 +58,33 @@ def getRoot(skinned_mesh=None, start=None, namespace=None, warn=True):
         pm.warning('Root joint {} does not match config name {}'.format(root.name(), pcfg.root_joint_name))
 
     return root
+
+
+def jointOrientToRotation(joints=None):
+    """
+    Removes all the joints orients from the joints given/found.
+
+    Args:
+        joints (list): Joints to remove joint orients of
+    """
+    joints = selection.validate(joints, find='joint')
+    data = hierarchy.save(joints)
+    hierarchy.reparent(data, xform.parent)
+
+
+def rotationToJointOrient(joints=None):
+    """
+    Sets the given/found joint orient value from their rotation value, and removes all rotations values.
+
+    Args:
+        joints (list): Joints to remove rotation values and set joint orient values of.
+    """
+    joints = selection.validate(joints, find='joint')
+
+    for joint in joints:
+        rotation = joint.r.get()
+        joint.jointOrient.set(rotation)
+        joint.r.set(0, 0, 0)
 
 
 def assignShape(joints, shape=curve.circle, *args, **kwargs):

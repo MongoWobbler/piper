@@ -1,7 +1,7 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import copy
-from Qt import QtWidgets, QtCore, QtGui
+from Qt import QtWidgets, QtCore
 import piper.ui.widget as widget
 
 
@@ -92,6 +92,7 @@ class AnimClip(QtWidgets.QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.table.setShowGrid(True)
         self.onAddLinePressed()  # creating first line
+        main_layout.addWidget(self.table, 1, 0)
 
         # add/remove buttons
         buttons_layout = widget.addRemoveButtons(self.onAddLinePressed, self.onRemoveLinePressed)

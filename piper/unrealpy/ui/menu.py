@@ -197,6 +197,17 @@ class _PiperMenu(object):
         self.owner.add_menu_entry(self.section, entry)
         return entry
 
+    def addSeparator(self):
+        """
+        Adds a separator to the current owning menu.
+
+        Returns:
+            (unreal.ToolMenuEntry): Entry object separator created for unreal menus.
+        """
+        entry = ue.ToolMenuEntry(type=ue.MultiBlockType.SEPARATOR)
+        self.owner.add_menu_entry(self.section, entry)
+        return entry
+
     def refresh(self):
         """
         Refreshes all widgets. Must be called after menu or entry is added for it to show up.
@@ -252,26 +263,35 @@ def create():
     """
     menu = getPiperMenu()
     with menu:
+
+        # main menu
         menu.setPiperMainMenuAsOwner('Developer')
+        menu.addSeparator()
         menu.add(reloadPiper)
 
+        # animation sub-menu
         menu.setPiperAnimationMenuAsOwner('Scripts')
         menu.add(animation.printUnusedSequences)
         menu.add(animation.printUnusedSelectedSequences)
 
+        # settings sub-menu
         menu.setPiperSettingsMenuAsOwner('Scripts')
         menu.add(piper_settings.openArtDirectoryInOS, 'Open Art Directory in OS')
         menu.add(piper_settings.openGameDirectoryInOS, 'Open Game Directory in OS')
         menu.add(piper_settings.openPiperDirectoryInOS, 'Open Piper Directory in OS')
+        menu.addSeparator()
         menu.add(piper_settings.setArtDirectory)
         menu.add(piper_settings.setGameDirectory)
 
+        # context menu (right-click on assets)
         menu.setPiperContextMenuAsOwner('Scripts')
         menu.add(copier.assetNames, 'Copy Asset Names')
         menu.add(copier.packageNames, 'Copy Package Names')
+        menu.addSeparator()
         menu.add(pipe.openInDCC, 'Open In DCC')
         menu.add(pipe.reexport, 'Re-Export from DCC')
 
+        # folder context menu (right-click on folders)
         menu.setPiperFolderMenuAsOwner('Scripts')
         menu.add(copier.assetNames, 'Copy Asset Names')
         menu.add(copier.packageNames, 'Copy Package Names')

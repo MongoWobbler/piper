@@ -44,10 +44,16 @@ game_directory = 'game_directory'
 use_perforce = 'use_p4'
 p4_add_after_save = 'p4_add_after_save'
 previous_widgets = 'previous_widgets'  # used when reloading, to re-open any previously opened widgets.
+preferred_dcc_versions = 'preferred_dcc_versions'
+dcc_versions = {maya_name: None,
+                houdini_name: None,
+                unreal_name: None,
+                max_3ds_name: None}
 store_defaults = {art_directory: None,
                   game_directory: None,
                   use_perforce: False,
                   p4_add_after_save: False,
+                  preferred_dcc_versions: dcc_versions,
                   previous_widgets: []}  # previous widgets are reloaded in piper agnostic file, so storing globally
 
 # Geometry

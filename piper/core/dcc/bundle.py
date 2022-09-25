@@ -305,23 +305,19 @@ class DCC(object):
         data = output.strip().split('\r\n')[-1]
         return data.lower().startswith(self.process_name.lower())
 
-    def launch(self, version, *args):
+    def launch(self, version=None, *args):
         """
-        Launches the DCC of the given version.
+        Launches the DCC of the given version. If no version given, will get the latest version.
 
         Args:
             version (string): DCC version to run.
         """
+        if not version:
+            version = self.getLatestVersion()
+
         path = self.getProcessPath(version)
         command = ['start', path] + list(args)
         return subprocess.run(command, universal_newlines=True, shell=True, check=True, capture_output=True)
-
-    def launchLatest(self, *args):
-        """
-        Launches the latest version of the DCC installed.
-        """
-        version = self.getLatestVersion()
-        return self.launch(version, *args)
 
     def send(self, command, display=True):
         """
@@ -346,7 +342,7 @@ class DCC(object):
 
         return data
 
-    def open(self, path, display=True):
+    def open(self, path, version=None, display=True):
         """
         Opens the given path in the DCC.
 
@@ -354,6 +350,8 @@ class DCC(object):
             path (string): Path to open file in DCC.
 
             display (boolean): If True, will print results from command that was executed in DCC.
+
+            version (string): DCC version to run.
 
         Returns:
             (string): Results of command executed in DCC.
@@ -364,7 +362,7 @@ class DCC(object):
             return self.send(command, display=display)
         else:
             print(f'Opening {path} in a new {self.name} process.')
-            return self.launchLatest(path)
+            return self.launch(version, path)
 
     def export(self, *args, **kwargs):
         """

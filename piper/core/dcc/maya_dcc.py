@@ -42,13 +42,13 @@ class Maya(DCC):
     def runPythonBatches(self, command, display=True):
         [self.runPythonBatch(version, command, display) for version in self.getVersions()]
 
-    def export(self, source_path, piper_node, source_method):
+    def export(self, source_path, piper_node, source_method, version=None):
         command = self.export_command.format(source_path, piper_node, source_method)
-        self.runPythonBatch(command)
+        self.runPythonBatch(command, version=version)
 
-    def exportFromJSON(self, json_file):
+    def exportFromJSON(self, json_file, version=None):
         command = self.export_from_json_command.format(json_file)
-        self.runPythonBatch(command)
+        self.runPythonBatch(command, version=version)
 
     def onBeforeInstalling(self):
         os.environ['MAYA_SKIP_USERSETUP_PY'] = '1'

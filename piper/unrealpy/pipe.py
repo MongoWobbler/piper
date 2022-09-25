@@ -6,6 +6,7 @@ import piper.core
 import piper.core.dcc as dcc
 import piper.core.pythoner as python
 import piper.unrealpy.metadata as metadata
+from piper.core.store import piper_store
 
 
 def openInDCC():
@@ -39,10 +40,12 @@ def reexport(single=False):
     directory = piper.core.getTempDirectory()
     json_file = directory + '/' + pcfg.export_file_name
     python.writeJson(json_file, dcc_names)
+    dcc_versions = piper_store.get(pcfg.preferred_dcc_versions)
 
     for dcc_name, data in dcc_names.items():
         app = dcc.mapping[dcc_name]()
-        app.exportFromJSON(json_file)
+        version = dcc_versions.get(dcc_name)
+        app.exportFromJSON(json_file, version=version)
         i += len(data)
 
     # clean up temp files

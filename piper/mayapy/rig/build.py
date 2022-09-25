@@ -177,3 +177,32 @@ def sticker(path=''):
         rig.FKIK('thigh_l', 'foot_l', name='Left Leg', parent=butt_ctrl)[-1]
         rig.bendy(['thigh_l', 'thigh_twist_{}_l', 'calf_l'], name='Left Thigh', ctrl_parent=spine_ctrls[0])
         rig.bendy(['calf_l', 'calf_twist_{}_l', 'foot_l'], name='Left Calf')
+
+
+def oliver(path=''):
+    with Rig(path=path, mirror=True) as rig:
+        # root and pelvis
+        root_ctrl = rig.root()[1][0]
+        pelvis_ctrl = rig.FK('pelvis', name='Pelvis', axis='y', parent=root_ctrl)[1][0]
+        butt_ctrl = rig.extra('pelvis', 'butt', scale=1.05, spaces=[pelvis_ctrl])[0]
+
+        # legs
+        rig.humanLeg('thigh_l', 'foot_l', 'ball_l', parent=butt_ctrl, name='Left Leg')
+
+        # mouth
+        jaw_ctrl = rig.FK('jaw', parent=pelvis_ctrl, axis='y', name='Mouth')[1][0]
+        [rig.FK(joint, parent=pelvis_ctrl, axis='y', name='Mouth') for joint in ['mouth_top', 'mouth_top_l']]
+        [rig.FK(joint, parent=jaw_ctrl, axis='y', name='Mouth') for joint in ['mouth_bottom', 'mouth_l']]
+
+        # eyes
+        left_eye_in_ctrl = rig.FK('eye_l', parent=pelvis_ctrl, axis='z', name='Eyes')[-1][0]
+        rig.switchSpace(left_eye_in_ctrl, 'worldSpace', t=False, r=True, o=True, s=False)
+
+        # eyebrows
+        eyebrow_joints = ['eyebrow_out_l', 'eyebrow_mid_l', 'eyebrow_in_l']
+        ctrl = rig.FK('eyebrow_l', parent=pelvis_ctrl, shape=curve.square, axis='z', name='Left Eyebrow')[1][0]
+        [rig.FK(joint, axis='z', parent=ctrl, name='Left Eyebrow') for joint in eyebrow_joints]
+
+        # band
+        _, knot_ctrls, _ = rig.FK('band', 'band_knot', parent=pelvis_ctrl, name='Band')
+        rig.FK('band_01_l', 'band_09_l', parent=knot_ctrls[-1], name='Band')
