@@ -9,6 +9,7 @@ from Qt import QtCompat
 from piper.ui.widget import manager
 from piper.ui.clipper import Clipper
 from piper.mayapy.ui.widget import Controller
+import piper.mayapy.animation.bookmark as bookmark
 
 
 class MayaClipper(Clipper):
@@ -39,6 +40,18 @@ class MayaClipper(Clipper):
 
         self.controller.setVisible(True)
 
+    def refresh(self, *args):
+        """
+        Refreshes the clipper widget with all the animation nodes in scene and their data.
+        Sets the bookmarks from the clip data.
+
+        Returns:
+            (Dictionary): All animations found in scene as key with their clip_data as value.
+        """
+        animations = super(MayaClipper, self).refresh(args)
+        [bookmark.fromClipData(clip_data) for clip_data in list(animations.values())]
+        return animations
+
     def getAnimations(self):
         """
         Gets all the animations nodes in scene with their corresponding clip data.
@@ -68,8 +81,9 @@ class MayaClipper(Clipper):
             data = widget.getData()
 
             for animation_name, clip_data in data.items():
+                parsed_data = json.dumps(clip_data)  # turns dictionary into string
+                bookmark.fromClipData(clip_data)
                 piper_animation = pm.PyNode(animation_name)
-                parsed_data = json.dumps(clip_data)
                 piper_animation.clipData.set(parsed_data)
                 clip_count += len(clip_data)
 

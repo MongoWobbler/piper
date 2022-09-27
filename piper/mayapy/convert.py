@@ -43,7 +43,16 @@ COLORS_RGB = {'cyan': [0, 1, 1],
               'pink': [1, 0, 1],
               'dark red': [.7, 0, 0],
               'dark green': [0, .7, 0],
-              'burnt orange': [.85, .6, 0]}
+              'burnt orange': [.85, .6, 0],
+              'green': [0, 1, 0],
+              'yellow': [1, 1, 0],
+              'blue': [0, 0, 1],
+              'red': [1, 0, 0],
+              'pastel green': [.3, .5, .3],
+              'pastel red': [.66, .37, .37],
+              'pastel blue': [.28, .28, .64],
+              'pastel yellow': [.7, .7, .33],
+              'muddy red': [.5, .3, .3]}
 
 AXES = {'x': (1, 0, 0),
         'y': (0, 1, 0),
@@ -108,8 +117,7 @@ def jointNameToLabel(name):
     Returns:
         (int)
     """
-    label = JOINT_LABELS.get(name)
-    return label if label else JOINT_LABELS[None]
+    return JOINT_LABELS.get(name, 0)
 
 
 def colorToInt(color):
@@ -123,8 +131,7 @@ def colorToInt(color):
         (int): Index of color.
     """
     color_table = reverse(COLORS_INDEX)
-    color_number = color_table.get(color)
-    return color_number if color_number else 0
+    return color_table.get(color, 0)
 
 
 def IntToColor(number):
@@ -137,8 +144,7 @@ def IntToColor(number):
     Returns:
         (string): Name of color associated with given index.
     """
-    color = COLORS_INDEX.get(number)
-    return color if color else 'default'
+    return COLORS_INDEX.get(number, 'default')
 
 
 def colorToRGB(color):
@@ -151,8 +157,7 @@ def colorToRGB(color):
     Returns:
         (list): RGB value on respective indices.
     """
-    rgb = COLORS_RGB.get(color)
-    return rgb if rgb else None
+    return COLORS_RGB.get(color, None)
 
 
 def rgbToColor(rgb):
@@ -166,8 +171,7 @@ def rgbToColor(rgb):
         (string): Name of given RGB value.
     """
     color_table = reverse(COLORS_RGB)
-    color = color_table.get(rgb)
-    return color if color else None
+    return color_table.get(rgb, None)
 
 
 def axisToString(vector, absolute=False):

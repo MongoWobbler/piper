@@ -201,3 +201,9 @@ bendy_suffix = '_bendy'
 bendy_control_set = 'bendy'
 bendy_aim_attribute = 'aimWeight'
 bendy_locator_suffix = '_driven'
+
+# Animation
+bookmark_suffix = '_bookmark'
+bookmark_clip_colors = {'Squat': 'pastel green',
+                        'Start': 'pastel yellow',
+                        'Pose': 'pastel red'}

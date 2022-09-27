@@ -35,6 +35,9 @@ class Clipper(QtWidgets.QDialog):
     def refresh(self, *args):
         """
         Refreshes the clipper widget with all the animation nodes in scene and their data.
+
+        Returns:
+            (Dictionary): All animations found in scene as key with their clip_data as value.
         """
         [clip_widget.remove() for clip_widget in self.anim_widgets]
         animations = self.getAnimations()
@@ -44,6 +47,8 @@ class Clipper(QtWidgets.QDialog):
             clip_widget = AnimClip(animation_name=animation, clip_data=clip_data)
             self.main_layout.insertWidget(0, clip_widget)
             self.anim_widgets.append(clip_widget)
+
+        return animations
 
     def getAnimations(self):
         """

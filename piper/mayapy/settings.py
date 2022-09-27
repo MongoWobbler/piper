@@ -63,14 +63,22 @@ def setStartupProject():
         setProject(art_directory)
 
 
-def loadDefaults():
+def loadDefaults(force=False):
     """
     Loads the settings to use in Maya
+
+    Args:
+        force (boolean): If True, will set the timeline/playback range regardless of scene existing or not.
     """
     # change grid, time, units, and playback options
     pm.currentUnit(time=mcfg.default_time)
     pm.grid(size=1200, spacing=500, divisions=5)
-    pm.playbackOptions(min=0, max=30)
+
+    # it's annoying when you have a scene and you reload and the timeline changes, so don't if scene exists.
+    scene_name = pm.sceneName()
+    if not scene_name or force:
+        pm.playbackOptions(min=0, max=30)
+
     pm.currentTime(0)
     pm.currentUnit(linear=mcfg.default_length)
 
