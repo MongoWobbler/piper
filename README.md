@@ -4,7 +4,7 @@ A rig, a pipe, and a scripter walk into a bar...
 This repo is **currently under development**, feel free to peruse for updates or cool functions/ideas.
 Tools are biased towards Maya and Unreal Engine.
 
-[Follow production status by clicking this link](https://github.com/MongoWobbler/piper/projects/1)
+[Follow production status by clicking this link](https://github.com/users/MongoWobbler/projects/1)
 
 ## Installing  
 
@@ -21,11 +21,12 @@ Houdini:
 
 Unreal:
  - PROJECT/Config/DefaultEngine.ini
+ - Alternatively, use the symlink option to symlink piper directory to one of Unreal's Python Paths.
   
 ## Building the Piper Installer
 
 **Requires:**  
-* [Python 3.7.7 (Same as Maya 2022, otherwise maya.standalone fails)](https://www.python.org/downloads/release/python-379/)  
+* [Python 3.7.7 (Same as Maya 2022, otherwise maya.standalone fails)](https://www.python.org/downloads/release/python-377/)  
 * [PyInstaller](https://www.pyinstaller.org/)
 * [PySide2](https://pypi.org/project/PySide2/)
 
