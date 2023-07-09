@@ -180,6 +180,12 @@ def sticker(path=''):
 
 
 def oliver(path=''):
+    """
+    Build script for a oliver character.
+
+    Args:
+        path (string): Path to skeletal mesh maya file with skeletal mesh node holding joints, skins, and mesh.
+    """
     with Rig(path=path, mirror=True) as rig:
         # root and pelvis
         root_ctrl = rig.root()[1][0]

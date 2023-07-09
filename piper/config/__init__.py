@@ -31,8 +31,9 @@ sides = {left_suffix: left_name,
 default_mirror_axis = 'x'
 
 # Vendors
-vendors = {dcc_agnostic_name: ['Qt', 'p4'],
-           maya_name: ['fbx'],
+vendors = {dcc_agnostic_name: [{'name': 'Qt'}],
+           maya_name: [{'name': 'fbx'},
+                       {'name': 'p4', 'max': '2023'}],
            houdini_name: [],
            unreal_name: [],
            max_3ds_name: []

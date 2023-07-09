@@ -1,17 +1,15 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
-import sys
 
 from Qt import QtWidgets, QtGui
 
 import piper.config as pcfg
 import piper.core
-import piper.core.namer as namer
 import piper.core.pythoner as python
 import piper.core.settings as piper_settings
 from piper.core.store import piper_store
-from piper.ui.widget import SecondaryAction, setTips, manager
+from piper.ui.widget import SecondaryAction, validateName, addMenuItem, manager
 
 
 class PiperMenu(QtWidgets.QMenu):
@@ -23,6 +21,7 @@ class PiperMenu(QtWidgets.QMenu):
         self.icon = QtGui.QIcon(os.path.join(piper.core.getPiperDirectory(), 'icons', 'piper.png'))
         self.parent_menu = None
         self.actions = []  # stores QWidgets so that they are not garbage collected
+        self.setObjectName(self.__class__.__name__.lstrip('_'))
 
     def onBeforePressed(self):
         pass
@@ -35,20 +34,6 @@ class PiperMenu(QtWidgets.QMenu):
         Gets called after menu is added to a PiperMenu through the addMenuP function. Meant to be overridden.
         """
         pass
-
-    @staticmethod
-    def _validateName(on_pressed, name=None):
-        """
-        Args:
-            on_pressed (method): Used to deduce name if None is given.
-
-            name (string): Name for the item to have on the menu. If None given, will use given method's name.
-
-        Returns:
-            (string): Name validated.
-        """
-        name = namer.toSentenceCase(on_pressed.__name__) if name is None else name
-        return name.decode('utf-8') if sys.version.startswith('2') else name
 
     def add(self, on_pressed, name=None, *args, **kwargs):
         """
@@ -67,17 +52,13 @@ class PiperMenu(QtWidgets.QMenu):
             on_pressed(*args, **kwargs)
             self.onAfterPressed(on_pressed)
 
-        name = self._validateName(on_pressed, name)
-        action = QtWidgets.QAction(name, self)
-        action.triggered.connect(wrapper)
-        setTips(on_pressed, action)
-        self.addAction(action)
+        action = addMenuItem(menu=self, on_pressed=wrapper, name=name, unwrapped=on_pressed)
         self.actions.append(action)
         return action
 
     def addSecondary(self, on_pressed, on_option, name=None, *args, **kwargs):
         """
-        Adds an action item to the menu with a option box.
+        Adds an action item to the menu with an option box.
 
         Args:
             on_pressed (method): This will be called when the item is pressed.
@@ -100,7 +81,7 @@ class PiperMenu(QtWidgets.QMenu):
             on_option(*args, **kwargs)
             self.onAfterPressed(on_pressed)
 
-        name = self._validateName(on_pressed, name)
+        name = validateName(on_pressed, name)
         action = SecondaryAction(name, pressed_wrapper, option_wrapper, on_pressed, on_option, self)
         self.addAction(action)
         self.actions.append(action)
@@ -121,7 +102,7 @@ class PiperMenu(QtWidgets.QMenu):
         Returns:
             (QtWidgets.QAction): Action item added.
         """
-        name = self._validateName(on_pressed, name)
+        name = validateName(on_pressed, name)
         action = QtWidgets.QAction(name, self)
         action.setCheckable(True)
         action.setChecked(state)

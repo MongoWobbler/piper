@@ -13,10 +13,8 @@ piper_package = os.path.join(packages_directory, 'piper.json')
 if not os.path.exists(packages_directory):
     os.makedirs(packages_directory)
 
-data = {
-        "env": [{"PIPER_DIR": environment_directory}],
-        "path": environment_directory + '/houdini'
-        }
+data = {"env": [{"PIPER_DIR": environment_directory}],
+        "path": environment_directory + '/houdini'}
 
 print('Writing environment to: {}'.format(piper_package))
 with open(piper_package, 'w') as open_file:

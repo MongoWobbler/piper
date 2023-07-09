@@ -7,6 +7,7 @@ import subprocess
 import winreg
 
 import piper.core.pather as pather
+import piper.core.vendor as vendor
 
 
 class DCC(object):
@@ -30,6 +31,7 @@ class DCC(object):
         self.relative_process_path = None  # override. App dependent
         self.open_command = None  # override. App dependent. Command to send to DCC to open a path
         self.export_command = None  # override. App dependent. Command to export scene to game directory.
+        self.packages_to_install = None  # override. App dependent. Packages for pip to install. List of dicts.
 
         # private variables
         self.version_replace = 'VERSION_NAME'  # Used to later replace version.
@@ -57,7 +59,7 @@ class DCC(object):
             error (boolean): If True, will raise error if no versions are found.
 
         Returns:
-            (set): Versions installed as strings.
+            (list): Versions installed as strings.
         """
         if self._versions:
             return self._versions
@@ -73,6 +75,8 @@ class DCC(object):
             if error:
                 raise error_message
             else:
+                versions = list(versions)
+                versions.sort()
                 self._versions = versions
                 return versions
 
@@ -87,6 +91,8 @@ class DCC(object):
             except WindowsError:
                 break
 
+        versions = list(versions)
+        versions.sort()
         self._versions = versions
         return versions
 
@@ -97,10 +103,7 @@ class DCC(object):
         Returns:
             (string): Latest version of the DCC found.
         """
-        versions = self.getVersions(error=True)
-        versions = list(versions)
-        versions.sort(reverse=True)
-        return versions[0]
+        return self.getVersions(error=True)[-1]
 
     def isInstalled(self):
         """
@@ -376,22 +379,36 @@ class DCC(object):
         """
         pass
 
-    def _runInstaller(self, python, install_script, install_directory):
+    def _runInstaller(self, python, version, install_script, install_directory):
         """
         Convenience method to log and run the python executable with the given install script.
 
         Args:
             python (string): Path to python executable for DCC.
 
+            version (string): DCC version.
+
             install_script (string): Full path to the python script the DCC is going to run to install
             environment variables.
 
             install_directory (string): Full path to directory that the given
             install_script will add to the environment.
+
+        Returns:
+            (subprocess.CompletedProcess or None): Struct class containing completed process, such as stdout amd stderr.
         """
         print('-' * 50)
-        print('Starting ' + self.name + '\'s ' + python)
-        subprocess.run([python, install_script, install_directory], shell=True)
+        print(f"Starting {self.name}'s {version} {python}")
+        command = [python, install_script, install_directory]
+
+        # No need to get result if there are no packages to install
+        if self.hasPackagesToInstall(version):
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            print(result.stdout)
+            return result
+        else:
+            subprocess.run(command)
+            return None
 
     def runInstaller(self, install_script, install_directory, versions=None, clean=False):
         """
@@ -416,28 +433,45 @@ class DCC(object):
             self.printInfo()
             paths = self.getPythonPaths()
         elif isinstance(versions, str):
-            paths = [self.getPythonPath(versions)]
+            paths = {self.getPythonPath(versions): versions}
         else:
-            paths = [self.getPythonPath(version) for version in versions]
+            paths = {self.getPythonPath(version): version for version in versions}
 
         if clean:
             pather.deleteCompiledScripts(install_directory)
 
         self.onBeforeInstalling()
-        [self._runInstaller(python, install_script, install_directory) for python in paths]
+        [self._runInstaller(python, version, install_script, install_directory) for python, version in paths.items()]
+
+    def hasPackagesToInstall(self, version):
+        """
+        Gets whether the DCC has any packages that need to be installed based on the given version.
+
+        Args:
+            version (string): Version number to compare against DCC package data.
+
+        Returns:
+            (boolean): True if any of the packages match the DCC version.
+        """
+        if not self.packages_to_install:
+            return False
+
+        return any([vendor.isValid(package, version) for package in self.packages_to_install])
 
     @staticmethod
-    def _printInfo(text, iterables):
+    def _formatInfo(text, iterables):
         """
         Convenience method for printing information about the dcc.
 
         Args:
-            text (string): Text to display
+            text (string): Text to display.
 
             iterables (list or dictionary or set): Each item will be displayed.
+
+        Returns:
+            (string): Newline between given text, with given iterables joined by newline.
         """
-        print('\n' + text)
-        [print(iterable) for iterable in iterables]
+        return '\n' + text + '\n' + '\n'.join(iterables) + '\n'
 
     def printInfo(self):
         """
@@ -449,16 +483,16 @@ class DCC(object):
         batch_paths = self.getBatchPaths()
         process_paths = self.getProcessPaths()
 
-        print('\n' + ('=' * 50))
-        print('DCC: ' + self.name)
+        to_print = f'\n{("=" * 50)}'
+        to_print += f'\nDCC: {self.name}\n'
 
         if self.isInstalled():
-            self._printInfo('VERSION(S): ', versions)
-            self._printInfo('INSTALL DIRECTORY(S): ', install_directories)
-            self._printInfo('PYTHON PATH(S): ', python_paths)
-            self._printInfo('BATCH PATH(S): ', batch_paths)
-            self._printInfo('PROCESS PATH(S): ', process_paths)
+            to_print += self._formatInfo('VERSION(S): ', versions)
+            to_print += self._formatInfo('INSTALL DIRECTORY(S): ', install_directories)
+            to_print += self._formatInfo('PYTHON PATH(S): ', python_paths)
+            to_print += self._formatInfo('BATCH PATH(S): ', batch_paths)
+            to_print += self._formatInfo('PROCESS PATH(S): ', process_paths)
         else:
-            print('No versions found in registry. Is ' + self.name + ' installed?')
+            to_print += f'No versions found in registry. Is {self.name} installed?'
 
-        print('\n')
+        print(to_print)

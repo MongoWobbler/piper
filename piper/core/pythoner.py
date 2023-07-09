@@ -1,13 +1,19 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+import sys
 import json
 import time
 import inspect
 import operator
 import functools
-import collections
 from _weakref import proxy
+
+
+if sys.version_info > (3, 7):
+    from collections.abc import MutableSet
+else:
+    from collections import MutableSet
 
 
 operators = {'< ': operator.lt,
@@ -38,7 +44,7 @@ def parametrized(decorator):
     A decorator for decorators that allows decorators to have parameters.
 
     Args:
-        decorator (method): Decorator that will allows parameters.
+        decorator (method): Decorator that will allow parameters.
 
     Returns:
         (method): Decorator parametrized.
@@ -207,7 +213,7 @@ class Link(object):
     __slots__ = 'prev', 'next', 'key', '__weakref__'
 
 
-class OrderedSet(collections.MutableSet):
+class OrderedSet(MutableSet):
     # Set the remembers the order elements were added
     #
     # Thanks to: https://github.com/ActiveState/code/blob/3b27230f418b714bc9a0f897cb8ea189c3515e99/recipes/Python

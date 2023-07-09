@@ -4,6 +4,8 @@ import os
 import subprocess
 import piper.config as pcfg
 import piper.config.maya as mcfg
+import piper.core.pather as pather
+import piper.core.vendor as vendor
 from piper.core.dcc.bundle import DCC
 
 
@@ -21,6 +23,9 @@ class Maya(DCC):
         self.relative_python_path = ['bin', 'mayapy.exe']
         self.relative_batch_path = ['bin', 'mayabatch.exe']
         self.relative_process_path = ['bin', self.process_name]
+        self.package_directory = 'scripts/site-packages'
+        self.packages_to_install = [{'name': 'pymel', 'min': '2024'},  # min/max version are inclusive
+                                    {'name': 'p4python', 'min': '2023'}]
         self.open_command = "import pymel.core as pm; import piper.mayapy.ui.window as uiwindow; None if " \
                             "uiwindow.save() else pm.error('Maya scene was not saved.'); pm.openFile(r'{}', f=True) "
         self.export_command = "import pymel.core as pm; import setup; setup.piperTools(is_headless=True); " \
@@ -33,11 +38,11 @@ class Maya(DCC):
             version = self.getLatestVersion()
 
         batch_path = self.getBatchPath(version)
-        full_command = '{0} -noAutoloadPlugins -command "python(""{1}"")"'.format(batch_path, command)
-        output = subprocess.run(full_command, capture_output=True)
+        full_command = f'{batch_path} -noAutoloadPlugins -command "python(""{command}"")"'
+        output = subprocess.run(full_command, capture_output=True, text=True)
 
         if display:
-            print('\n', output.stdout.decode('utf-8'))
+            print('\n', output.stdout)
 
     def runPythonBatches(self, command, display=True):
         [self.runPythonBatch(version, command, display) for version in self.getVersions()]
@@ -51,5 +56,40 @@ class Maya(DCC):
         self.runPythonBatch(command, version=version)
 
     def onBeforeInstalling(self):
+        os.environ["PYTHONUNBUFFERED"] = "1"
         os.environ['MAYA_SKIP_USERSETUP_PY'] = '1'
         os.environ['PYMEL_SKIP_MEL_INIT'] = '1'
+
+    def _runInstaller(self, python, version, install_script, install_directory):
+        """
+        Installing required pip packages to user's maya/scripts/site-packages.
+
+        Args:
+            python (string): Path to python executable for DCC.
+
+            version (string): DCC version.
+
+            install_script (string): Full path to the python script the DCC is going to run to install
+            environment variables.
+
+            install_directory (string): Full path to directory that the given
+            install_script will add to the environment.
+
+        Returns:
+            (subprocess.CompletedProcess): Struct class containing completed process, such as stdout amd stderr.
+        """
+        # stdout from writing mod file includes the user's maya app directory.
+        result = super(Maya, self)._runInstaller(python, version, install_script, install_directory)
+
+        if not result:
+            return None
+
+        maya_directory = result.stdout.split("MAYA_APP_DIR = ")[-1].strip()
+        target_directory = os.path.normpath(os.path.join(maya_directory, self.package_directory))
+        pather.validateDirectory(target_directory)
+        pip_command = [python, '-m', 'pip', 'install']
+
+        [subprocess.run(pip_command + [package['name'], '--upgrade', '--target', target_directory])
+         for package in self.packages_to_install if vendor.isValid(package, version)]
+
+        return result

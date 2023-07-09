@@ -46,3 +46,11 @@ def getInstalled():
         (Dictionary): Name of DCC as key, then dictionary of path as key and version as value.
     """
     return {dcc_name: installer().getInstallDirectories() for dcc_name, installer in mapping.items()}
+
+
+def printInfo():
+    """
+    Prints the information gathered from all the installed DCCs.
+    """
+    [dcc().printInfo() for dcc in mapping.values()]
+

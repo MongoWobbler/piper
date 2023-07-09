@@ -2,6 +2,7 @@
 
 import os
 import sys
+import maya.cmds
 
 
 # adds the piper directory to the system's path to look for python scripts
@@ -16,7 +17,8 @@ def piperTools(is_headless=False):
     """
     import piper.core.vendor
 
-    piper.core.vendor.addPaths()  # sets up vendor paths for dcc
+    version = maya.cmds.about(version=True)
+    piper.core.vendor.addPaths(dcc_version=version)  # sets up vendor paths for dcc
 
     import piper.mayapy.plugin as plugin
     import piper.mayapy.settings as settings

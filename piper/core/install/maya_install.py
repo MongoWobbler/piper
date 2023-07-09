@@ -20,21 +20,24 @@ if len(sys.argv) < 2:
 # using maya's environment to figure out where to save modules to
 environment_directory = sys.argv[1]
 version = mc.about(version=True)
-modules_directory = os.path.join(os.environ['MAYA_APP_DIR'], version, 'modules')
+maya_directory = os.path.normpath(os.path.join(os.environ['MAYA_APP_DIR'], version))
+modules_directory = os.path.normpath(os.path.join(maya_directory, 'modules'))
 
 if not os.path.exists(modules_directory):
     os.makedirs(modules_directory)
 
 # formatting lines for modules file.
-lines = ['+ {0} 1.0 {1}/maya'.format(MODULE_NAME, environment_directory),
-         '{0}={1}'.format(ENVIRONMENT_KEY, environment_directory),
-         'MAYA_CONTENT_PATH+={0}/maya/scenes'.format(environment_directory),
-         'MAYA_PLUG_IN_PATH+={0}/maya/plug-ins/{1}'.format(environment_directory, version)]
+lines = [f'+ {MODULE_NAME} 1.0 {environment_directory}/maya',
+         f'{ENVIRONMENT_KEY}={environment_directory}',
+         f'MAYA_CONTENT_PATH+={environment_directory}/maya/scenes',
+         f'MAYA_PLUG_IN_PATH+={environment_directory}/maya/plug-ins/{version}']
 
 lines += ENVIRONMENT
 lines = [line + '\n' for line in lines]
-modules_path = os.path.join(modules_directory, MODULE_NAME.lower() + '.mod')
-print('Writing environment to: {}'.format(modules_path))
+modules_path = os.path.normpath(os.path.join(modules_directory, MODULE_NAME.lower() + '.mod'))
+print(f'Writing environment to: {modules_path}')
 
 with open(modules_path, 'w') as module_file:
     module_file.writelines(lines)
+
+print(f'MAYA_APP_DIR = {maya_directory}')

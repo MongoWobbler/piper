@@ -5,7 +5,7 @@ All files in piper.core are meant to be DCC agnostic. Therefore, scripts in pipe
 ## Building the Piper Installer
 
 **Requires:**  
-* [Python 3.7.7 (Same as Maya 2022, otherwise maya.standalone fails)](https://www.python.org/downloads/release/python-379/)  
+* [Python 3.10.8 (Same as Maya 2024, otherwise maya.standalone fails)](https://www.python.org/downloads/release/python-3108/)  
 * [PyInstaller](https://www.pyinstaller.org/)
 * [PySide2](https://pypi.org/project/PySide2/)
 

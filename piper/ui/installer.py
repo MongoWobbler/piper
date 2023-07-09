@@ -10,7 +10,7 @@ import piper.core
 import piper.core.install
 import piper.core.pather as pather
 
-from piper.ui.widget import TreeWidget, TreeNodeItem, separator
+from piper.ui.widget import TreeWidget, TreeNodeItem, separator, addMenuItem
 import piper.core.dcc as dcc
 import piper.core.dcc.unreal_dcc as ue_dcc
 import piper.core.install.unreal_install as ue_install
@@ -234,10 +234,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle('Piper Installer')
         self.headers = ['Digital Content Creation (DCC)', 'Install']
-        self.documentation_action = None  # must store action so it's not garbage collected
+
+        self.actions = []  # actions must be stored so they are not garbage collected
         self.widget_dccs = {}
-        # self.dcc_installers = {pcfg.maya_name: Maya(),
-        #                        pcfg.houdini_name: Houdini()}
         self.dcc_install_methods = {pcfg.unreal_name: ue_install.defaultConfig}
         self.dcc_symlink_methods = {pcfg.unreal_name: ue_install.symlink}
         self.dcc_print_python_path_methods = {pcfg.unreal_name: ue_dcc.printPythonPaths}
@@ -254,10 +253,9 @@ class MainWindow(QtWidgets.QMainWindow):
         menu = self.menuBar()
         file_menu = menu.addMenu('&Help')
 
-        # add documentation to menu bar
-        self.documentation_action = QtWidgets.QAction('Open Documentation')
-        self.documentation_action.triggered.connect(piper.core.openDocumentation)
-        file_menu.addAction(self.documentation_action)
+        # add documentation and print info to menu bar
+        addMenuItem(menu=file_menu, on_pressed=dcc.printInfo, actions=self.actions)
+        addMenuItem(menu=file_menu, on_pressed=piper.core.openDocumentation, actions=self.actions)
 
         # fill out DCC information with what the user has installed
         installed = dcc.getInstalled()
@@ -317,4 +315,4 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 print(f'{dcc_name} DCC has no associated installer!')
 
-        print('\nFinished Piper Install')
+        print('\nFinished Piper Install. You may close this window or run other installers.')

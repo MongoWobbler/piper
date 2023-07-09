@@ -26,7 +26,7 @@ Unreal:
 ## Building the Piper Installer
 
 **Requires:**  
-* [Python 3.7.7 (Same as Maya 2022, otherwise maya.standalone fails)](https://www.python.org/downloads/release/python-377/)  
+* [Python 3.10.8 (Same as latest Maya version (2024), otherwise maya.standalone fails)](https://www.python.org/downloads/release/python-3108/)  
 * [PyInstaller](https://www.pyinstaller.org/)
 * [PySide2](https://pypi.org/project/PySide2/)
 
@@ -46,6 +46,9 @@ Alternatively, clone, initiate, and update the repo and its submodules all in on
 git clone --recurse-submodules -j8 https://github.com/MongoWobbler/piper.git
 ```
 
-## Notes
+## Supported
 
-Currently, only supporting Windows, and piper's Maya tools require Maya 2022.
+- Windows
+- Maya 2022 to 2024
+- Houdini 18.5 to 19.5
+- Unreal Engine 5

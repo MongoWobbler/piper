@@ -1,8 +1,11 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
+import sys
+
 from Qt import QtWidgets, QtCore, QtGui
 
 import piper.config as pcfg
+import piper.core.namer as namer
 from piper.core.store import piper_store
 
 
@@ -110,6 +113,52 @@ def setTips(method, widget):
     status_tip = module + ': ' + documentation.split('Args:')[0].split('Returns:')[0] if documentation else module
     widget.setToolTip(documentation)
     widget.setStatusTip(status_tip)
+
+
+def validateName(on_pressed, name=None):
+    """
+    Args:
+        on_pressed (method): Used to deduce name if None is given.
+
+        name (string): Name for the item to have on the menu. If None given, will use given method's name.
+
+    Returns:
+        (string): Name validated.
+    """
+    name = namer.toSentenceCase(on_pressed.__name__) if name is None else name
+    return name.decode('utf-8') if sys.version.startswith('2') else name
+
+
+def addMenuItem(menu, on_pressed, name=None, unwrapped=None, actions=None):
+    """
+    Adds an action to the given menu with the given on_pressed method and name.
+
+    Args:
+        menu (QtWidgets.QMenu): Menu to add action to.
+
+        on_pressed (method): Method that will call when action is pressed.
+
+        name (string): Name for the item to have on the menu. If None given, will use given method's name.
+
+        unwrapped (method): Used in case on_pressed is wrapped, to deduct name and docstring from.
+
+        actions (list): List to add new action to. Useful to keep action from being garbage collected.
+
+    Returns:
+        (QtWidgets.QAction): Action created.
+    """
+    unwrapped = unwrapped if unwrapped else on_pressed
+    name = validateName(unwrapped, name)
+    action = QtWidgets.QAction(name, menu)
+    action.setObjectName(name)
+    setTips(unwrapped, action)
+    action.triggered.connect(on_pressed)
+    menu.addAction(action)
+
+    if actions:
+        actions.append(action)
+
+    return action
 
 
 def separator(layout=None, *args, **kwargs):
