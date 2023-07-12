@@ -295,7 +295,7 @@ class MayaSwitcher(Switcher):
         rigs = selection.get('piperRig')
         pm.select(rigs)
 
-    def close(self, *args, **kwargs):
+    def close(self, *_, **__):
         """
         Overriding close method to use the controller class function instead.
 
@@ -312,7 +312,9 @@ def get():
     Returns:
         (MayaSwitcher): Widget created.
     """
-    MayaSwitcher.instance = MayaSwitcher(dcc_store=maya_store) if MayaSwitcher.instance is None else MayaSwitcher.instance
+    if MayaSwitcher.instance is None:
+        MayaSwitcher.instance = MayaSwitcher(dcc_store=maya_store)
+
     return MayaSwitcher.instance
 
 

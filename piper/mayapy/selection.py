@@ -28,7 +28,7 @@ def validate(nodes=None, minimum=0, maximum=0, find=None, parent=False, display=
     # If user chooses not to display anything, we must pass an empty function
     if not display:
 
-        def _nothing(*args):
+        def _nothing(*_):
             pass  # using a function instead of a lambda one-liner because PEP-8
 
         display = _nothing
@@ -117,4 +117,3 @@ def get(node_type, ignore=None, search=True):
         nodes = [node for node in nodes if not hierarchy.getFirstTypeParent(node, ignore)]
 
     return nodes
-

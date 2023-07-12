@@ -67,7 +67,7 @@ def attributeCompound(transform, action, attributes=None, axes=None):
     Performs the given action on the given transform's given compound attributes with the given axis.
 
     Args:
-        transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all of its the given axis.
+        transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all the given axis.
 
         action (method): action that will be performed on given transform attributes.
 
@@ -89,7 +89,7 @@ def lockAndHideCompound(transform, attributes=None, axes=None):
     Locks and hides several compound attributes with several axis.
 
     Args:
-        transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all of its the given axis.
+        transform (pm.nodetypes.DependNode): Transform with attribute(s) to hide all the given axis.
 
         attributes (list): Compound attributes to hide. If None given, will hide t, r, and s.
 
@@ -185,7 +185,7 @@ def addSeparator(transform, character=mcfg.separator_character):
 
 def addDelete(transforms=None):
     """
-    Adds a "delete" attribute to the given transforms that marks them to be delete on export.
+    Adds a "delete" attribute to the given transforms that marks them to be deleted on export.
 
     Args:
         transforms (list): List of pm.nodetypes.transform to add "delete" attribute to.
@@ -330,10 +330,10 @@ def getDestinationNode(attribute, node_type=''):
 
 def getDecomposeMatrix(attribute):
     """
-    Gets the decompose matrix of the given attribute if exists, else creates one.
+    Gets the decomposed matrix of the given attribute if exists, else creates one.
 
     Args:
-        attribute (pm.general.Attribute): Matrix attribute that is connected or will be connected to a decompose matrix.
+        attribute (pm.general.Attribute): Matrix attribute that is connected or will be connected to a decomposed matrix
 
     Returns:
         (pm.nodetypes.DecomposeMatrix): Decompose matrix connected to given attribute.
@@ -358,7 +358,7 @@ def getNextAvailableIndex(node, attribute_name, start_index=0):
 
         attribute_name (string): Name of attribute with "[{}]" so that index search can occur.
 
-        start_index (integer): index to start searching for the available attribute..
+        start_index (integer): index to start searching for the available attribute.
 
     Returns:
         (integer): First available attribute index.

@@ -54,7 +54,7 @@ class Export(ABC):
         """
         pass
 
-    def _write(self, export_path, settings, *args, **kwargs):
+    def _write(self, export_path, settings, *_, **__):
         """
         Called to write file after verifying directory exists, and posts results after export.
 
@@ -71,7 +71,7 @@ class Export(ABC):
         self.onFinished(export_path)
         return export_path
 
-    def toSelf(self, name, settings, *args, **kwargs):
+    def toSelf(self, name, settings, *_, **__):
         """
         Exports .fbx of selected nodes to the folder that the current scene is in.
         If file is not saved, will export to root of art directory.
@@ -88,7 +88,7 @@ class Export(ABC):
         self._write(export_path, settings)
         return export_path
 
-    def toGame(self, name, settings, *args, **kwargs):
+    def toGame(self, name, settings, *_, **kwargs):
         """
         Exports selected nodes to the game directory + the relative directory the file is found in with the given name.
 

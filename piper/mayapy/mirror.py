@@ -97,7 +97,7 @@ def _mirror(method):
     """
     def wrapper(self, *args, **kwargs):
 
-        if not self.is_mirroring:  # execute function normally if its not mirroring
+        if not self.is_mirroring:  # execute function normally if it's not mirroring
             return method(self, *args, **kwargs)
 
         self.is_mirroring = False  # must turn off mirroring so that other functions inside method don't get mirrored.

@@ -45,6 +45,31 @@ def validateDirectory(directory):
     return directory
 
 
+def validateSymlink(directory, name):
+    """
+    Validates the path created by joining the given directory and name as a valid symlink path.
+
+    Args:
+        directory (string): Directory where symlink will be made to, the target.
+
+        name (string): Name of target file.
+
+    Returns:
+        (string): Full path validated to make sure it does not already exist.
+    """
+    path = os.path.join(directory, name).replace('\\', '/')
+
+    if os.path.islink(path):
+        print(f'{path} link already exists! Removing...')
+        os.remove(path)
+
+    if os.path.exists(path):
+        message = f'{path} already exists! Please specify path or manually remove file.'
+        raise FileExistsError(message)
+
+    return path
+
+
 def getDirectoryDialog(start=None, title='Select Directory', error=True):
     """
     Opens a dialog that asks the user to select a directory.

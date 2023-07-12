@@ -1,7 +1,5 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
-
-import os
-from functools import partial
+import os.path
 
 from Qt import QtWidgets, QtCore
 
@@ -12,24 +10,21 @@ import piper.core.pather as pather
 
 from piper.ui.widget import TreeWidget, TreeNodeItem, separator, addMenuItem
 import piper.core.dcc as dcc
-import piper.core.dcc.unreal_dcc as ue_dcc
 import piper.core.install.unreal_install as ue_install
 
 
 class DCC(QtWidgets.QWidget):
 
-    def __init__(self, name='', print_python_paths=None):
+    def __init__(self, name=''):
         super(DCC, self).__init__()
 
         # initial
         self.setWhatsThis('Right click to add or remove paths for Piper to install to the DCC')
         self.headers = ['Install', 'Version', 'Path']
         self.allow_context = False
-        self.print_python_paths = print_python_paths
 
         self.tree = None
         self.layout = None
-        self.symlink_checkbox = None
         self.name = name
         self.defaults = {}
 
@@ -44,12 +39,6 @@ class DCC(QtWidgets.QWidget):
         # DCC name label
         label = QtWidgets.QLabel(self.name)
         label_layout.addWidget(label, 0)
-
-        # symlink checkbox
-        self.symlink_checkbox = QtWidgets.QCheckBox('Symlink')
-        self.symlink_checkbox.setLayoutDirection(QtCore.Qt.RightToLeft)
-        self.symlink_checkbox.setVisible(False)
-        label_layout.addWidget(self.symlink_checkbox, stretch=1)
 
         # tree widget
         self.tree = TreeWidget()
@@ -67,7 +56,7 @@ class DCC(QtWidgets.QWidget):
         self.tree.itemDoubleClicked.connect(self.onItemDoubleClicked)
         self.layout.addWidget(self.tree, 1, 0)
 
-    def onAddLinePressed(self, *args, **kwargs):
+    def onAddLinePressed(self, *args, **__):
         """
         Called to add a row to the tree widget.
 
@@ -91,7 +80,7 @@ class DCC(QtWidgets.QWidget):
         root = self.tree.invisibleRootItem()
         [(item.parent() or root).removeChild(item) for item in self.tree.selectedItems()]
 
-    def onSelectionChanged(self, *args, **kwargs):
+    def onSelectionChanged(self, *_, **__):
         """
         Happens when selection is changed in order to maintain selection after checkbox is pressed.
         """
@@ -138,21 +127,6 @@ class DCC(QtWidgets.QWidget):
         reset_action = QtWidgets.QAction('Reset back to defaults')
         reset_action.triggered.connect(self.resetToDefaults)
         menu.addAction(reset_action)
-
-        if self.print_python_paths:
-            root = self.tree.invisibleRootItem()
-            rows = self.getSelectedRows()
-            projects = []
-            editors = []
-            for row in rows:
-                item = root.child(row)
-                projects.append(item.text(2))
-                editors.append(item.text(4))
-
-            menu.addSeparator()
-            print_paths_action = QtWidgets.QAction('Print Python Paths')
-            print_paths_action.triggered.connect(partial(self.print_python_paths, editors, projects))
-            menu.addAction(print_paths_action)
 
         menu.exec_(self.tree.mapToGlobal(position))
 
@@ -210,19 +184,16 @@ class DCC(QtWidgets.QWidget):
             item = root.child(i)
             version = item.text(1)
             path = item.text(2)
-            symlink = item.text(3)
-            editor = item.text(4)
 
+            # if install checkbox is not checked, ignore this dcc
             if item.checkState(0) != QtCore.Qt.Checked:
                 continue
 
-            if not symlink and not os.path.exists(path):
+            if not os.path.exists(path):
                 print(f'{path} does not exist! Skipping.')
                 continue
 
-            paths[path] = {'version': version,
-                           'symlink': symlink,
-                           'editor': editor}
+            paths[path] = {'version': version}
 
         return paths
 
@@ -237,9 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.actions = []  # actions must be stored so they are not garbage collected
         self.widget_dccs = {}
-        self.dcc_install_methods = {pcfg.unreal_name: ue_install.defaultConfig}
         self.dcc_symlink_methods = {pcfg.unreal_name: ue_install.symlink}
-        self.dcc_print_python_path_methods = {pcfg.unreal_name: ue_dcc.printPythonPaths}
 
         self.build()
 
@@ -261,8 +230,7 @@ class MainWindow(QtWidgets.QMainWindow):
         installed = dcc.getInstalled()
         for dcc_name in pcfg.valid_dccs:
             installed_dcc = installed.get(dcc_name, {})
-            print_python_path_method = self.dcc_print_python_path_methods.get(dcc_name, None)
-            dcc_widget = DCC(name=dcc_name, print_python_paths=print_python_path_method)
+            dcc_widget = DCC(name=dcc_name)
             dcc_widget.defaults = installed_dcc
             dcc_widget.addDefaults()
             self.widget_dccs[dcc_name] = dcc_widget
@@ -271,12 +239,10 @@ class MainWindow(QtWidgets.QMainWindow):
             # allow context to add/remove paths in unreal install
             if dcc_name == pcfg.unreal_name:
                 headers = dcc_widget.headers
-                headers[2] = 'Path to .uproject'
-                headers = headers + ['Symlink Target Path', 'Unreal Editor']
+                headers[2] = 'Path to .uproject or Plugins'
                 dcc_widget.tree.setColumnCount(len(headers))
                 dcc_widget.tree.setHeaderLabels(headers)
                 dcc_widget.allow_context = True
-                dcc_widget.symlink_checkbox.setVisible(True)
 
         # install button
         separator(main_layout)
@@ -293,9 +259,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for dcc_name, dcc_widget in self.widget_dccs.items():
             installer = dcc.mapping.get(dcc_name)
-            installer_method = self.dcc_install_methods.get(dcc_name)
             symlink_method = self.dcc_symlink_methods.get(dcc_name)
-            is_symlink = dcc_widget.symlink_checkbox.isChecked()
             paths = dcc_widget.getPaths()
 
             if not paths:
@@ -308,10 +272,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 versions = [row.get('version') for row in paths.values()]
                 install_script = piper.core.install.getScriptPath(dcc_name)
                 installer().runInstaller(install_script, install_directory, versions)
-            elif is_symlink and symlink_method:
-                [symlink_method(install_directory, path, paths[path].get('symlink')) for path in paths]
-            elif installer_method:
-                [installer_method(path, install_directory) for path in paths]
+            elif symlink_method:
+                [symlink_method(install_directory, path) for path in paths]
             else:
                 print(f'{dcc_name} DCC has no associated installer!')
 

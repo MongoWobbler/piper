@@ -19,7 +19,7 @@ def copy(source, target):
     Args:
         source (pm.nodetypes.Transform or string): Control that will have its shapes copied from.
 
-        target (pm.nodetypes.Transform): Control that will have it's shapes copied onto.
+        target (pm.nodetypes.Transform): Control that will have its shapes copied onto.
 
     Returns:
         (list): New shapes created.
@@ -233,7 +233,7 @@ def swirl(*args, **kwargs):
 
 def arrowSingleStraight(*args, **kwargs):
     """
-    Creates an straight arrow with point at origin facing Z-forward shape.
+    Creates a straight arrow with point at origin facing Z-forward shape.
 
     Returns:
         (pm.nodetypes.Transform): Transform of single straight arrow shape created.
@@ -252,7 +252,7 @@ def arrowSingleStraight(*args, **kwargs):
 
 def arrowSingleCurved(*args, **kwargs):
     """
-    Creates an curved arrow with pivot at origin facing Z-forward shape.
+    Creates a curved arrow with pivot at origin facing Z-forward shape.
 
     Returns:
         (pm.nodetypes.Transform): Transform of single curved arrow shape created.
@@ -334,7 +334,7 @@ def arrowTriple(*args, **kwargs):
 
 def arrowQuad(*args, **kwargs):
     """
-    Creates an four arrows with pivot at origin pointing at +- X and Z.
+    Creates a four arrows with pivot at origin pointing at +- X and Z.
 
     Returns:
         (pm.nodetypes.Transform): Transform of quad straight arrow shape created.
@@ -367,7 +367,7 @@ def cube(*args, **kwargs):
 
 def diamond(*args, **kwargs):
     """
-    Creates a two square pyramids joined facing +- Y axis shape.
+    Creates two square pyramids joined facing +- Y axis shape.
 
     Returns:
         (pm.nodetypes.Transform): Transform of diamond shape created.
@@ -644,10 +644,10 @@ def layoutColors(spacing=4, axis=None, shape=circle):
 @plugin.loadHoudiniEngine
 def crossSection(meshes=None):
     """
-    Gets the cross section of a mesh as a curve.
+    Gets the cross-section of a mesh as a curve.
 
     Args:
-        meshes (pm.nodetypes.Mesh): Shape of transform that will get cross section from as a curve.
+        meshes (pm.nodetypes.Mesh): Shape of transform that will get cross-section from as a curve.
 
     Returns:
         (pm.nodetypes.houdiniAsset): Asset that generates the curve(s)
@@ -668,7 +668,7 @@ def crossSection(meshes=None):
 
 def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_up=True):
     """
-    Creates a curve at the origin that is a cross section of the given mesh(es).
+    Creates a curve at the origin that is a cross-section of the given mesh(es).
 
     Args:
         meshes (collections.Iterable): pm.nodetypes.Transform with mesh shapes as children to create curves from.
@@ -677,10 +677,10 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
 
         name (string): Name to give curve(s)
 
-        tolerance (float): Value that will be divided from height to get curve from in case mesh doesnt actually touch
+        tolerance (float): Value that will be divided from height to get curve from in case mesh doesn't actually touch
         the origin.
 
-        clean_up (boolean): If True, will delete meshes made to generate cross section. Useful for turn off for debug.
+        clean_up (boolean): If True, will delete meshes made to generate cross-section. Useful for turn off for debug.
 
     Returns:
         (list): Curve(s) generated.
@@ -702,7 +702,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
         if min_height > step:
             continue
 
-        # for all the meshes that are close to 0, create poly plane that will be used to create edge cross section
+        # for all the meshes that are close to 0, create poly plane that will be used to create edge cross-section
         plane, _ = pm.polyPlane(axis=[0, 1, 0], sw=1, sh=1, sx=1, sy=1, w=2, h=2)
         plane_name = plane.name()
         plane.ty.set(step)
@@ -731,7 +731,7 @@ def originCrossSection(meshes=None, side='', name=None, tolerance=128.0, clean_u
         plane.sz.set(abs(max(bounding_box[2], bounding_box[5])) * 2)
         attribute.freezeTransformations(plane)
 
-        # create duplicate of mesh and use a boolean difference with the plane to make edges cross section
+        # create duplicate of mesh and use a boolean difference with the plane to make edges cross-section
         duplicate_mesh = pm.duplicate(static_mesh)[0]
         pm.select(duplicate_mesh, plane)
         new_mesh, _ = pm.polyCBoolOp(*pm.selected(), op=2, classification=2)

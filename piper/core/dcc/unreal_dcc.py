@@ -33,29 +33,6 @@ def validateEngineConfig(project_path):
     return default_engine
 
 
-def validatePythonDirectory(project_path):
-    """
-    Validates the python directory in the Unreal project's content directory.
-
-    Args:
-        project_path (string): Path to unreal project which includes all source code, ending in .uproject
-
-    Returns:
-        (string): Full path to the python directory in the project's content directory.
-    """
-    if not os.path.exists(project_path):
-        raise FileNotFoundError(f'{project_path} does not exist! Please use valid .uproject path')
-
-    project_directory = os.path.dirname(project_path)
-    python_directory = os.path.join(project_directory, 'Content', 'Python')
-
-    if os.path.exists(python_directory):
-        return python_directory
-
-    os.mkdir(python_directory)
-    return python_directory
-
-
 def validateLog(project_path, error=True):
     """
     Gets the latest log from the given project path.
@@ -65,7 +42,7 @@ def validateLog(project_path, error=True):
         error (bool): If True, will raise FileNotFoundError if log is not found.
 
     Returns:
-        (string): Full path to latest log file for given project.
+        (string): Full path to the latest log file for given project.
     """
     if not os.path.exists(project_path):
         raise FileNotFoundError(f'{project_path} does not exist! Please use valid .uproject path')
@@ -82,7 +59,7 @@ def validateLog(project_path, error=True):
 
 def getPythonPaths(editor_path, project_path):
     """
-    Runs the given unreal editor with the given project path and prints all the paths in sys.path
+    Runs the given unreal editor with the given project path and prints all the paths in `sys.path`
 
     Args:
         editor_path (string): Path to unreal editor, if built: /UnrealEngine/Engine/Binaries/Win64/UnrealEditor.exe
@@ -102,7 +79,7 @@ def getPythonPaths(editor_path, project_path):
         raise FileNotFoundError(f'{project_path} is not a real path! Please verify path exists.')
 
     print('\n')
-    message = 'jqz5piper'  # jqz are least common letters, and final message needs to be short to keep string together
+    message = 'jqz5piper'  # jqz are the least common letters, final message needs to be short to keep string together
     start = f"print('{message}')"
     end = f'LogPython: {message}'
     script = f'\\nimport sys\\nfor path in sys.path:\\n\\tprint(path)\\n{start}'

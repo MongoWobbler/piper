@@ -185,13 +185,19 @@ Debug/
 #############################################################
 # PIPER SPECIFIC IGNORE START
 
-maya/plug-ins/*/CharcoalEditor*.mll
-maya/plug-ins/*/MayaLiveLinkPlugin*.mll
-maya/plug-ins/*/MayaLiveLinkUI*.py
+# piper directories
 settings/
 temp/
 
-# builds
+# maya plug-ins not to be included
+maya/plug-ins/*/CharcoalEditor*.mll
+maya/plug-ins/*/MayaLiveLinkPlugin*.mll
+maya/plug-ins/*/MayaLiveLinkUI*.py
+
+# maya cpp builds
 maya/cpp/Piper.dir
 maya/cpp/x64
 maya/cpp/Release
+
+# unreal plugin builds
+unreal/Piper/Binaries

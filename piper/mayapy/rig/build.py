@@ -181,7 +181,7 @@ def sticker(path=''):
 
 def oliver(path=''):
     """
-    Build script for a oliver character.
+    Build script for oliver character.
 
     Args:
         path (string): Path to skeletal mesh maya file with skeletal mesh node holding joints, skins, and mesh.

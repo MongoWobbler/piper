@@ -258,7 +258,7 @@ def interceptConnect(source, target, name='', operation=1):
 
         name (string): Name of intercept node.
 
-        operation (int): 1 is add, 2 is subtract, 3 is average.
+        operation (int): 1 means add, 2 means subtract, 3 means average.
     """
     if operation and target.connections(scn=True, plugs=True, destination=False):
         connection = target.connections(scn=True, plugs=True, destination=False)[0]
@@ -561,7 +561,7 @@ def poleVectorMatrixConstraint(ik_handle, control):
     joint.translate >> world_point.inPoint
     joint.parentMatrix >> world_point.inMatrix
 
-    # Now composeMatrix from output, so we can inverse and find local position from startJoint to pole control
+    # Now composeMatrix from output, so we can invert and find local position from startJoint to pole control
     world_point.output >> compose_matrix.inputTranslate
     compose_matrix.outputMatrix >> inverse_matrix.inputMatrix
     control.worldMatrix >> multiplication_matrix.matrixIn[0]
@@ -583,7 +583,7 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
     Args:
         start_transform (PyNode): Start of the joint chain
 
-        mid_transform (PyNode): Mid joint of the chain.
+        mid_transform (PyNode): Mid-joint of the chain.
 
         end_transform (PyNode): End joint of the chain.
 
@@ -597,7 +597,7 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
     is_in_straight_line = False
     zero_vector = pm.dt.Vector(0, 0, 0)
 
-    # if transform has rotations or joint orient, then its not in a straight line and we can figure out pole vector
+    # if transform has rotations or joint orient, then it's not in a straight line, and we can figure out pole vector
     if mid_transform.r.get().isEquivalent(zero_vector, tol=0.5):
         if mid_transform.hasAttr('orientJoint'):
             if mid_transform.orientJoint.get().isEquivalent(zero_vector, tol=0.5):
@@ -605,7 +605,7 @@ def calculatePoleVector(start_transform, mid_transform, end_transform, scale=1, 
         else:
             is_in_straight_line = True
 
-    # if transform is in a straight line use the location of the mid transform to place the pole vector
+    # if transform is in a straight line use the location of the mid-transform to place the pole vector
     if is_in_straight_line:
         translation = pm.dt.Vector(pm.xform(mid_transform, q=True, ws=True, t=True))
         rotation = pm.xform(mid_transform, q=True, ws=True, ro=True)

@@ -57,7 +57,7 @@ def loadAll():
 def loadHoudiniEngine(method):
     """
     Decorator function that attempts to load the houdini engine.
-    Houdini plug-in should not be auto-loaded, so use this anytime you need to call a function that use the plug-in.
+    Houdini plug-in should not be set to autoload, so use this anytime you need to call a function that use the plug-in.
 
     Args:
         method (method): Function to call after plugin has loaded.

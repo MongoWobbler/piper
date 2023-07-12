@@ -10,7 +10,7 @@ from . import control
 
 def get(transform, error=True, name=False):
     """
-    Gets the switcher if the given transform has an fk_ik attribute.
+    Gets the switcher if the given transform has a fk_ik attribute.
 
     Args:
         transform (pm.nodetypes.Transform): Transform to get switcher control of.

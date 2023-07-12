@@ -39,10 +39,10 @@ def exists(transform):
     Gets whether the given transform has spaces or not.
 
     Args:
-        transform (pm.nodetypes.Transform): Transform to check if has spaces.
+        transform (pm.nodetypes.Transform): Transform to check if it has spaces.
 
     Returns:
-        (boolean): True if has a spaces blender connected, False if it does not.
+        (boolean): True if given transform has a spaces blender connected, False if it does not.
     """
     matrix_blend = attribute.getMessagedSpacesBlender(transform)
     return bool(matrix_blend)
@@ -50,7 +50,7 @@ def exists(transform):
 
 def getAll(transform, cast=False):
     """
-    Gets all the piper made spaces. Uses names stored in a string attribute to get these spaces.
+    Gets all the piper made spaces. Will use names stored in a string attribute to get these spaces.
     Will return empty list if no spaces attributes found.
 
     Args:
@@ -202,7 +202,7 @@ def create(transform=None, spaces=None, direct=False, warn=True):
 
             target_plug = multiply.matrixSum
 
-        # if has input matrix, then create an orient space
+        # if matrix blend has input matrix, then create an orient space
         if position:
             orient_name = '{}_X_{}{}'.format(transform_name, space_name, mcfg.orient_matrix_suffix)
             orient_matrix = pipernode.createOrientMatrix(position, target_plug, name=orient_name)

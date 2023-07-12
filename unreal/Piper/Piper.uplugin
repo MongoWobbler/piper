@@ -1,0 +1,25 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1",
+	"FriendlyName": "Piper",
+	"Description": "Piper tools/scripts for Unreal Engine",
+	"Category": "Tools",
+	"CreatedBy": "Christian Corsica",
+	"CreatedByURL": "https://github.com/MongoWobbler",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "https://github.com/MongoWobbler/piper",
+    "EnabledByDefault": true,
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Plugins": 
+    [
+		{
+			"Name": "PythonScriptPlugin",
+			"Enabled": true
+		}
+	]
+}
