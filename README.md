@@ -20,8 +20,7 @@ Houdini:
  - USER/Documents/houdiniVERSION/packages/piper.json
 
 Unreal:
- - PROJECT/Config/DefaultEngine.ini
- - Alternatively, use the symlink option to symlink piper directory to one of Unreal's Python Paths.
+ - PROJECT/Plugins/Piper (Symlink)
   
 ## Building the Piper Installer
 
