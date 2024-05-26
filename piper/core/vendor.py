@@ -63,7 +63,8 @@ def getAll():
 
 def isValid(vendor, dcc_version=None):
     """
-    Whether the given vendor data is valid based on the given dcc_version. Min/Max values are inclusive.
+    Whether the given vendor data is valid based on the given dcc_version. Min is inclusive, Max is exclusive.
+    Meaning that if 2023 is given for Max, then the 2023 will NOT be valid, but 2022 will be valid.
 
     Args:
         vendor (dictionary): Data including min, and max string keys with int as values to compare against version.

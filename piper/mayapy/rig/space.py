@@ -24,14 +24,16 @@ def _connect(transform, target, space, orient_matrix=None):
         target (pm.Attribute): Attribute with use transform attributes.
 
         space (pm.Attribute): Space attribute that will drive the target weight.
+
+        orient_matrix (pm.nodetypes.piperOrientMatrix): Node with weight attribute that will be driven by transform.
     """
     space >> target.weight
-    transform.attr(mcfg.space_use_translate) >> target.useTranslate
-    transform.attr(mcfg.space_use_rotate) >> target.useRotate
-    transform.attr(mcfg.space_use_scale) >> target.useScale
+    transform.attr(mcfg.space_translate_weight) >> target.translateWeight
+    transform.attr(mcfg.space_rotate_weight) >> target.rotateWeight
+    transform.attr(mcfg.space_scale_weight) >> target.scaleWeight
 
     if orient_matrix:
-        transform.attr(mcfg.space_use_orient) >> orient_matrix.useOrient
+        transform.attr(mcfg.space_orient_weight) >> orient_matrix.weight
 
 
 def exists(transform):
@@ -157,11 +159,11 @@ def create(transform=None, spaces=None, direct=False, warn=True):
 
         # create attributes on transform and add world space by default
         attribute.addSeparator(transform)
-        transform.addAttr(mcfg.space_use_translate, at='bool', dv=1, k=True)
-        transform.addAttr(mcfg.space_use_rotate, at='bool', dv=1, k=True)
-        transform.addAttr(mcfg.space_use_orient, at='bool', dv=0, k=True)
-        transform.addAttr(mcfg.space_use_scale, at='bool', dv=1, k=True)
-        transform.addAttr(mcfg.spaces_name, dt='string', k=False, h=True, s=True)
+        transform.addAttr(mcfg.space_translate_weight, at=float, dv=1, k=True, hsx=True, hsn=True, smn=0, smx=1)
+        transform.addAttr(mcfg.space_rotate_weight, at=float, dv=1, k=True, hsx=True, hsn=True, smn=0, smx=1)
+        transform.addAttr(mcfg.space_orient_weight, at=float, dv=0, k=True, hsx=True, hsn=True, smn=0, smx=1)
+        transform.addAttr(mcfg.space_scale_weight, at=float, dv=1, k=True, hsx=True, hsn=True, smn=0, smx=1)
+        transform.addAttr(mcfg.spaces_name, dt=str, k=False, h=True, s=True)
         transform.addAttr(mcfg.space_world_name, k=True, dv=0, hsx=True, hsn=True, smn=0, smx=1)
         _connect(transform, target, transform.attr(mcfg.space_world_name))
         space_attributes.append(mcfg.space_world_name)
@@ -219,23 +221,23 @@ def create(transform=None, spaces=None, direct=False, warn=True):
     return space_attributes
 
 
-def switch(transform, new_space=None, t=True, r=True, o=False, s=True, key=False):
+def switch(transform, new_space=None, t=1.0, r=1.0, o=0.0, s=1.0, key=False):
     """
     Switches the given transform to the given new_space while maintaining the world transform of the given transform.
     Choose to switch driving translate, rotate, or scale attributes on or off too.
 
     Args:
-        transform (pm.nodetypes.Transform):
+        transform (pm.nodetypes.Transform): Node to switch space of.
 
         new_space (string or None): Name of space attribute to switch to.
 
-        t (boolean): If True, space will affect translate values.
+        t (float): If True, space will affect translate values.
 
-        r (boolean): If True, space will affect rotate values.
+        r (float): If True, space will affect rotate values.
 
-        o (boolean): If True, space will affect orient values.
+        o (float): If True, space will affect orient values.
 
-        s (boolean): If True, space will affect scale values.
+        s (float): If True, space will affect scale values.
 
         key (boolean): If True, will set a key at the previous frame on the transform.
     """
@@ -244,10 +246,10 @@ def switch(transform, new_space=None, t=True, r=True, o=False, s=True, key=False
         pm.setKeyframe(transform, time=current_frame - 1)
 
     position = transform.worldMatrix.get()
-    transform.useTranslate.set(t)
-    transform.useRotate.set(r)
-    transform.useOrient.set(o)
-    transform.useScale.set(s)
+    transform.attr(mcfg.space_translate_weight).set(t)
+    transform.attr(mcfg.space_rotate_weight).set(r)
+    transform.attr(mcfg.space_orient_weight).set(o)
+    transform.attr(mcfg.space_scale_weight).set(s)
     spaces = getAll(transform)
     [transform.attr(space_attribute).set(0) for space_attribute in spaces]
 

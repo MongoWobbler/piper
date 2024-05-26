@@ -17,4 +17,5 @@ static_mesh = 'StaticMesh'
 skeleton = 'Skeleton'
 skeletal_mesh = 'SkeletalMesh'
 anim_sequence = 'AnimSequence'
-
+blendspace = 'BlendSpace'
+blendspace1D = 'BlendSpace1D'

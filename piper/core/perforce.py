@@ -108,7 +108,7 @@ class Perforce(P4):
             (boolean): True if file is exclusively checked out by another user, False if not.
         """
         # if other people have it open for edit AND file is an exclusive check out type
-        if 'otherOpens' in file_info and file_info['headType'].endswith('+l'):
+        if 'otherOpens' in file_info and '+l' in file_info['headType']:
             self.display(', '.join(file_info['otherOpen']) + ' has ' + file_info['clientFile'] + ' checked out')
             return True
 
@@ -427,7 +427,7 @@ class Perforce(P4):
 
         return True
 
-    def isCheckedOutByOther(self, path=None, info=None):
+    def isCheckedOutByOther(self, path=None, info=None, fast_fail=True):
         """
         Gets whether the given path(s) are exclusively checked out by other users or not.
 
@@ -436,16 +436,25 @@ class Perforce(P4):
 
             info (list): Information about path to use. If None, will use "fstat" to get info about path.
 
+            fast_fail (bool): If True, will return the file info dict of the first file that is checked out by a user.
+            Else will return a list of all the file info dicts that are checked out.
+
         Returns:
-            (boolean): If ANY path(s) given is checked out by another user, will return True, else false.
+            (list or dictionary): If ANY path(s) given is checked out by another user, will return the file info of the
+            path checked out if given fast_fail is set to True. If fast_fail is set to False, will return list of all
+            file info paths that are checked out. If no files are checked out, will return empty list.
         """
         info = info if info else self.getInfo(path=path)
+        checked_out = []
 
         for file_info in info:
             if self._isCheckedOutByOther(file_info):
-                return True
+                if fast_fail:
+                    return file_info
+                else:
+                    checked_out.append(file_info)
 
-        return False
+        return checked_out
 
     def add(self, path=None, flags=None):
         """
@@ -466,9 +475,9 @@ class Perforce(P4):
         Checkouts the given path from the current client.
 
         Args:
-            path (string): Path to checkout from client. Will use self.getCurrentScene() if None given.
+            path (string): Path to check out from client. Will use self.getCurrentScene() if None given.
 
-            flags (list): Extra flags to pass to checkout ("edit") command
+            flags (list): Extra flags to pass to check out ("edit") command
 
         Returns:
             (Any): Result of file being checked out from client.

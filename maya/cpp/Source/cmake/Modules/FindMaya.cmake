@@ -44,7 +44,7 @@
 
 # Set a default Maya version if not specified
 if(NOT DEFINED MAYA_VERSION)
-    set(MAYA_VERSION 2017 CACHE STRING "Maya version")
+    set(MAYA_VERSION 2023 CACHE STRING "Maya version")
 endif()
 
 # OS Specific environment setup
@@ -76,7 +76,9 @@ endif()
 set(MAYA_INSTALL_BASE_PATH ${MAYA_INSTALL_BASE_DEFAULT} CACHE STRING
     "Root path containing your maya installations, e.g. /usr/autodesk or /Applications/Autodesk/")
 
-set(MAYA_LOCATION ${MAYA_INSTALL_BASE_PATH}/maya${MAYA_VERSION}${MAYA_INSTALL_BASE_SUFFIX})
+set(MAYA_LOCATION ${MAYA_INSTALL_BASE_PATH}/Maya${MAYA_VERSION}${MAYA_INSTALL_BASE_SUFFIX})
+
+# message(MAYA_LOCATION="${MAYA_LOCATION}")
 
 # Maya include directory
 find_path(MAYA_INCLUDE_DIR maya/MFn.h
@@ -100,6 +102,9 @@ find_library(MAYA_LIBRARY
     NO_DEFAULT_PATH
 )
 set(MAYA_LIBRARIES "${MAYA_LIBRARY}")
+
+# message(MAYA_INCLUDE_DIR="${MAYA_INCLUDE_DIR}")
+# message(MAYA_LIBRARY="${MAYA_LIBRARY}")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Maya

@@ -1,5 +1,6 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
-import os.path
+
+import os
 
 from Qt import QtWidgets, QtCore
 

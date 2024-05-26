@@ -2,6 +2,7 @@
 
 import os
 import pathlib
+import posixpath
 import piper.config.unreal as ucfg
 import piper.core.pather as pather
 
@@ -16,7 +17,7 @@ def getPluginDirectory(piper_directory):
     Returns:
         (string): Path to Unreal Piper plug-in directory.
     """
-    return os.path.join(piper_directory, ucfg.plugin_path).replace('\\', '/')
+    return posixpath.join(piper_directory, ucfg.plugin_path)
 
 
 def symlink(piper_directory, path):

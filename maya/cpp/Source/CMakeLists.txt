@@ -46,6 +46,9 @@ set(SOURCE_FILES
         "SwingTwistNode.cpp"
         "SwingTwistNode.h")
 
+# uncomment with correct maya version when developing in CLion to have cmake find correct maya version
+# set(MAYA_VERSION 2023)
+
 find_package(Maya REQUIRED)
 
 add_library(Piper SHARED ${SOURCE_FILES})

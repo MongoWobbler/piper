@@ -63,6 +63,10 @@ default_rendering_api = 'DirectX11'
 default_tone_map = 'Un-tone-mapped (sRGB)'
 default_initial_material = 'lambert'
 
+# Mesh
+collision_layer_name = "Collision"
+collision_prefix = "UCX_"
+
 # Skeleton
 skeleton_namespace = 'SKL'
 bind_namespace = 'BIND'
@@ -114,7 +118,7 @@ right_bendy_color = 'light blue'
 right_inner_bendy_color = 'baby blue'
 
 # Export
-fbx_default_version = 2018
+fbx_default_version = 2020
 mesh_prefix = 'SM_'
 skinned_mesh_prefix = 'SKM_'
 animation_prefix = 'A_'
@@ -164,15 +168,15 @@ offset_parent_comp_suffix = '_OC_ParentOffset' + compose_matrix_suffix
 spaces_name = 'spaces'
 space_suffix = 'Space'
 space_world_name = 'world' + space_suffix
-space_use_translate = 'useTranslate'
-space_use_rotate = 'useRotate'
-space_use_orient = 'useOrient'
-space_use_scale = 'useScale'
+space_translate_weight = 'translateWeight'
+space_rotate_weight = 'rotateWeight'
+space_orient_weight = 'orientWeight'
+space_scale_weight = 'scaleWeight'
 space_blend_matrix_suffix = '_Spaces' + blend_matrix_suffix
-use_attributes = (space_use_translate,
-                  space_use_rotate,
-                  space_use_scale,
-                  space_use_orient,
+use_attributes = (space_translate_weight,
+                  space_rotate_weight,
+                  space_scale_weight,
+                  space_orient_weight,
                   separator_character,
                   spaces_name)
 

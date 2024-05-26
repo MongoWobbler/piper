@@ -11,17 +11,18 @@ Tools are biased towards Maya and Unreal Engine.
 Run **piper_installer.exe** to add files that allow the user's currently installed Digital Content Creation (DCC) packages to know about piper.
 See, **Building the Piper Installer** below if piper_installer.exe is missing.
 
-The **piper_installer.exe** will create the following files for all versions of the following DCCs installed.  
+**Maya**  
+- **piper_installer.exe** will create the following file:  
+`USER/Documents/maya/VERSION/modules/piper.mod`
 
-Maya:
- - USER/Documents/maya/VERSION/modules/piper.mod
+**Houdini**  
+- **piper_installer.exe** will create the following file:  
+`USER/Documents/houdiniVERSION/packages/piper.json`
 
-Houdini:
- - USER/Documents/houdiniVERSION/packages/piper.json
+**Unreal**  
+ - **piper_installer.exe** will create the following symlink directory:  
+`PROJECT/Plugins/Piper` 
 
-Unreal:
- - PROJECT/Plugins/Piper (Symlink)
-  
 ## Building the Piper Installer
 
 **Requires:**  
@@ -48,6 +49,6 @@ git clone --recurse-submodules -j8 https://github.com/MongoWobbler/piper.git
 ## Supported
 
 - Windows
-- Maya 2022 to 2024
+- Maya 2023 to 2024
 - Houdini 18.5 to 19.5
 - Unreal Engine 5

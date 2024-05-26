@@ -6,6 +6,7 @@ import socket
 import subprocess
 import winreg
 
+import piper.config as pcfg
 import piper.core.pather as pather
 import piper.core.vendor as vendor
 
@@ -453,10 +454,10 @@ class DCC(object):
         Returns:
             (boolean): True if any of the packages match the DCC version.
         """
-        if not self.packages_to_install:
+        if not pcfg.packages_to_install[self.name]:
             return False
 
-        return any([vendor.isValid(package, version) for package in self.packages_to_install])
+        return any([vendor.isValid(package, version) for package in pcfg.packages_to_install[self.name]])
 
     @staticmethod
     def _formatInfo(text, iterables):

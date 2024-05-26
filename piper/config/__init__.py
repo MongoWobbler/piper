@@ -33,11 +33,20 @@ default_mirror_axis = 'x'
 # Vendors
 vendors = {dcc_agnostic_name: [{'name': 'Qt'}],
            maya_name: [{'name': 'fbx'},
-                       {'name': 'p4', 'max': '2023'}],
+                       {'name': 'p4', 'max': '2023'}],  # max versions are exclusive
            houdini_name: [],
            unreal_name: [],
            max_3ds_name: []
            }
+
+# Pip Package Names
+# used by DCC module to install when piper installer runs
+packages_to_install = {maya_name: [{'name': 'pymel', 'min': '2024'},  # min versions are inclusive
+                                   {'name': 'p4python', 'min': '2023'}],
+                       houdini_name: [],
+                       unreal_name: [],
+                       max_3ds_name: []
+                       }
 
 # Store
 art_directory = 'art_directory'

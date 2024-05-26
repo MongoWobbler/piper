@@ -2,7 +2,7 @@
 
 import pymel.core as pm
 import piper.config.maya as mcfg
-import piper.mayapy.selection
+import piper.mayapy.selection as selection
 import piper.mayapy.convert as convert
 
 
@@ -190,7 +190,7 @@ def addDelete(transforms=None):
     Args:
         transforms (list): List of pm.nodetypes.transform to add "delete" attribute to.
     """
-    transforms = piper.mayapy.selection.validate(transforms, display=pm.warning)
+    transforms = selection.validate(transforms, display=pm.warning)
 
     for transform in transforms:
         addSeparator(transform)

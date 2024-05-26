@@ -33,6 +33,7 @@ class _PiperMenu(object):
         self.piper_context_menu_name = self.context_menu_name + '.' + self.label
         self.piper_folder_menu_name = self.folder_context_menu_name + '.' + self.label
         self.piper_animation_menu_name = self.piper_main_menu_name + '.' + 'Animation'
+        self.piper_level_menu_name = self.piper_main_menu_name + '.' + 'Level'
         self.piper_settings_menu_name = self.piper_main_menu_name + '.' + 'Settings'
         self.tool = ue.ToolMenus.get()
 
@@ -50,6 +51,7 @@ class _PiperMenu(object):
         self.buildFolder()
         self.buildMain()
         self.buildAnimation()
+        self.buildLevel()
         self.buildSettings()
         return self.instance
 
@@ -121,6 +123,12 @@ class _PiperMenu(object):
         """
         return self.setOwner(self.piper_animation_menu_name, section)
 
+    def setPiperLevelMenuAsOwner(self, section):
+        """
+        Convenience method for setting Piper Animation Submenu as the owner.
+        """
+        return self.setOwner(self.piper_level_menu_name, section)
+
     def setPiperSettingsMenuAsOwner(self, section):
         """
         Convenience method for setting Piper Settings Submenu as the owner.
@@ -152,6 +160,13 @@ class _PiperMenu(object):
         Convenience method for building the Piper Animation Submenu.
         """
         self.label = 'Animation'
+        self._build(self.setPiperMainMenuAsOwner, 'Main')
+
+    def buildLevel(self):
+        """
+        Convenience method for building the Piper Level Submenu.
+        """
+        self.label = 'Level'
         self._build(self.setPiperMainMenuAsOwner, 'Main')
 
     def buildSettings(self):
@@ -273,6 +288,10 @@ def create():
         menu.setPiperAnimationMenuAsOwner('Scripts')
         menu.add(animation.printUnusedSequences)
         menu.add(animation.printUnusedSelectedSequences)
+
+        # level sub-menu
+        menu.setPiperLevelMenuAsOwner('Scripts')
+        menu.add(copier.level, 'Copy Level Package Name')
 
         # settings sub-menu
         menu.setPiperSettingsMenuAsOwner('Scripts')

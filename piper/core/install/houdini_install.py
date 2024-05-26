@@ -13,7 +13,8 @@ piper_package = os.path.join(packages_directory, 'piper.json')
 if not os.path.exists(packages_directory):
     os.makedirs(packages_directory)
 
-data = {"env": [{"PIPER_DIR": environment_directory}],
+data = {"env": [{"PIPER_DIR": environment_directory},
+                {"HOUDINI_EXTERNAL_HELP_BROWSER": 1}],
         "path": environment_directory + '/houdini'}
 
 print('Writing environment to: {}'.format(piper_package))

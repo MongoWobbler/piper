@@ -1,4 +1,4 @@
-//  Copyright (c) 2021 Christian Corsica. All Rights Reserved.#ifndef PIPER_PIPERFK_H
+//  Copyright (c) Christian Corsica. All Rights Reserved.
 
 #pragma once
 

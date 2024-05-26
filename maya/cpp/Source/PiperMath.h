@@ -1,4 +1,4 @@
-//  Copyright (c) 2021 Christian Corsica. All Rights Reserved.#ifndef PIPER_PIPERMATH_H
+//  Copyright (c) Christian Corsica. All Rights Reserved.
 
 #pragma once
 
@@ -63,7 +63,7 @@ public:
 public:
     static MTypeId type_ID;
     static MString node_name;
-    static MObject use_orient;
+    static MObject weight;
     static MObject position_matrix;
     static MObject orient_matrix;
     static MObject output;

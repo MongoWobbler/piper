@@ -1,4 +1,4 @@
-//  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+//  Copyright (c) Christian Corsica. All Rights Reserved.
 
 #include "PiperMath.h"
 #include "util.h"
@@ -6,6 +6,7 @@
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnCompoundAttribute.h>
+#include <maya/MQuaternion.h>
 #include <maya/MGlobal.h>
 
 #include <iso646.h>
@@ -227,7 +228,7 @@ MStatus PiperOneMinus::compute(const MPlug &plug, MDataBlock &data)
 // Piper Orient Matrix
 MTypeId PiperOrientMatrix::type_ID(0x0013714A);
 MString PiperOrientMatrix::node_name("piperOrientMatrix");
-MObject PiperOrientMatrix::use_orient;
+MObject PiperOrientMatrix::weight;
 MObject PiperOrientMatrix::position_matrix;
 MObject PiperOrientMatrix::orient_matrix;
 MObject PiperOrientMatrix::output;
@@ -244,11 +245,12 @@ MStatus PiperOrientMatrix::initialize()
     MFnMatrixAttribute matrix_fn;
     MFnNumericAttribute numeric_fn;
 
-    use_orient = numeric_fn.create("useOrient", "uso", MFnNumericData::kBoolean, 1.0);
+    weight = numeric_fn.create("weight", "weg", MFnNumericData::kDouble, 0.0);
     numeric_fn.setStorable(true);
     numeric_fn.setKeyable(true);
-    numeric_fn.setWritable(true);
-    addAttribute(use_orient);
+    numeric_fn.setMin(0);
+    numeric_fn.setMax(1);
+    addAttribute(weight);
 
     position_matrix = matrix_fn.create("positionMatrix", "pom");
     matrix_fn.setStorable(true);
@@ -266,7 +268,7 @@ MStatus PiperOrientMatrix::initialize()
     matrix_fn.setWritable(false);
     addAttribute(output);
 
-    attributeAffects(use_orient, output);
+    attributeAffects(weight, output);
     attributeAffects(position_matrix, output);
     attributeAffects(orient_matrix, output);
 
@@ -278,36 +280,34 @@ MStatus PiperOrientMatrix::compute(const MPlug &plug, MDataBlock &data)
 {
     if (plug == output)
     {
-        bool use_orient_value = data.inputValue(use_orient).asBool();
+        double weight_value = data.inputValue(weight).asDouble();
         MMatrix orient_matrix_value = data.inputValue(orient_matrix).asMatrix();
+        MMatrix position_matrix_value = data.inputValue(position_matrix).asMatrix();
 
-        if (use_orient_value)
-        {
-            MMatrix position_matrix_value = data.inputValue(position_matrix).asMatrix();
+        MTransformationMatrix position_transform = MTransformationMatrix(position_matrix_value);
+        MTransformationMatrix orient_transform = MTransformationMatrix(orient_matrix_value);
+        MQuaternion position_quaternion = position_transform.rotation();
+        MQuaternion orient_quaternion = orient_transform.rotation();
+
+        MQuaternion output_quaternion;
+        output_quaternion = slerp(position_quaternion, orient_quaternion, weight_value);
 
 
-            MTransformationMatrix position_transform = MTransformationMatrix(position_matrix_value);
-            MTransformationMatrix orient_transform = MTransformationMatrix(orient_matrix_value);
-            MTransformationMatrix output_transform;
 
-            double x, y, z, w;
-            orient_transform.getRotationQuaternion(x, y, z, w);
-            output_transform.setRotationQuaternion(x, y, z, w);
+        MTransformationMatrix output_transform;
 
-            double scale[3];
-            position_transform.getScale(scale, MSpace::kWorld);
-            output_transform.setScale(scale, MSpace::kWorld);
-            output_transform.setTranslation(position_transform.getTranslation(MSpace::kWorld), MSpace::kWorld);
+//        double x, y, z, w;
+//        orient_transform.getRotationQuaternion(x, y, z, w);
+//        output_transform.setRotationQuaternion(x, y, z, w);
+        output_transform.rotateTo(output_quaternion);
 
-            data.outputValue(output).set(output_transform.asMatrix());
-        }
-        else
-        {
-            data.outputValue(output).set(orient_matrix_value);
-        }
+        double scale[3];
+        position_transform.getScale(scale, MSpace::kWorld);
+        output_transform.setScale(scale, MSpace::kWorld);
+        output_transform.setTranslation(position_transform.getTranslation(MSpace::kWorld), MSpace::kWorld);
 
+        data.outputValue(output).set(output_transform.asMatrix());
         data.outputValue(output).setClean();
-
     }
 
     return MS::kSuccess;

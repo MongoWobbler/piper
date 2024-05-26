@@ -197,11 +197,13 @@ class PiperExportMenu(PiperMenu):
 
     def __init__(self, title='Export', *args, **kwargs):
         super(PiperExportMenu, self).__init__(title, *args, **kwargs)
+        self.game_export = None
+        self.current_export = None
         self.build()
 
     def build(self):
-        self.add(self.exportToGame)
-        self.add(self.exportToCurrentDirectory)
+        self.game_export = self.add(self.exportToGame)
+        self.current_export = self.add(self.exportToCurrentDirectory)
         self.addSeparator()
         self.add(self.exportMeshesToCurrentAsObj, 'Export Meshes to Current as OBJ')
         self.addSeparator()

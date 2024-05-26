@@ -704,7 +704,7 @@ class Rig(object):
         return space.create(transform=transform, spaces=spaces, direct=direct, warn=warn)
 
     @_mirror
-    def switchSpace(self, transform, new_space=None, t=True, r=True, o=False, s=True, key=False):
+    def switchSpace(self, transform, new_space=None, t=1.0, r=1.0, o=0.0, s=1.0, key=False):
         """
         Wrapper around switch function in space module but with mirror functionality.
         Switches the given transform to the given new_space maintaining the world transform of the given transform.
@@ -715,13 +715,13 @@ class Rig(object):
 
             new_space (string or None): Name of space attribute to switch to.
 
-            t (boolean): If True, space will affect translate values.
+            t (float): If True, space will affect translate values.
 
-            r (boolean): If True, space will affect rotate values.
+            r (float): If True, space will affect rotate values.
 
-            o (boolean): If True, space will affect orient values.
+            o (float): If True, space will affect orient values.
 
-            s (boolean): If True, space will affect scale values.
+            s (float): If True, space will affect scale values.
 
             key (boolean): If True, will set a key at the previous frame on the transform.
         """
@@ -1247,9 +1247,9 @@ class Rig(object):
             driver.worldMatrix >> blend_matrix.inputMatrix
             target.worldMatrix >> blend_matrix.target[0].targetMatrix
             blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
-            blend_matrix.target[0].useRotate.set(False)
-            blend_matrix.target[0].useScale.set(False)
-            blend_matrix.target[0].useShear.set(False)
+            blend_matrix.target[0].rotateWeight.set(0)
+            blend_matrix.target[0].scaleWeight.set(0)
+            blend_matrix.target[0].shearWeight.set(0)
 
             # create attribute on control to drive the distance weight
             ctrl.addAttr(mcfg.twist_blend_weight_attribute, k=True, dv=1, hsx=True, hsn=True, smn=-1, smx=1)
@@ -1365,7 +1365,7 @@ class Rig(object):
                 blend_matrix = pm.createNode('blendMatrix', n=joint_name + mcfg.blend_matrix_suffix)
                 start_joint.worldMatrix >> blend_matrix.inputMatrix
                 end_joint.worldMatrix >> blend_matrix.target[0].targetMatrix
-                blend_matrix.target[0].useRotate.set(0)
+                blend_matrix.target[0].rotateWeight.set(0)
                 blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
             else:
                 si = str(i)
@@ -1381,7 +1381,7 @@ class Rig(object):
                 start_joint.worldMatrix >> blend_matrix.inputMatrix
                 end_joint.worldMatrix >> blend_matrix.target[0].targetMatrix
                 decimal_distance >> blend_matrix.target[0].weight
-                blend_matrix.target[0].useRotate.set(0)
+                blend_matrix.target[0].rotateWeight.set(0)
                 blend_matrix.outputMatrix >> ctrl.offsetParentMatrix
 
                 # inner control

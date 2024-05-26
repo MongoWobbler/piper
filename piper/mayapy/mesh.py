@@ -4,7 +4,9 @@ import maya.OpenMaya as om
 import pymel.core as pm
 
 import piper.config as pcfg
+import piper.config.maya as mcfg
 import piper.mayapy.hierarchy as hierarchy
+import piper.mayapy.selection as selection
 
 
 def exists(node):
@@ -92,6 +94,7 @@ def getVerticesAtHeight(mesh_name, height):
 def getAttributed(parent=None):
     """
     Gets the mesh named accordingly to have export attributes written on to it.
+    Export attributes are mostly used with metadata in engine.
 
     Args:
         parent (pm.nodetypes.Transform): Node to get children of to find mesh with export name.
@@ -108,3 +111,32 @@ def getAttributed(parent=None):
             return transform
 
     pm.error('No meshes with name: "{}". Please name one mesh as such.'.format(pcfg.mesh_with_attribute_name))
+
+
+def assignCollisions(transforms=None):
+    """
+    Assigns the selected transforms as collisions to the LAST selected/given transform by
+    renaming and parenting the transforms. Also creates and assigns Collision display layer.
+
+    Args:
+        transforms (pm.nodetypes.Transform): Nodes to assign as transforms. Last in list will be used for name/group.
+    """
+    transforms = selection.validate(transforms)
+    mesh = transforms[-1]
+    mesh_parent = mesh.getParent()
+    collisions = transforms[:-1]
+
+    if mesh_parent:
+        pm.parent(collisions, mesh_parent)
+
+    # maya automatically handles the index number renaming for us :)
+    {pm.rename(collision, f"{mcfg.collision_prefix}{mesh.name()}_01") for collision in collisions}
+
+    if pm.objExists(mcfg.collision_layer_name):
+        collision_layer = pm.PyNode(mcfg.collision_layer_name)
+    else:
+        collision_layer = pm.createDisplayLayer(name=mcfg.collision_layer_name)
+        collision_layer.displayType.set(1)
+
+    # adds the collision objects to the display layer
+    pm.editDisplayLayerMembers(collision_layer, collisions)

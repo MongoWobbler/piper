@@ -24,8 +24,6 @@ class Maya(DCC):
         self.relative_batch_path = ['bin', 'mayabatch.exe']
         self.relative_process_path = ['bin', self.process_name]
         self.package_directory = 'scripts/site-packages'
-        self.packages_to_install = [{'name': 'pymel', 'min': '2024'},  # min/max version are inclusive
-                                    {'name': 'p4python', 'min': '2023'}]
         self.open_command = "import pymel.core as pm; import piper.mayapy.ui.window as uiwindow; None if " \
                             "uiwindow.save() else pm.error('Maya scene was not saved.'); pm.openFile(r'{}', f=True) "
         self.export_command = "import pymel.core as pm; import setup; setup.piperTools(is_headless=True); " \
@@ -90,6 +88,6 @@ class Maya(DCC):
         pip_command = [python, '-m', 'pip', 'install']
 
         [subprocess.run(pip_command + [package['name'], '--upgrade', '--target', target_directory])
-         for package in self.packages_to_install if vendor.isValid(package, version)]
+         for package in pcfg.packages_to_install[self.name] if vendor.isValid(package, version)]
 
         return result

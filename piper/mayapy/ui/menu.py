@@ -28,6 +28,7 @@ import piper.mayapy.ui.window as mywindow
 import piper.mayapy.pipe.export as export
 import piper.mayapy.pipe.paths as paths
 import piper.mayapy.pipe.perforce as perforce
+import piper.mayapy.mesh as mesh
 import piper.mayapy.modifier as modifier
 import piper.mayapy.plugin as plugin
 import piper.mayapy.pipernode as pipernode
@@ -138,6 +139,14 @@ class MayaPerforceMenu(PiperPerforceMenu):
 
 class MayaExportMenu(PiperExportMenu):
 
+    def updateTooltips(self):
+        self.game_export.setToolTip("\n    Exports to: " + paths.getGameExport() + "\n")
+        self.current_export.setToolTip("\n    Exports to: " + paths.getSelfExport() + "\n")
+
+    def build(self):
+        super(MayaExportMenu, self).build()
+        self.aboutToShow.connect(self.updateTooltips)
+
     def exportToGame(self):
         export.piperNodesToGameAsFBX()
 
@@ -182,6 +191,8 @@ class MayaNodesMenu(MayaPiperMenu):
         self.add(pipernode.createMesh)
         self.add(pipernode.createSkinnedMesh)
         self.add(pipernode.createAnimation)
+        self.addSeparator()
+        self.add(mesh.assignCollisions)
 
 
 class MayaBonesMenu(MayaPiperMenu):

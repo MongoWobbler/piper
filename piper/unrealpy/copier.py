@@ -1,5 +1,6 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
+import unreal
 import piper.core.filer as filer
 import piper.unrealpy.browser as browser
 
@@ -41,7 +42,7 @@ def assetNames():
 
 def packageNames():
     """
-    Copies the asset names to the clipboard.
+    Copies the full package names to the clipboard.
     """
     asset_data = browser.getSelectedAssetData()
     names = formatPackageName(asset_data)
@@ -55,3 +56,12 @@ def folderPaths():
     folder_paths = browser.getSelectedFolders()
     folder_paths = '\n'.join([str(path) for path in folder_paths])
     return filer.copyToClipboard(folder_paths)
+
+
+def level():
+    """
+    Copies the full package name of the open level to the clipboard.
+    """
+    current_level = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).get_current_level()
+    name = unreal.SystemLibrary.get_path_name(current_level).split(".")[0]
+    filer.copyToClipboard(name)
