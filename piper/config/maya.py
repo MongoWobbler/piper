@@ -211,3 +211,7 @@ bookmark_suffix = '_bookmark'
 bookmark_clip_colors = {'Squat': 'pastel green',
                         'Start': 'pastel yellow',
                         'Pose': 'pastel red'}
+
+# Menu
+game_not_set = 'Game directory is not set. Please use "Piper>Export>Set Game Directory" to set export directory.'
+art_not_set = 'Please save the scene or set the Art Directory before exporting to self.'

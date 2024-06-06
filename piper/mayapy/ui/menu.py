@@ -140,8 +140,13 @@ class MayaPerforceMenu(PiperPerforceMenu):
 class MayaExportMenu(PiperExportMenu):
 
     def updateTooltips(self):
-        self.game_export.setToolTip("\n    Exports to: " + paths.getGameExport() + "\n")
-        self.current_export.setToolTip("\n    Exports to: " + paths.getSelfExport() + "\n")
+        game_export = paths.getGameExport(error=False)
+        game_tip = f'\n    Exports to: {game_export} \n' if game_export else mcfg.game_not_set
+        self.game_export.setToolTip(game_tip)
+
+        current_directory = paths.getSelfExport(error=False)
+        art_tip = f'\n    Exports to: {current_directory} \n' if current_directory else mcfg.art_not_set
+        self.current_export.setToolTip(art_tip)
 
     def build(self):
         super(MayaExportMenu, self).build()

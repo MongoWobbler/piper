@@ -42,12 +42,14 @@ def getRelativeArt(path='', name=''):
     return relative_art.replace('\\', '/')
 
 
-def getSelfExport(name=''):
+def getSelfExport(name='', error=True):
     """
     Gets the current scene's directory if scene is saved, else uses the art directory.
 
     Args:
         name (string): Name of file to return.
+
+        error (bool): If True and art directory is not found, will raise error. Else will return None.
 
     Returns:
         (string): Full path with given name.
@@ -58,7 +60,7 @@ def getSelfExport(name=''):
     else:
         art_directory = piper_store.get(pcfg.art_directory)
         if not art_directory:
-            pm.error('Please save the scene or set the Art Directory before exporting to self.')
+            return pm.error(mcfg.art_not_set) if error else None
 
         export_directory = art_directory
 
@@ -66,12 +68,14 @@ def getSelfExport(name=''):
     return export_path
 
 
-def getGameExport(name=''):
+def getGameExport(name='', error=True):
     """
     Gets the game path for the given scene. If no scene open, will use game root directory.
 
     Args:
         name (string): Name of file to return.
+
+        error (bool): If True and game directory is not found, will raise error. Else will return None.
 
     Returns:
         (string): Full path with given name.
@@ -81,7 +85,7 @@ def getGameExport(name=''):
     relative_directory = ''
 
     if not game_directory:
-        pm.error('Game directory is not set. Please use "Piper>Export>Set Game Directory" to set export directory.')
+        return pm.error(mcfg.game_not_set) if error else None
 
     if scene_path:
         source_directory = os.path.dirname(scene_path)
