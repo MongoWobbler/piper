@@ -21,12 +21,11 @@ import piper.mayapy.rig.control as control
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
 import piper.mayapy.ui.clipper as myclipper
+import piper.mayapy.ui.projects as myprojects
 import piper.mayapy.ui.switcher as myswitcher
 import piper.mayapy.ui.vert_selector as myvert_selector
 import piper.mayapy.ui.widget as mywidget
 import piper.mayapy.ui.window as mywindow
-import piper.mayapy.pipe.export as export
-import piper.mayapy.pipe.paths as paths
 import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.mesh as mesh
 import piper.mayapy.modifier as modifier
@@ -38,6 +37,8 @@ import piper.mayapy.animation.key as key
 import piper.mayapy.animation.resolution as resolution
 
 from piper.core.store import piper_store
+from piper.mayapy.pipe.paths import maya_paths
+from piper.mayapy.pipe.export import maya_export
 from piper.mayapy.pipe.store import maya_store
 from piper.ui.menu import PiperMenu, PiperSceneMenu, PiperPerforceMenu, PiperExportMenu, getPiperMainMenu
 
@@ -60,22 +61,9 @@ class MayaPiperMenu(PiperMenu):
 
 class MayaSceneMenu(PiperSceneMenu):
 
-    def openSceneInOS(self):
-        """
-        Opens the current scene in a OS window.
-        """
-        filer.openWithOS(os.path.dirname(pm.sceneName()))
-
-    def copyCurrentSceneToClipboard(self):
-        """
-        Copies the current scene to the clipboard.
-        """
-        scene_path = pm.sceneName()
-
-        if not scene_path:
-            pm.error('Scene is not saved!')
-
-        filer.copyToClipboard(scene_path)
+    def build(self):
+        self.dcc_paths = maya_paths
+        super(MayaSceneMenu, self).build()
 
     def reloadCurrentScene(self):
         """
@@ -118,7 +106,7 @@ class MayaSceneMenu(PiperSceneMenu):
 class MayaPerforceMenu(PiperPerforceMenu):
 
     def afterAdded(self):
-        state = piper_store.get(pcfg.use_perforce)
+        state = maya_store.get(mcfg.use_perforce)
         self.menuAction().setVisible(state)
 
     def addScene(self):
@@ -131,44 +119,18 @@ class MayaPerforceMenu(PiperPerforceMenu):
         Returns:
             (boolean): Setting stored in store.
         """
-        return piper_store.get(pcfg.p4_add_after_save)
+        return maya_store.get(mcfg.p4_add_after_save)
 
     def onAddSceneAfterSavingPressed(self, state):
-        piper_store.set(pcfg.p4_add_after_save, state)
+        maya_store.set(mcfg.p4_add_after_save, state)
 
 
 class MayaExportMenu(PiperExportMenu):
 
-    def updateTooltips(self):
-        game_export = paths.getGameExport(error=False)
-        game_tip = f'\n    Exports to: {game_export} \n' if game_export else mcfg.game_not_set
-        self.game_export.setToolTip(game_tip)
-
-        current_directory = paths.getSelfExport(error=False)
-        art_tip = f'\n    Exports to: {current_directory} \n' if current_directory else mcfg.art_not_set
-        self.current_export.setToolTip(art_tip)
-
     def build(self):
+        self.dcc_paths = maya_paths
+        self.dcc_export = maya_export
         super(MayaExportMenu, self).build()
-        self.aboutToShow.connect(self.updateTooltips)
-
-    def exportToGame(self):
-        export.piperNodesToGameAsFBX()
-
-    def exportToCurrentDirectory(self):
-        export.piperNodesToSelfAsFBX()
-
-    def exportMeshesToCurrentAsObj(self):
-        export.piperMeshToSelfAsOBJ()
-
-    def setArtDirectory(self):
-        directory = super(MayaExportMenu, self).setArtDirectory()
-
-        if not directory:
-            return
-
-        settings.setProject(directory)
-
 
 class MayaCurvesMenu(MayaPiperMenu):
 
@@ -263,14 +225,14 @@ class MayaReferenceMenu(MayaPiperMenu):
 
     def build(self):
         # cannot build menu without art directory
-        art_directory = piper_store.get(pcfg.art_directory)
+        art_directory = maya_paths.getArtDirectory()
         if not art_directory:
             return
 
         rigs = pather.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, art_directory)
         for rig in rigs:
             name = os.path.basename(os.path.abspath(rig + '/../..'))
-            rig = paths.getRelativeArt(rig)
+            rig = maya_paths.getRelativeArt(rig)
             self.add(self.referenceRig, name, rig)
 
 
@@ -312,8 +274,9 @@ class MayaSettingsMenu(MayaPiperMenu):
         self.build()
 
     def build(self):
-        self.addCheckbox(piper_store.get(pcfg.use_perforce), self.onUsePerforcePressed, 'Use Perforce')
+        self.add(myprojects.show, 'Projects')
         self.addSeparator()
+        self.addCheckbox(maya_store.get(mcfg.use_perforce), self.onUsePerforcePressed, 'Use Perforce')
         self.addCheckbox(maya_store.get(mcfg.use_piper_units), self.onUseUnitsPressed, 'Use Piper Units')
         self.addCheckbox(maya_store.get(mcfg.use_piper_render), self.onUseRenderPressed, 'Use Piper Render')
         self.addCheckbox(maya_store.get(mcfg.export_ascii), self.onExportInAsciiPressed, 'Export In Ascii')
@@ -333,7 +296,7 @@ class MayaSettingsMenu(MayaPiperMenu):
         Args:
             state (boolean): Whether to use perforce or not.
         """
-        piper_store.set(pcfg.use_perforce, state)
+        maya_store.set(mcfg.use_perforce, state)
         self.parent_menu.perforce_menu.menuAction().setVisible(state)
 
     @staticmethod
@@ -365,7 +328,7 @@ class MayaSettingsMenu(MayaPiperMenu):
 
     def onSetHdrImagePressed(self):
         dialog = QtWidgets.QFileDialog()
-        starting_directory = piper_store.get(pcfg.art_directory)
+        starting_directory = maya_paths.getArtDirectory()
         file_path = dialog.getOpenFileName(self, 'Choose HDR Image', starting_directory)
 
         if not file_path:

@@ -110,6 +110,28 @@ class Store(object):
 
         return self._settings[variable]
 
+    def getChecked(self, variable, error, description):
+        """
+        Gets the stored setting associated with the given variable and checks to make sure variable value is valid.
+        If not valid, will raise given error with given description.
+
+        Args:
+            variable (string): Name of setting to search for.
+
+            error (Error): Error to raise if value of setting is not valid.
+
+            description (string): Text to raise for value being invalid.
+
+        Returns:
+            (Any): Setting stored.
+        """
+        variable = self.get(variable)
+
+        if not variable:
+            raise error(description)
+
+        return variable
+
     def set(self, variable, value):
         """
         Sets and stores the given setting based on variable and value.

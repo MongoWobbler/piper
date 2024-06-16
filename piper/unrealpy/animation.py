@@ -15,6 +15,8 @@ class Hierarchy(object):
         self.no_found_message = "Didn't find anything!"
         self.registry = ue.AssetRegistryHelpers.get_asset_registry()
         self.utilities = ue.EditorUtilityLibrary()
+        self.registry_helpers = ue.AssetRegistryHelpers()
+        self.system_library = ue.SystemLibrary()
 
         self.options = ue.AssetRegistryDependencyOptions(True, True)
 
@@ -152,15 +154,16 @@ class Dependencies(Hierarchy):
         for dependency in dependencies:
             asset_data = self.registry.get_assets_by_package_name(dependency)
             for data in asset_data:
-                cls = data.asset_class
-                if cls == self.sequence_name:
+                asset_class = self.registry_helpers.get_class(data)
+                class_name = self.system_library.get_class_display_name(asset_class)
+                if class_name == self.sequence_name:
                     self.found.add(data.package_name)
-                elif (cls == self.abp_name or
-                      cls == self.montage_name or
-                      cls == self.blendspace1_name or
-                      cls == self.blendspace_name or
-                      cls == self.offset1_name or
-                      cls == self.offset_name):
+                elif (class_name == self.abp_name or
+                      class_name == self.montage_name or
+                      class_name == self.blendspace1_name or
+                      class_name == self.blendspace_name or
+                      class_name == self.offset1_name or
+                      class_name == self.offset_name):
                     self._getRecursive(data.package_name)
 
     @python.measureTime

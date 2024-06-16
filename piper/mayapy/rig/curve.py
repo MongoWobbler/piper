@@ -4,6 +4,7 @@
 import os
 import pymel.core as pm
 
+import piper.config.maya as mcfg
 import piper.core
 import piper.mayapy.mesh as mesh
 import piper.mayapy.plugin as plugin
@@ -641,7 +642,7 @@ def layoutColors(spacing=4, axis=None, shape=circle):
     return curves
 
 
-@plugin.loadHoudiniEngine
+@plugin.runtimeLoad(mcfg.houdini_plugin)
 def crossSection(meshes=None):
     """
     Gets the cross-section of a mesh as a curve.

@@ -23,7 +23,8 @@ class MayaClipper(Clipper):
     def __init__(self, *args, **kwargs):
         super(MayaClipper, self).__init__(*args, **kwargs)
         manager.register(self, self.create_command)
-        self.callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.refresh)
+        self.callbacks = [om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.refresh),
+                          om.MSceneMessage.addCallback(om.MSceneMessage.kAfterNew, self.refresh)]
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
 
@@ -89,7 +90,7 @@ class MayaClipper(Clipper):
 
         pm.displayInfo('Saved {} clips.'.format(str(clip_count)))
         
-    def close(self, *args, **kwargs):
+    def close(self, *_, **__):
         """
         Overriding close method to use the controller class function instead.
 
@@ -117,7 +118,7 @@ def unregister():
     if MayaClipper.instance is None:
         return
 
-    om.MEventMessage.removeCallback(MayaClipper.instance.callback)
+    [om.MEventMessage.removeCallback(callback) for callback in MayaClipper.instance.callbacks]
     manager.unregister(MayaClipper.instance)
     QtCompat.delete(MayaClipper.instance)
     MayaClipper.instance = None

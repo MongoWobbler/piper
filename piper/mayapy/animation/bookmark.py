@@ -4,9 +4,11 @@ import pymel.core as pm
 import maya.plugin.timeSliderBookmark.timeSliderBookmark as bookmark
 
 import piper.config.maya as mcfg
+import piper.mayapy.plugin as plugin
 import piper.mayapy.convert as convert
 
 
+@plugin.runtimeLoad(mcfg.bookmark_plugin)
 def fromClipData(clip_data):
     """
     Creates bookmarks from the given clip data if it doesn't exist, else makes sure time and color is set correctly.

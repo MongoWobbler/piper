@@ -161,6 +161,42 @@ def addMenuItem(menu, on_pressed, name=None, unwrapped=None, actions=None):
     return action
 
 
+def colorTextStart(start_text, end_text='', color='red'):
+    """
+    Adds HTML tags around the given start text that attempts to set the Rich Text to the given color.
+    Followed by the end text, which will remain in the default color.
+
+    Args:
+        start_text (string): Text to color.
+
+        end_text (string): Text to append after colored text.
+
+        color (string): Name of color or HEX code for color.
+
+    Returns:
+        (string): Text wrapped in HTML tags that color text in Rich Text environments.
+    """
+    return f'<span style="color:{color};">{start_text}</span>{end_text}'
+
+
+def colorTextEnd(start_text, end_text='', color='red'):
+    """
+    Adds HTML tags around the given end_text that attempts to set the Rich Text to the given color.
+    Preceded by the start text, which will remain in the default color.
+
+    Args:
+        start_text (string): Text to keep color.
+
+        end_text (string): Text to color after start text.
+
+        color (string): Name of color or HEX code for color.
+
+    Returns:
+        (string): Text wrapped in HTML tags that color text in Rich Text environments.
+    """
+    return f'{start_text}<span style="color:{color};">{end_text}</span>'
+
+
 def separator(layout=None, *args, **kwargs):
     """
     Creates a separator widget (horizontal line)
@@ -176,6 +212,27 @@ def separator(layout=None, *args, **kwargs):
     line.setFrameShape(QtWidgets.QFrame.HLine)
     line.setFrameShadow(QtWidgets.QFrame.Sunken)
     line.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+
+    if layout:
+        layout.addWidget(line, *args, **kwargs)
+
+    return line
+
+
+def separatorVertical(layout=None, *args, **kwargs):
+    """
+    Creates a separator widget (vertical line)
+
+    Args:
+        layout (QtWidgets.QLayout): Layout to add separator to.
+
+    Returns:
+        (QtWidgets.QFrame): Widget created.
+    """
+    line = QtWidgets.QFrame()
+    line.setFrameShape(QtWidgets.QFrame.VLine)
+    line.setFrameShadow(QtWidgets.QFrame.Sunken)
+    line.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
 
     if layout:
         layout.addWidget(line, *args, **kwargs)

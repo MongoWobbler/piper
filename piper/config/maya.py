@@ -25,6 +25,9 @@ port = 4439
 address = (host, port)
 
 # Store
+current_project = 'current_project'
+use_perforce = 'use_p4'
+p4_add_after_save = 'p4_add_after_save'
 use_piper_units = 'use_piper_units'
 export_ascii = 'export_ascii'
 hdr_image_path = 'hdr_image_path'
@@ -38,7 +41,10 @@ switcher_translate_box = 'switcher_translate_box'
 switcher_rotate_box = 'switcher_rotate_box'
 switcher_orient_box = 'switcher_orient_box'
 switcher_scale_box = 'switcher_scale_box'
-store_defaults = {use_piper_units: False,
+store_defaults = {current_project: None,
+                  use_perforce: False,
+                  p4_add_after_save:  False,
+                  use_piper_units: False,
                   use_piper_render: False,
                   unload_unwanted: False,
                   export_ascii: 0,  # 0 instead of False because FBX options takes int, not bool
@@ -62,6 +68,10 @@ workspace_control_suffix = 'WorkspaceControl'
 default_rendering_api = 'DirectX11'
 default_tone_map = 'Un-tone-mapped (sRGB)'
 default_initial_material = 'lambert'
+
+# Plugin Names
+houdini_plugin = 'houdiniEngine'
+bookmark_plugin = 'timeSliderBookmark'
 
 # Mesh
 collision_layer_name = "Collision"
@@ -211,7 +221,3 @@ bookmark_suffix = '_bookmark'
 bookmark_clip_colors = {'Squat': 'pastel green',
                         'Start': 'pastel yellow',
                         'Pose': 'pastel red'}
-
-# Menu
-game_not_set = 'Game directory is not set. Please use "Piper>Export>Set Game Directory" to set export directory.'
-art_not_set = 'Please save the scene or set the Art Directory before exporting to self.'

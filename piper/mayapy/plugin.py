@@ -54,25 +54,26 @@ def loadAll():
     [load(os.path.basename(plugin)) for plugin in plugins]
 
 
-def loadHoudiniEngine(method):
+def runtimeLoad(plugin):
     """
-    Decorator function that attempts to load the houdini engine.
-    Houdini plug-in should not be set to autoload, so use this anytime you need to call a function that use the plug-in.
+    Decorator function that attempts to load the given plugin_name.
+    Plug-in should not be set to autoload, so use this anytime you need to call a function that uses the plug-in.
 
     Args:
-        method (method): Function to call after plugin has loaded.
+        plugin (string): Name of plugin to load
 
     Returns:
-        (method): Wrapper method.
+        (decorator): Decorator with correct argument. 
     """
-    def wrapper(*args,  **kwargs):
-        try:
-            # try to load houdini engine plug-in to make sliding pivot curve
-            pm.loadPlugin('houdiniEngine', qt=True)
-        except RuntimeError:
-            pm.warning('Houdini Engine not found!')
-            return
+    def parametrized(method):
+        def wrapper(*args,  **kwargs):
+            try:
+                # try to load houdini engine plug-in to make sliding pivot curve
+                pm.loadPlugin(plugin, qt=True)
+            except RuntimeError:
+                pm.warning(f'{plugin} not found!')
+                return
 
-        return method(*args, **kwargs)
-
-    return wrapper
+            method(*args, **kwargs)
+        return wrapper
+    return parametrized

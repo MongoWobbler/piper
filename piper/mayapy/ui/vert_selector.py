@@ -28,7 +28,7 @@ class MayaVertSelector(VertSelector):
 
     def showInMaya(self):
         """
-        Creates the controller to handle Maya integration with this class' widget. This replaces widget.show
+        Creates the controller to handle Maya integration with this class' widget. This replaces widget.show()
         """
         self.controller = Controller(self.__class__.ui_name)
 
@@ -39,7 +39,7 @@ class MayaVertSelector(VertSelector):
 
         self.controller.setVisible(True)
 
-    def onSelectPressed(self, *args, **kwargs):
+    def onSelectPressed(self, *_, **__):
         """
         Selects the verts based on the input of the operator and slider value.
         """
@@ -50,7 +50,7 @@ class MayaVertSelector(VertSelector):
         self.last_selected = joints
         self.last_selected_button.setText('Previously: ' + ', '.join([joint.name() for joint in joints]))
 
-    def onLastSelectedPressed(self, *args, **kwargs):
+    def onLastSelectedPressed(self, *_, **__):
         """
         Selects the verts based on the input of the operator and slider value and the last selected joints
         """
@@ -66,7 +66,7 @@ class MayaVertSelector(VertSelector):
         operator = self.combobox.currentText()
         skin.selectWeightedVerts(joints=joints, operator=operator, threshold=threshold)
 
-    def close(self, *args, **kwargs):
+    def close(self, *_, **__):
         """
         Overriding close method to use the controller class function instead.
 

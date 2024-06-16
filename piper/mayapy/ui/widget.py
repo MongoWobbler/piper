@@ -8,6 +8,8 @@ import maya.OpenMayaUI as omui
 import pymel.core as pm
 
 import piper.config.maya as mcfg
+from piper.core.dcc.template.widget_qt import WidgetQTDCC
+from piper.mayapy.pipe.paths import maya_paths
 
 
 if sys.version_info > (3,):
@@ -53,15 +55,19 @@ def getMainMenuBar():
 
 class Controller(object):
 
-    def __init__(self, name):
+    def __init__(self, name, alm=False):
         """
         Class to handle interactions with pm.workspaceControl function used to add QT widgets to Maya.
         pm.workspaceControl handles docking, and stores window settings.
 
         Args:
             name (string): Name of the widget to pass to Maya to store.
+
+            alm (bool): Controls whether this workspace control acts like Maya UI Elements.
+            For example, this hides the tab bar and shows a toolbar grip on the end of the control to allow undocking.
         """
         self.name = name + mcfg.workspace_control_suffix
+        self.alm = alm
         self.widget = None
 
     def create(self, label, widget, ui_script=None, close_script=None):
@@ -78,6 +84,7 @@ class Controller(object):
             close_script (string): Python code to run when window is closed.
         """
         pm.workspaceControl(self.name, label=label)
+        pm.workspaceControl(self.name, e=True, alm=self.alm)
 
         if ui_script:
             pm.workspaceControl(self.name, e=True, uiScript=ui_script)
@@ -111,6 +118,7 @@ class Controller(object):
         if not widget:
             pm.error('No widget was given!')
 
+        pm.workspaceControl(self.name, e=True, alm=self.alm)
         self.widget = widget
         self.widget.setAttribute(QtCore.Qt.WA_DontCreateNativeAncestors)
 
@@ -184,3 +192,13 @@ class Controller(object):
             (boolean): True if closing occurred.
         """
         return pm.workspaceControl(self.name, edit=True, close=True)
+
+
+class MayaWidget(WidgetQTDCC):
+
+    def __init__(self):
+        super(MayaWidget, self).__init__()
+        self.dcc_paths = maya_paths
+
+
+maya_widget = MayaWidget()

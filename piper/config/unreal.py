@@ -5,6 +5,10 @@ plugin_name = "Piper"
 plugin_path = 'unreal/' + plugin_name
 plugins_directory_name = "Plugins"
 
+# Store
+current_project = 'current_project'
+store_defaults = {current_project: None}
+
 # Menu
 menu_label = 'Piper'
 

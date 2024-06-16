@@ -8,6 +8,8 @@ import webbrowser
 import piper.config as pcfg
 import piper.core.dcc as dcc
 
+from . import filer
+
 
 def getPiperDirectory():
     """
@@ -17,6 +19,14 @@ def getPiperDirectory():
         (string): Path to piper directory.
     """
     return os.environ['PIPER_DIR']
+
+
+def openPiperDirectoryInOS():
+    """
+    Opens the piper toolset directory currently being used in OS window.
+    """
+    piper_directory = getPiperDirectory()
+    filer.openWithOS(piper_directory)
 
 
 def getTempDirectory(create=True):
@@ -45,6 +55,17 @@ def deleteTempDirectory():
 
     if os.path.exists(directory) and not os.listdir(directory):
         os.rmdir(directory)
+
+
+def getIconsDirectory():
+    """
+    Gets directory where all the icons are stored for piper.
+
+    Returns:
+        (string): Full path to piper icons directory.
+    """
+    piper_directory = getPiperDirectory()
+    return os.path.join(piper_directory, 'maya', 'icons')
 
 
 def setPiperDirectory():

@@ -11,6 +11,7 @@ import piper.config.maya as mcfg
 
 import piper.core
 import piper.core.namer as namer
+import piper.core.pather as pather
 import piper.core.pythoner as python
 
 import piper.mayapy
@@ -20,8 +21,8 @@ import piper.mayapy.attribute as attribute
 import piper.mayapy.hierarchy as hierarchy
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.selection as selection
-import piper.mayapy.pipe.paths as paths
 import piper.mayapy.ui.window as uiwindow
+from piper.mayapy.pipe.paths import maya_paths
 from piper.mayapy.mirror import _mirror, _ignoreMirror
 
 from . import bone
@@ -83,6 +84,21 @@ def getSkeletonMeshes(rigs=None):
     nodes = getSkeletonNodes(rigs=rigs)
     return {mesh.getParent(): {'skinned_mesh': node, 'rig': rig} for node, rig in nodes.items()
             for mesh in node.getChildren(ad=True, type='mesh')}
+
+
+def getRigPath(path):
+    """
+    Gets the rig associated with the given path. Could return None if no rig found.
+
+    Args:
+        path (string): Starting path to search for rig. Could be directory or full file path.
+
+    Returns:
+        (string): Path to rig associated with given path.
+    """
+    directory = path if os.path.isdir(path) else os.path.dirname(path)
+    rigs = pather.getAllFilesEndingWithWord(mcfg.maya_rig_suffixes, directory)
+    return rigs[0] if rigs else None
 
 
 def setLockOnMeshes(lock):
@@ -236,7 +252,7 @@ class Rig(object):
 
         # getRelativeArt checks if scene is saved
         self.path = path
-        skeleton_path = paths.getRelativeArt(path=path)
+        skeleton_path = maya_paths.getRelativeArt(path=path)
         rig_name, _ = os.path.splitext(os.path.basename(skeleton_path))
         rig_name = rig_name.split(mcfg.skinned_mesh_prefix)[-1]
 
@@ -447,7 +463,7 @@ class Rig(object):
 
         if self.copy_controls and self.path:
             pm.select(cl=True)
-            rig_path = paths.getRigPath(self.path)
+            rig_path = getRigPath(self.path)
 
             if rig_path:
                 control.replaceShapes(rig_path)

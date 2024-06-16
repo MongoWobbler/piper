@@ -1,12 +1,14 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+
 import piper.config as pcfg
 import piper.core
 import piper.core.dcc as dcc
 import piper.core.pythoner as python
-import piper.unrealpy.metadata as metadata
 from piper.core.store import piper_store
+
+import piper.unrealpy.metadata as metadata
 
 
 def openInDCC():
@@ -14,12 +16,12 @@ def openInDCC():
     Opens the selected asset in its source DCC if it has any.
 
     Returns:
-        (list): Metadata with source DCC, relative source path, piper_node, and export method.
+        (list): Metadata with source DCC, relative source path, piper_node, export method, and project.
     """
-    app, source_path, piper_node, export_method = metadata.get()
+    app, source_path, piper_node, export_method, project = metadata.get()
     app.open(source_path)
 
-    return app, source_path, piper_node, export_method
+    return app, source_path, piper_node, export_method, project
 
 
 def reexport(single=False):
@@ -30,8 +32,8 @@ def reexport(single=False):
         (dictionary): Data that was used to reexport files.
     """
     if single:
-        app, source_path, piper_node, export_method = metadata.get()
-        app.export(source_path, piper_node, export_method)
+        app, source_path, piper_node, export_method, project = metadata.get()
+        app.export(source_path, piper_node, export_method, project)
 
         return app, source_path, piper_node, export_method
 

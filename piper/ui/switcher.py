@@ -1,7 +1,5 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import os
-
 from Qt import QtWidgets, QtCore, QtGui
 
 import piper.core
@@ -13,9 +11,7 @@ class Switcher(QtWidgets.QDialog):
     def __init__(self, dcc_store=None, *args, **kwargs):
         super(Switcher, self).__init__(*args, **kwargs)
 
-        piper_directory = piper.core.getPiperDirectory()
-        self.icons_directory = os.path.join(piper_directory, 'maya', 'icons')
-
+        self.icons_directory = piper.core.getIconsDirectory()
         self.setWindowTitle('Switcher')
         self.store = dcc_store
         self.self_update = None

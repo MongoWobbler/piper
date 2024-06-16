@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Christian Corsica. All Rights Reserved.
+#  Copyright (c) Christian Corsica. All Rights Reserved.
 #
 #  Some functions come from:
 #  https://stackoverflow.com/questions/17915475/how-may-i-project-vectors-onto-a-plane-defined-by-its-orthogonal-vector-in-pytho
@@ -52,7 +52,7 @@ def projectOntoPlane(x, n):
     Projects the given x vector onto the given n plane which is defined by its orthogonal vector.
 
     Args:
-        x (list): Vector to to project onto n.
+        x (list): Vector to project onto n.
 
         n (list): Vector that represents its orthogonal plane.
 

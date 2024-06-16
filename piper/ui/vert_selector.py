@@ -16,6 +16,7 @@ class VertSelector(QtWidgets.QDialog):
         self.slider = None
         self.last_selected = None
         self.last_selected_button = None
+        self.common_values = [0.05, 0.25, 0.5, 0.75, 1.0]
 
         self.build()
 
@@ -38,7 +39,7 @@ class VertSelector(QtWidgets.QDialog):
         input_layout.addWidget(self.slider)
 
         # buttons for commonly used values
-        for i in [0.05, 0.25, 0.5, 0.75, 1.0]:
+        for i in self.common_values:
             weight_button = QtWidgets.QPushButton(str(i))
             weight_button.clicked.connect(partial(self.slider.setValue, i))
             weight_button.setMinimumWidth(10)
@@ -59,13 +60,13 @@ class VertSelector(QtWidgets.QDialog):
         main_layout.addWidget(select_verts_button)
         main_layout.addWidget(self.last_selected_button)
 
-    def onSelectPressed(self, *args, **kwargs):
+    def onSelectPressed(self, *_, **__):
         """
         To be implemented in inherited child class.
         """
         pass
 
-    def onLastSelectedPressed(self, *args, **kwargs):
+    def onLastSelectedPressed(self, *_, **__):
         """
         To be implemented in inherited child class.
         """

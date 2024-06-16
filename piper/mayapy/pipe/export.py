@@ -15,6 +15,7 @@ import piper.core.filer as filer
 import piper.core.pather as pather
 import piper.core.pythoner as python
 import piper.core.fbx_sdk as fbx_sdk
+from piper.core.dcc.template.export import ExportDCC
 
 import piper.mayapy.rig as rig
 import piper.mayapy.rig.bone as bone
@@ -24,7 +25,9 @@ import piper.mayapy.mesh as mesh
 import piper.mayapy.plugin as plugin
 import piper.mayapy.selection as selection
 import piper.mayapy.pipe.fbxpreset as fbxpreset
-import piper.mayapy.pipe.paths as paths
+from piper.mayapy.pipe.paths import maya_paths
+from piper.mayapy.settings import setStartupWorkspace
+from piper.mayapy.pipe.store import maya_store
 
 
 # Assign ABC based on version
@@ -84,7 +87,7 @@ class Export(ABC):
         Returns:
             (string): Path where file wrote to.
         """
-        export_path = paths.getSelfExport(name + self.extension)
+        export_path = maya_paths.getSelfExport(name + self.extension)
         self._write(export_path, settings)
         return export_path
 
@@ -104,7 +107,7 @@ class Export(ABC):
         if export_textures:
             self.textures()
 
-        export_path = paths.getGameExport(name + self.extension)
+        export_path = maya_paths.getGameExport(name + self.extension)
         self._write(export_path, settings)
 
         return export_path
@@ -118,7 +121,7 @@ class Export(ABC):
             return
 
         for texture in textures:
-            export_path = paths.getGameTextureExport(texture)
+            export_path = maya_paths.getGameTextureExport(texture)
             pather.validateDirectory(os.path.dirname(export_path))
             shutil.copyfile(texture, export_path)
             print('Copying ' + texture + ' to ' + export_path)
@@ -140,11 +143,14 @@ class Export(ABC):
         current_dcc = dcc.get()
         transform.attr(pcfg.dcc_attribute).set(current_dcc)
 
-        relative_path = paths.getRelativeArt()
+        relative_path = maya_paths.getRelativeArt()
         transform.attr(pcfg.relative_attribute).set(relative_path)
 
         node_name = piper_node.name()
         transform.attr(pcfg.pipernode_attribute).set(node_name)
+
+        project = maya_store.get(mcfg.current_project)
+        transform.attr(pcfg.project_attribute).set(project)
 
         if self.source_method:
             command = python.methodToStringCommand(self.source_method)
@@ -559,10 +565,37 @@ def fromJSON(json_file):
     app = dcc.get()
 
     for data in dcc_names[app]:
+        project = data[pcfg.project_attribute]
         source_path = data[pcfg.relative_attribute]
         piper_node = data[pcfg.pipernode_attribute]
         export_method = data[pcfg.method_attribute]
 
+        maya_paths.setCurrentProject(project)
+        setStartupWorkspace()
         pm.openFile(source_path, force=True)
         pm.select(piper_node)
         exec(export_method)
+
+
+class MayaExport(ExportDCC):
+
+    def exportToGame(self):
+        """
+        Exports all piper nodes in the scene to the game directory as in FBX format.
+        """
+        piperNodesToGameAsFBX()
+
+    def exportToCurrentDirectory(self):
+        """
+        Exports all piper nodes in the scene to the art directory as in FBX format.
+        """
+        piperNodesToSelfAsFBX()
+
+    def exportMeshesToCurrentAsObj(self):
+        """
+        Exports all piper nodes in the scene to the art directory as in OBJ format.
+        """
+        piperMeshToSelfAsOBJ()
+
+
+maya_export = MayaExport()

@@ -1,53 +1,51 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import pymel.core as pm
+import unreal as ue
 
-import piper.config.maya as mcfg
+import piper.config.unreal as ucfg
 from piper.core.dcc.template.paths import PathDCC
-from piper.mayapy.pipe.store import maya_store
+from piper.unrealpy.store import unreal_store
 
 
-class MayaPaths(PathDCC):
+class UnrealPaths(PathDCC):
 
     def display(self, text):
         """
-        Way of DCC of displaying text in a friendly, visible manner.
+        Way of Unreal of displaying text in a friendly, visible manner.
 
         Args:
             text (string): Text to display.
         """
-        pm.displayInfo(text)
+        ue.log(text)
 
     def warn(self, text):
         """
-        Way of DCC to warn user of with message.
+        Way of Unreal to warn user of with message.
 
         Args:
             text (string): Text to warn user with.
         """
-        pm.warning(text)
+        ue.log_warning(text)
 
     def getCurrentScene(self):
         """
-        Meant to be overridden by DCC that can get the full path to the currently opened scene in the DCC.
-
-        Returns:
-            (string): Full path to the current scene.
+        Gets the full package name of the open level.
         """
-        return pm.sceneName()
+        current_level = ue.get_editor_subsystem(ue.LevelEditorSubsystem).get_current_level()
+        return ue.SystemLibrary.get_path_name(current_level).split(".")[0]
 
     def getCurrentProject(self):
         """
-        Uses the DCC store to get the current project selected.
+        Uses unreal store to get the current project selected.
 
         Returns:
             (string): Name of current project selected.
         """
-        return maya_store.get(mcfg.current_project)
+        return unreal_store.get(ucfg.current_project)
 
     def setCurrentProject(self, project=None, force=False):
         """
-        Sets the given project on the Maya store.
+        Sets the given project on the Unreal store.
 
         Args:
             project (string): If given, will set the current project to the given project.
@@ -58,10 +56,20 @@ class MayaPaths(PathDCC):
             (boolean): True if project was set, False if it was not set.
         """
         if project or force:
-            maya_store.set(mcfg.current_project, project)
+            unreal_store.set(ucfg.current_project, project)
             return True
 
         return False
 
 
-maya_paths = MayaPaths()
+unreal_paths = UnrealPaths()
+
+
+def get():
+    """
+    Convenience method for getting the unreal_paths. Useful in menu creation.
+
+    Returns:
+        (UnrealPaths): PathDCC class for Unreal.
+    """
+    return unreal_paths

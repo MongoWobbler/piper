@@ -3,7 +3,6 @@
 import maya.OpenMaya as om
 import pymel.core as pm
 
-import piper.config as pcfg
 import piper.config.maya as mcfg
 
 import piper.ui
@@ -17,7 +16,7 @@ import piper.mayapy.manipulator as manipulator
 import piper.mayapy.pipernode as pipernode
 import piper.mayapy.pipe.perforce as perforce
 import piper.mayapy.ui.window as window
-from piper.core.store import piper_store
+from piper.mayapy.pipe.paths import maya_paths
 from piper.mayapy.pipe.store import maya_store
 
 
@@ -41,9 +40,9 @@ def removeCallbacks():
     callbacks = []
 
 
-def setProject(directory):
+def setWorkspace(directory):
     """
-    Sets the maya project. Will create a directory if one does not already exist.
+    Sets the maya workspace. Will create a directory if one does not already exist.
 
     Args:
         directory (string): path where project will be set to.
@@ -53,14 +52,14 @@ def setProject(directory):
     pm.workspace(fr=['scene', directory])
 
 
-def setStartupProject():
+def setStartupWorkspace():
     """
-    Sets the art directory project
+    Uses the current project's art directory to set up the workspace.
     """
-    art_directory = piper_store.get(pcfg.art_directory)
+    art_directory = maya_paths.getArtDirectory()
 
     if art_directory:
-        setProject(art_directory)
+        setWorkspace(art_directory)
 
 
 def loadDefaults(force=False):
@@ -161,7 +160,7 @@ def onAfterSave(*args):
     """
     Called after scene is saved.
     """
-    if piper_store.get(pcfg.use_perforce) and piper_store.get(pcfg.p4_add_after_save):
+    if maya_store.get(mcfg.use_perforce) and maya_store.get(mcfg.p4_add_after_save):
         perforce.makeAvailable()
 
 
@@ -226,7 +225,7 @@ def startup():
     if has_gui and maya_store.get(mcfg.open_port):
         openPort()
 
-    setStartupProject()
+    setStartupWorkspace()
     registerCallbacks()
 
     if has_gui:

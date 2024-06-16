@@ -12,7 +12,7 @@ import piper.core.pather as pather
 import piper.core.pythoner as python
 
 import piper.mayapy.plugin as plugin
-import piper.mayapy.pipe.paths as paths
+from piper.mayapy.pipe.paths import maya_paths
 from piper.mayapy.pipe.store import maya_store
 
 
@@ -41,7 +41,7 @@ class PiperShader(object):
         """
         # get user defined settings
         hdr_image_path = maya_store.get(mcfg.hdr_image_path)
-        return paths.getRelativeArt(hdr_image_path) if hdr_image_path else ''
+        return maya_paths.getRelativeArt(hdr_image_path) if hdr_image_path else ''
 
     def getTextures(self, warn=True):
         """
@@ -119,7 +119,7 @@ class PiperShader(object):
                 continue
 
             # use relative texture path if possible
-            texture_path = paths.getRelativeArt(texture_path)
+            texture_path = maya_paths.getRelativeArt(texture_path)
 
             # diffuse/base color
             if texture_name.endswith(pcfg.diffuse_suffix):

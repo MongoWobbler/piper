@@ -6,10 +6,10 @@ import copy
 import pymel.core as pm
 
 import piper.config.maya as mcfg
-import piper.mayapy.pipe.paths as paths
 import piper.mayapy.rig.xform as xform
 import piper.mayapy.rig.control as control
 import piper.mayapy.selection as selection
+from piper.mayapy.pipe.paths import maya_paths
 
 from . import key
 from . import resolution
@@ -53,7 +53,7 @@ def referenceRig(path):
                 continue
 
             references.append(new_path)
-            new_relative_path = paths.getRelativeArt(new_path)
+            new_relative_path = maya_paths.getRelativeArt(new_path)
             nodes = old_reference.replaceWith(new_relative_path, returnNewNodes=True)  # this is where the swap happens
             new_skinned_meshes = pm.ls(nodes, type='piperSkinnedMesh')
 

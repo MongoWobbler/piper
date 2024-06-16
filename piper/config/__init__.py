@@ -51,20 +51,21 @@ packages_to_install = {maya_name: [{'name': 'pymel', 'min': '2024'},  # min vers
 # Store
 art_directory = 'art_directory'
 game_directory = 'game_directory'
-use_perforce = 'use_p4'
-p4_add_after_save = 'p4_add_after_save'
 previous_widgets = 'previous_widgets'  # used when reloading, to re-open any previously opened widgets.
 preferred_dcc_versions = 'preferred_dcc_versions'
+projects = 'projects'
 dcc_versions = {maya_name: None,
                 houdini_name: None,
                 unreal_name: None,
                 max_3ds_name: None}
-store_defaults = {art_directory: None,
-                  game_directory: None,
-                  use_perforce: False,
-                  p4_add_after_save: False,
-                  preferred_dcc_versions: dcc_versions,
+store_defaults = {preferred_dcc_versions: dcc_versions,
+                  projects: {},
                   previous_widgets: []}  # previous widgets are reloaded in piper agnostic file, so storing globally
+
+# Projects
+create_project = ' + Create'
+delete_project = ' - Delete'
+project_default = {art_directory: None, game_directory: None}  # starting settings project should have
 
 # Geometry
 low_poly_suffix = '_low'
@@ -100,6 +101,11 @@ dcc_attribute = 'DCC'
 relative_attribute = 'relative_source'
 pipernode_attribute = 'piper_node'
 method_attribute = 'export_method'
-export_attributes = [dcc_attribute, relative_attribute, pipernode_attribute, method_attribute]
+project_attribute = 'project'
+export_attributes = [dcc_attribute, relative_attribute, pipernode_attribute, method_attribute, project_attribute]
 mesh_with_attribute_name = 'body_low'  # due to UE metadata limitations, a mesh name will be shared across characters
 export_file_name = 'export.json'
+
+# Menu
+game_not_set = 'Game directory is not set. Please use "Piper>Export>Set Game Directory" to set export directory.'
+art_not_set = 'Please save the scene or set the Art Directory before exporting to self.'

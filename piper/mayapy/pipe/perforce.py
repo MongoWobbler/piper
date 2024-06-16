@@ -4,7 +4,7 @@ import pymel.core as pm
 
 from piper.core.perforce import Perforce
 from piper.ui.widget import getUserInput
-import piper.mayapy.ui.widget as widget
+from piper.mayapy.ui.widget import getMainWindow
 import piper.mayapy.ui.window as window
 
 
@@ -17,7 +17,7 @@ class PerforceMaya(Perforce):
         Returns:
             (QtWidget): Widget to parent to.
         """
-        return widget.getMainWindow()
+        return getMainWindow()
 
     def getCurrentScene(self):
         """

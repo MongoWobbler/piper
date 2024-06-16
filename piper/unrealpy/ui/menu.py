@@ -6,11 +6,12 @@ import piper.config.unreal as ucfg
 import piper.core
 import piper.core.namer as namer
 import piper.core.pythoner as python
-import piper.core.settings as piper_settings
 
 import piper.unrealpy.animation as animation
 import piper.unrealpy.copier as copier
+import piper.unrealpy.paths as paths
 import piper.unrealpy.pipe as pipe
+import piper.unrealpy.ui.widget as widget
 
 
 class _PiperMenu(object):
@@ -188,26 +189,34 @@ class _PiperMenu(object):
         """
         self._build(self.setFolderContextMenuAsOwner, 'Common')
 
-    def add(self, method, label=None):
+    def add(self, method, label=None, getter=None):
         """
         Adds an entry to the currently set owning menu.
 
         Args:
-            method (method): Function to execute when entry is pressed.
+            method (Callable): Function to execute when entry is pressed.
 
             label (string): Label that entry will have. If None given, will use method's sentence case as label.
+
+            getter (Callable): Function that gets the object which resolves for any variable/class inheritance
 
         Returns:
             (unreal.ToolMenuEntry): Entry object created for unreal menus.
         """
-        module = method.__module__
-        full_method = module + '.' + method.__name__
+        if getter:
+            module = getter.__module__
+            full_method = f'{module}.{getter.__name__}().{method.__name__}'
+        else:
+            module = method.__module__
+            full_method = f'{module}.{method.__name__}'
+
         command = f'import {module}; {full_method}()'
         label = namer.toSentenceCase(method.__name__) if label is None else label
         entry = ue.ToolMenuEntry(name=full_method, type=ue.MultiBlockType.MENU_ENTRY)
 
         entry.set_label(ue.Text(label))
-        entry.set_tool_tip(method.__doc__ + f'\n\nFound in: {full_method}')
+        no_docs = f'No documentation found in {full_method}'
+        entry.set_tool_tip(ue.Text(f'{method.__doc__}\n\nFound in: {full_method}' if method.__doc__ else no_docs))
         entry.set_string_command(ue.ToolMenuStringCommandType.PYTHON, ue.Name(''), command)
         self.owner.add_menu_entry(self.section, entry)
         return entry
@@ -295,12 +304,12 @@ def create():
 
         # settings sub-menu
         menu.setPiperSettingsMenuAsOwner('Scripts')
-        menu.add(piper_settings.openArtDirectoryInOS, 'Open Art Directory in OS')
-        menu.add(piper_settings.openGameDirectoryInOS, 'Open Game Directory in OS')
-        menu.add(piper_settings.openPiperDirectoryInOS, 'Open Piper Directory in OS')
+        menu.add(paths.get().openArtDirectoryInOS, 'Open Art Directory in OS', getter=paths.get)
+        menu.add(paths.get().openGameDirectoryInOS, 'Open Game Directory in OS', getter=paths.get)
+        menu.add(piper.core.openPiperDirectoryInOS, 'Open Piper Directory in OS')
         menu.addSeparator()
-        menu.add(piper_settings.setArtDirectory)
-        menu.add(piper_settings.setGameDirectory)
+        menu.add(widget.get().setArtDirectory, getter=widget.get)
+        menu.add(widget.get().setGameDirectory, getter=widget.get)
 
         # context menu (right-click on assets)
         menu.setPiperContextMenuAsOwner('Scripts')
