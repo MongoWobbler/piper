@@ -2,6 +2,7 @@
 
 import piper.config as pcfg
 import piper.core.pather as pather
+from piper.core.events import dispatcher
 from piper.core.store import piper_store
 from piper.core.dcc.template.widget import WidgetDCC
 
@@ -31,8 +32,10 @@ class WidgetTKDCC(WidgetDCC):
         if not directory:
             return
 
+        dispatcher.call(pcfg.before_art_directory_change_event)
         projects[project][pcfg.art_directory] = directory
         piper_store.set(pcfg.projects, projects)
+        dispatcher.call(pcfg.after_art_directory_change_event)
         return directory
 
     def setGameDirectory(self, project=None):

@@ -184,11 +184,8 @@ class Perforce(P4):
         for file_path in path:
             file_path = self.validatePath(path=file_path)
             client = self.findClient(file_path, validate_path=False)
-
-            if client in clients:
-                clients[client].append(file_path)
-            else:
-                clients[client] = [file_path]
+            client_file_paths = clients.setdefault(client, [])
+            client_file_paths.append(file_path)
 
         pre_arguments = flags if flags else []
         pre_arguments.insert(0, command)
@@ -209,7 +206,7 @@ class Perforce(P4):
         Uses the "fstat" command.
 
         Args:
-            path (string): Path to get info of. If None given, will use path defined by self.getCurrentScene().
+            path (string or list): Path to get info of. If None given, will use path defined by self.getCurrentScene().
 
         Returns:
             (list): Each path given contains a dictionary with all the information about each path.

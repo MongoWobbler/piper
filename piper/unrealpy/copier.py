@@ -1,6 +1,5 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import unreal as ue
 import piper.core.filer as filer
 import piper.unrealpy.browser as browser
 
@@ -62,6 +61,5 @@ def level():
     """
     Copies the full package name of the open level to the clipboard.
     """
-    current_level = ue.get_editor_subsystem(ue.LevelEditorSubsystem).get_current_level()
-    name = ue.SystemLibrary.get_path_name(current_level).split(".")[0]
+    name = browser.getCurrentLevel()
     filer.copyToClipboard(name)

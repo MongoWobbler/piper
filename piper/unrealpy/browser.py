@@ -47,3 +47,24 @@ def getSelectedAssetData(recursive=True):
         print('Nothing was selected!')
 
     return asset_data + folder_data
+
+
+def getCurrentLevel():
+    """
+    Gets the package name of the current level.
+
+    Returns:
+        (string): Package name of level opened in editor.
+    """
+    current_level = ue.get_editor_subsystem(ue.LevelEditorSubsystem).get_current_level()
+    return ue.SystemLibrary.get_path_name(current_level).split(".")[0]
+
+
+def selectCurrentLevel():
+    """
+    Selects the current level in the content browser.
+    """
+    level = getCurrentLevel()
+    paths = ue.Array(str)
+    paths.append(level)
+    ue.EditorAssetLibrary.sync_browser_to_objects(paths)

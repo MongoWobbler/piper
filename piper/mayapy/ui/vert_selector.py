@@ -4,6 +4,7 @@ import pymel.core as pm
 
 from Qt import QtCompat
 
+import piper.config as pcfg
 from piper.ui.vert_selector import VertSelector
 from piper.ui.widget import manager
 from piper.mayapy.ui.widget import Controller
@@ -13,7 +14,7 @@ import piper.mayapy.selection as selection
 
 class MayaVertSelector(VertSelector):
 
-    label = 'Weighted Vert Selector'
+    label = pcfg.vert_selector_name
     instance = None  # useful to be singleton while window is open
     ui_name = label.replace(' ', '')  # same as label, but without spaces
     create_command = 'import {0}; {0}.show()'.format(__name__)

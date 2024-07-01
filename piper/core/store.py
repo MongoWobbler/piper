@@ -132,7 +132,7 @@ class Store(object):
 
         return variable
 
-    def set(self, variable, value):
+    def set(self, variable, value, write=True):
         """
         Sets and stores the given setting based on variable and value.
 
@@ -140,12 +140,17 @@ class Store(object):
             variable (string): Name of setting to store.
 
             value (Any): Value of given variable to store.
+
+            write (boolean): If True, will write settings to file. Useful to turn off when setting multiple variables
+            to avoid calling writing to file multiple times. If False, should call writeSettings after store.set()
         """
         if not self._settings:
             self.getSettings()
 
         self._settings[variable] = value
-        self.writeSettings()
+
+        if write:
+            self.writeSettings()
 
     def update(self, data):
         """

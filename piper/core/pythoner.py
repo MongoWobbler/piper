@@ -39,6 +39,21 @@ def methodToStringCommand(method):
     return f'import {module}; {full_method}()'
 
 
+def listToStrings(laundry):
+    """
+    Converts the given list to a string with each element enclosed by quotation marks,
+    and separated by a comma plus space.
+
+    Args:
+        laundry (list): Elements to wrap with quotation marks, separating with comma plus space.
+
+    Returns:
+        (string): Elements wrapped with quotation marks, separated with comma plus space.
+    """
+    formatted_paths = '", "'.join(laundry)
+    return f'"{formatted_paths}"'
+
+
 def parametrized(decorator):
     """
     A decorator for decorators that allows decorators to have parameters.

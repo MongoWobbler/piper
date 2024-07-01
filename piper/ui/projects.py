@@ -5,6 +5,7 @@ from Qt import QtWidgets, QtCore, QtGui
 import piper.core
 import piper.config as pcfg
 import piper.ui.widget as widget
+from piper.core.events import dispatcher
 from piper.core.store import piper_store
 from piper.core.dcc.template.paths import dcc_paths
 from piper.core.dcc.template.widget_qt import dcc_widget
@@ -44,8 +45,7 @@ class DirectoryLine(QtWidgets.QWidget):
 
         # set button
         self.set_button = QtWidgets.QToolButton()
-        self.set_button.setToolTip(self.set_pressed.__doc__)
-        self.set_button.setStatusTip(self.set_pressed.__doc__)
+        widget.setTips(self.set_pressed, self.set_button)
         set_icon = QtGui.QIcon(f'{icons_directory}/{self.icon_name}.png')
         self.set_button.setIcon(set_icon)
         self.set_button.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Ignored)
@@ -54,8 +54,7 @@ class DirectoryLine(QtWidgets.QWidget):
 
         # export button
         self.export_button = QtWidgets.QToolButton()
-        self.export_button.setToolTip(self.export_pressed.__doc__)
-        self.export_button.setStatusTip(self.export_pressed.__doc__)
+        widget.setTips(self.export_pressed, self.export_button)
         export_icon = QtGui.QIcon(icons_directory + '/piper_export.png')
         self.export_button.setIcon(export_icon)
         self.export_button.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Ignored)
@@ -95,7 +94,7 @@ class Projects(QtWidgets.QDialog):
 
     def __init__(self, *args, **kwargs):
         super(Projects, self).__init__(*args, **kwargs)
-        self.setWindowTitle('Projects')
+        self.setWindowTitle(pcfg.projects_name)
 
         self.project_box = None
         self.art_line = None
@@ -108,6 +107,7 @@ class Projects(QtWidgets.QDialog):
 
         self.last_successfully_set_project = None
         self.is_blocking_combobox_callback = False
+        self.is_changing_project = False
         self.build()
 
     def build(self):
@@ -257,6 +257,7 @@ class Projects(QtWidgets.QDialog):
         Args:
             name (string or None): Name of project to be used as the current project.
         """
+        dispatcher.call(pcfg.before_project_change_event)
         self.dcc_paths.setCurrentProject(project=name if name else None, force=True)
 
         # should be setting current project in DCC store here.
@@ -264,9 +265,11 @@ class Projects(QtWidgets.QDialog):
         if not name:
             self.art_line.text_line.setText('')
             self.game_line.text_line.setText('')
+            dispatcher.call(pcfg.after_project_change_event)
             return
 
         self.updateDirectoryLines()
+        dispatcher.call(pcfg.after_project_change_event)
 
     def deleteProject(self, name):
         """

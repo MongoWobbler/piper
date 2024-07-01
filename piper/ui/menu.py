@@ -9,7 +9,7 @@ import piper.core
 import piper.core.pythoner as python
 from piper.core.dcc.template.paths import dcc_paths
 from piper.core.dcc.template.export import dcc_export
-from piper.ui.widget import SecondaryAction, validateName, addMenuItem, manager
+from piper.ui.widget import SecondaryAction, validateName, addMenuItem, manager, setTips
 
 
 class PiperMenu(QtWidgets.QMenu):
@@ -106,6 +106,7 @@ class PiperMenu(QtWidgets.QMenu):
         action = QtWidgets.QAction(name, self)
         action.setCheckable(True)
         action.setChecked(state)
+        setTips(on_pressed, action)
         action.triggered.connect(on_pressed)
         self.addAction(action)
         self.actions.append(action)
@@ -209,15 +210,6 @@ class PiperExportMenu(PiperMenu):
         current_directory = self.dcc_paths.getSelfExport(error=False)
         art_tip = f'\n    Exports to: {current_directory} \n' if current_directory else pcfg.art_not_set
         self.current_export.setToolTip(art_tip)
-
-    def exportToGame(self):
-        pass
-
-    def exportToCurrentDirectory(self):
-        pass
-
-    def exportMeshesToCurrentAsObj(self):
-        pass
 
 
 class _PiperMainMenu(PiperMenu):

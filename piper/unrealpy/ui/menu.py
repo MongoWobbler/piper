@@ -8,6 +8,7 @@ import piper.core.namer as namer
 import piper.core.pythoner as python
 
 import piper.unrealpy.animation as animation
+import piper.unrealpy.browser as browser
 import piper.unrealpy.copier as copier
 import piper.unrealpy.paths as paths
 import piper.unrealpy.pipe as pipe
@@ -301,6 +302,7 @@ def create():
         # level sub-menu
         menu.setPiperLevelMenuAsOwner('Scripts')
         menu.add(copier.level, 'Copy Level Package Name')
+        menu.add(browser.selectCurrentLevel)
 
         # settings sub-menu
         menu.setPiperSettingsMenuAsOwner('Scripts')

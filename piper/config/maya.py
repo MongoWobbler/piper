@@ -41,6 +41,12 @@ switcher_translate_box = 'switcher_translate_box'
 switcher_rotate_box = 'switcher_rotate_box'
 switcher_orient_box = 'switcher_orient_box'
 switcher_scale_box = 'switcher_scale_box'
+browser_mesh_filter = 'browser_mesh_filter'
+browser_skeleton_filter = 'browser_skeleton_filter'
+browser_rig_filter = 'browser_rig_filter'
+browser_animation_filter = 'browser_animation_filter'
+browser_other_filter = 'browser_other_filter'
+browser_expanded_directories = 'browser_expanded_directories'
 store_defaults = {current_project: None,
                   use_perforce: False,
                   p4_add_after_save:  False,
@@ -56,7 +62,13 @@ store_defaults = {current_project: None,
                   switcher_translate_box: True,
                   switcher_rotate_box: True,
                   switcher_orient_box: False,
-                  switcher_scale_box: True}
+                  switcher_scale_box: True,
+                  browser_mesh_filter: True,
+                  browser_skeleton_filter: True,
+                  browser_rig_filter: True,
+                  browser_animation_filter: True,
+                  browser_other_filter: True,
+                  browser_expanded_directories: {}}
 
 # Units
 hotkey_set_name = 'PiperKeySet'
@@ -137,6 +149,9 @@ check_anim_health_on_export = True
 export_root_scale_curves = True
 delete_fbx_attributes = True
 fbx_attributes_to_delete = ['filmboxTypeID', 'lockInfluenceWeights', length_attribute, 'currentUVSet']
+meshes_directory = 'Meshes'
+rig_name = 'Rig'
+animation_directory = 'Animation'
 
 # Root Squash/Stretch attributes
 squash_stretch_attribute = 'squashStretch'

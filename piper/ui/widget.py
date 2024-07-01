@@ -89,16 +89,16 @@ class _Manager(object):
 
 def getManager():
     """
-    Used to create or get the Piper Main Menu, there can only be ONE in the scene at a time.
+    Used to create or get the Piper Widget Manager, there can only be ONE in the scene at a time.
 
     Returns:
-        (_Manager): Piper main menu class.
+        (_Manager): Piper widget manager. Useful for knowing which widgets are open.
     """
     _Manager.instance = _Manager() if _Manager.instance is None else _Manager.instance
     return _Manager.instance
 
 
-def setTips(method, widget):
+def setTips(method, widget, module=None):
     """
     Sets the tool and status tips on the given widget based on the given method.
 
@@ -106,10 +106,12 @@ def setTips(method, widget):
         method (method): Method to get documentation, module, and name from.
 
         widget (QtWidget): Widget to set status and tool tip with method's documentation.
+
+        module (string): Module to use if given. Else will use method's module. Useful for partial methods.
     """
     # getting the documentation from the function
     documentation = method.__doc__
-    module = method.__module__ + '.' + method.__name__
+    module = module if module else method.__module__ + '.' + method.__name__
     status_tip = module + ': ' + documentation.split('Args:')[0].split('Returns:')[0] if documentation else module
     widget.setToolTip(documentation)
     widget.setStatusTip(status_tip)

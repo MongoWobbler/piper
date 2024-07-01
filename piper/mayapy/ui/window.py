@@ -74,3 +74,19 @@ def beforeSave():
                               defaultButton=default_button, cancelButton='Cancel', dismissString='Cancel')
 
     return answer
+
+
+def beforeOpen():
+    """
+    Opens window to prompt user what to do about scene not being synced up in P4.
+
+    Returns:
+        (string): Option picked, could be 'Get Latest' or 'Continue'
+    """
+    buttons = ['Get Latest', 'Continue']
+    default_button = 'Get Latest'
+
+    answer = pm.confirmDialog(title='Out of Sync', message='Scene is not latest!', button=buttons,
+                              defaultButton=default_button, cancelButton='Continue', dismissString='Continue')
+
+    return answer

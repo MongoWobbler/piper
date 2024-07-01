@@ -3,16 +3,45 @@
 from Qt import QtWidgets, QtCore, QtGui
 
 import piper.core
-import piper.config.maya as mcfg
+import piper.config as pcfg
+from piper.ui.widget import setTips
 
 
 class Switcher(QtWidgets.QDialog):
+
+    @property
+    def update_config(self):
+        raise NotImplementedError
+
+    @property
+    def key_config(self):
+        raise NotImplementedError
+
+    @property
+    def match_config(self):
+        raise NotImplementedError
+
+    @property
+    def translate_config(self):
+        raise NotImplementedError
+
+    @property
+    def rotate_config(self):
+        raise NotImplementedError
+
+    @property
+    def orient_config(self):
+        raise NotImplementedError
+
+    @property
+    def scale_config(self):
+        raise NotImplementedError
 
     def __init__(self, dcc_store=None, *args, **kwargs):
         super(Switcher, self).__init__(*args, **kwargs)
 
         self.icons_directory = piper.core.getIconsDirectory()
-        self.setWindowTitle('Switcher')
+        self.setWindowTitle(pcfg.switcher_name)
         self.store = dcc_store
         self.self_update = None
         self.keyframe_box = None
@@ -33,13 +62,13 @@ class Switcher(QtWidgets.QDialog):
         self.hide_play_button = None
         self.build()
 
-        self.store_data = {self.self_update: mcfg.switcher_update_box,
-                           self.keyframe_box: mcfg.switcher_key_box,
-                           self.match_only: mcfg.switcher_match_box,
-                           self.translate: mcfg.switcher_translate_box,
-                           self.rotate: mcfg.switcher_rotate_box,
-                           self.orient: mcfg.switcher_orient_box,
-                           self.scale: mcfg.switcher_scale_box}
+        self.store_data = {self.self_update: self.update_config,
+                           self.keyframe_box: self.key_config,
+                           self.match_only: self.match_config,
+                           self.translate: self.translate_config,
+                           self.rotate: self.rotate_config,
+                           self.orient: self.orient_config,
+                           self.scale: self.scale_config}
 
         self.restorePrevious()
 
@@ -61,8 +90,7 @@ class Switcher(QtWidgets.QDialog):
         """
         button = QtWidgets.QToolButton()
         button.setCheckable(checkable)
-        button.setToolTip(on_pressed.__doc__)
-        button.setStatusTip(on_pressed.__doc__)
+        setTips(on_pressed, button)
         icon = QtGui.QIcon(self.icons_directory + '/{}.png'.format(icon))
         button.setIcon(icon)
         button.clicked.connect(on_pressed)
@@ -208,7 +236,8 @@ class Switcher(QtWidgets.QDialog):
         if not self.store:
             return
 
-        {self.store.set(name, box.isChecked()) for box, name in self.store_data.items()}
+        {self.store.set(name, box.isChecked(), write=False) for box, name in self.store_data.items()}
+        self.store.writeSettings()
 
     def onSelectionChanged(self, *args):
         """

@@ -1,10 +1,11 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om2
 import pymel.core as pm
 
 from Qt import QtCompat
 
+import piper.config as pcfg
 import piper.config.maya as mcfg
 import piper.core.pythoner as python
 
@@ -22,18 +23,46 @@ import piper.mayapy.selection as selection
 
 class MayaSwitcher(Switcher):
 
-    label = 'Switcher'
+    label = pcfg.switcher_name
     instance = None  # useful to be singleton while window is open
     ui_name = label.replace(' ', '')  # same as label, but without spaces
     create_command = 'import {0}; {0}.show()'.format(__name__)
     closed_command = 'import {0}; {0}.unregister()'.format(__name__)
+
+    @property
+    def update_config(self):
+        return mcfg.switcher_update_box
+
+    @property
+    def key_config(self):
+        return mcfg.switcher_key_box
+
+    @property
+    def match_config(self):
+        return mcfg.switcher_match_box
+
+    @property
+    def translate_config(self):
+        return mcfg.switcher_translate_box
+
+    @property
+    def rotate_config(self):
+        return mcfg.switcher_rotate_box
+
+    @property
+    def orient_config(self):
+        return mcfg.switcher_orient_box
+
+    @property
+    def scale_config(self):
+        return mcfg.switcher_scale_box
 
     def __init__(self, dcc_store=None, *args, **kwargs):
         super(MayaSwitcher, self).__init__(dcc_store=dcc_store, *args, **kwargs)
         manager.register(self, self.create_command)
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
-        self.callback = om.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
+        self.callback = om2.MEventMessage.addEventCallback('SelectionChanged', self.onSelectionChanged)
         self.selected = None
         self.inners = []
         self.pivots = []
@@ -326,7 +355,7 @@ def unregister():
         return
 
     MayaSwitcher.instance.onClosedPressed()
-    om.MMessage.removeCallback(MayaSwitcher.instance.callback)
+    om2.MMessage.removeCallback(MayaSwitcher.instance.callback)
     manager.unregister(MayaSwitcher.instance)
     QtCompat.delete(MayaSwitcher.instance)
     MayaSwitcher.instance = None

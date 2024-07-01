@@ -1,9 +1,10 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om2
 
 from Qt import QtCompat
 
+import piper.config as pcfg
 from piper.ui.widget import manager
 from piper.ui.projects import Projects
 from piper.mayapy.ui.widget import Controller
@@ -15,7 +16,7 @@ from piper.mayapy.ui.widget import maya_widget
 
 class MayaProjects(Projects):
 
-    label = 'Projects'
+    label = pcfg.projects_name
     instance = None  # useful to be singleton while window is open
     ui_name = label
     create_command = 'import {0}; {0}.show()'.format(__name__)
@@ -24,8 +25,8 @@ class MayaProjects(Projects):
     def __init__(self, *args, **kwargs):
         super(MayaProjects, self).__init__(*args, **kwargs)
         manager.register(self, self.create_command)
-        self.callbacks = [om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.updateDirectoryLines),
-                          om.MSceneMessage.addCallback(om.MSceneMessage.kAfterNew, self.updateDirectoryLines)]
+        self.callbacks = [om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterOpen, self.updateDirectoryLines),
+                          om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterNew, self.updateDirectoryLines)]
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
 
@@ -86,7 +87,7 @@ def unregister():
     if MayaProjects.instance is None:
         return
 
-    [om.MEventMessage.removeCallback(callback) for callback in MayaProjects.instance.callbacks]
+    om2.MMessage.removeCallbacks(MayaProjects.instance.callbacks)
     manager.unregister(MayaProjects.instance)
     QtCompat.delete(MayaProjects.instance)
     MayaProjects.instance = None

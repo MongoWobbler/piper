@@ -17,6 +17,10 @@ dcc_tooltips = {maya_name:    'Path to Maya Install directory, such as C:/Progra
                 houdini_name: 'Path to Houdini Install directory, such as C:/Program Files/Side Effects '
                               'Software/Houdini 18.5.0',
                 unreal_name:  'Path to .uproject file, such as C:/MyGame/MyGame.uproject'}
+dcc_extensions = {maya_name: ('.ma', '.mb'),
+                  houdini_name: ('.hip', '.hiplc', '.hipnc'),
+                  unreal_name: ('.uasset', '.umap'),
+                  max_3ds_name: '.max'}
 
 # Maths
 axes = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]
@@ -67,6 +71,20 @@ create_project = ' + Create'
 delete_project = ' - Delete'
 project_default = {art_directory: None, game_directory: None}  # starting settings project should have
 
+# File Types
+none_type = 1
+static_mesh_type = 2
+skeletal_mesh_type = 3
+rig_type = 4
+animation_type = 5
+file_type_colors = {none_type: '#000000',  # black
+                    static_mesh_type: '#00ffff',  # cyan
+                    skeletal_mesh_type: '#f1a3f1',  # pink
+                    rig_type: '#fbaf5d',  # orange
+                    animation_type: '#507b48'}  # green
+file_exportable_color = '#ffffff'  # white
+file_not_exportable_color = '#808080'  # grey
+
 # Geometry
 low_poly_suffix = '_low'
 high_poly_suffix = '_high'
@@ -109,3 +127,16 @@ export_file_name = 'export.json'
 # Menu
 game_not_set = 'Game directory is not set. Please use "Piper>Export>Set Game Directory" to set export directory.'
 art_not_set = 'Please save the scene or set the Art Directory before exporting to self.'
+
+# Window names
+browser_name = 'Browser'
+clipper_name = 'Clipper'
+projects_name = 'Projects'
+switcher_name = 'Switcher'
+vert_selector_name = 'Weighted Vert Selector'
+
+# Event Callbacks
+before_project_change_event = 'before_project_change'
+after_project_change_event = 'after_project_change'
+before_art_directory_change_event = 'before_art_directory_change'
+after_art_directory_change_event = 'after_art_directory_change'

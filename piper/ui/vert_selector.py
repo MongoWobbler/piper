@@ -3,6 +3,7 @@
 from functools import partial
 from Qt import QtWidgets
 
+import piper.config as pcfg
 import piper.core.pythoner as python
 import piper.ui.widget as widget
 
@@ -11,7 +12,7 @@ class VertSelector(QtWidgets.QDialog):
 
     def __init__(self, *args, **kwargs):
         super(VertSelector, self).__init__(*args, **kwargs)
-        self.setWindowTitle('Weighted Vert Selector')
+        self.setWindowTitle(pcfg.vert_selector_name)
         self.combobox = None
         self.slider = None
         self.last_selected = None

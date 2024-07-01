@@ -1,9 +1,73 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
 import os
+
 import piper.config as pcfg
 import piper.core.filer as filer
 from piper.core.store import piper_store
+
+
+class FileType:
+    """
+    Defines the export types that are allowed in piper. This is essentially just an enum with inheritance.
+    """
+    none = pcfg.none_type
+    static_mesh = pcfg.static_mesh_type
+    skeletal_mesh = pcfg.skeletal_mesh_type
+    rig = pcfg.rig_type
+    animation = pcfg.animation_type
+
+    @staticmethod
+    def isMesh(directory):
+        """
+        Determines what is a mesh file type.
+
+        Args:
+            directory (string): Used to determine if it is a mesh file type
+
+        Returns:
+            (boolean): True is given directory proves that the File Type should be of mesh.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def isSkeletal(file_name):
+        """
+        Determines what is a Skeletal Mesh file type.
+
+        Args:
+            file_name (string): Used to determine if it is a mesh file type.
+
+        Returns:
+            (boolean): True is given file_name proves that the File Type should be of skeletal mesh.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def isRig(file_name):
+        """
+        Determines what is a Rig file type.
+
+        Args:
+            file_name (string): Used to determine if it is a Rig file type.
+
+        Returns:
+            (boolean): True is given file_name proves that the File Type should be of type Rig.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def isAnimation(directory):
+        """
+        Determines what is an animation file type.
+
+        Args:
+            directory (string): Used to determine if it is a animation file type
+
+        Returns:
+            (boolean): True is given directory proves that the File Type should be of animation.
+        """
+        raise NotImplementedError
 
 
 class PathDCC(object):
@@ -11,6 +75,13 @@ class PathDCC(object):
     Used partly as template of common functionality across different DCCs, along with common functions that can be
     deduced with this common functionality.
     """
+
+    @property
+    def is_exportable(self):
+        """
+        Dictionary of each file type as key, and bool of whether the file type is exportable or not as value.
+        """
+        raise NotImplementedError
 
     def display(self, text):
         """
@@ -59,6 +130,30 @@ class PathDCC(object):
 
         Returns:
             (boolean): True if project was set, False if it was not set.
+        """
+        raise NotImplementedError
+
+    def open(self, path):
+        """
+        Opens the given path in the DCC.
+
+        Args:
+            path (string): Full path to file to open in dcc.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def getFileType(directory, file_name):
+        """
+        Gets what kind of file type the given directory and given file_name is.
+
+        Args:
+            directory (string): Directory the given file_name is located in.
+
+            file_name (string): The name of the file (not including its directory).
+
+        Returns:
+            (FileType): The file type that the given file is based on its directory and file name.
         """
         raise NotImplementedError
 

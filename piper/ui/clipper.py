@@ -2,6 +2,8 @@
 
 import copy
 from Qt import QtWidgets, QtCore
+
+import piper.config as pcfg
 import piper.ui.widget as widget
 
 
@@ -9,7 +11,7 @@ class Clipper(QtWidgets.QDialog):
 
     def __init__(self, *args, **kwargs):
         super(Clipper, self).__init__(*args, **kwargs)
-        self.setWindowTitle('Clipper')
+        self.setWindowTitle(pcfg.clipper_name)
         self.anim_widgets = []
         self.main_layout = None
 

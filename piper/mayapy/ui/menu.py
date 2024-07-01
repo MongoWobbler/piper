@@ -20,6 +20,7 @@ import piper.mayapy.rig.space as space
 import piper.mayapy.rig.control as control
 import piper.mayapy.graphics as graphics
 import piper.mayapy.settings as settings
+import piper.mayapy.ui.browser as mybrowser
 import piper.mayapy.ui.clipper as myclipper
 import piper.mayapy.ui.projects as myprojects
 import piper.mayapy.ui.switcher as myswitcher
@@ -63,6 +64,8 @@ class MayaSceneMenu(PiperSceneMenu):
 
     def build(self):
         self.dcc_paths = maya_paths
+        self.add(mybrowser.show, 'Browser')
+        self.addSeparator()
         super(MayaSceneMenu, self).build()
 
     def reloadCurrentScene(self):
@@ -291,7 +294,7 @@ class MayaSettingsMenu(MayaPiperMenu):
 
     def onUsePerforcePressed(self, state):
         """
-        Sets whether perforce should be used before saving scene.
+        Sets whether perforce should be used before saving scene and shows/hides the Perforce menu set
 
         Args:
             state (boolean): Whether to use perforce or not.
@@ -301,32 +304,66 @@ class MayaSettingsMenu(MayaPiperMenu):
 
     @staticmethod
     def onUseUnitsPressed(state):
+        """
+        Changes time range, frame speed, units, and grid size to what's defined in Piper.
+
+        Args:
+            state (boolean): If True, will change some Maya defaults on Maya open.
+        """
         maya_store.set(mcfg.use_piper_units, state)
         if state:
             settings.loadDefaults()
 
     @staticmethod
     def onUseRenderPressed(state):
+        """
+        Sets the viewport's render engine to DirectX11 and the tone map to use the tonemapping set in Maya config.
+
+        Args:
+            state (boolean): If True, will switch render engine and tonemapping.
+        """
         maya_store.set(mcfg.use_piper_render, state)
         if state:
             settings.loadRender()
 
     @staticmethod
     def onExportInAsciiPressed(state):
+        """
+        Sets FBX export method.
+
+        Args:
+            state (boolean): If True, FBX will export in ASCII, useful to read what is part of the file. Else FBX
+            will export in Binary format. Binary is a smaller, faster file, but harder to debug.
+        """
         maya_store.set(mcfg.export_ascii, state)
 
     @staticmethod
     def onUnloadUnwantedPressed(state):
+        """
+        Unloads all the unwanted Maya plugins defined in piper's Maya config if given state is True.
+
+        Args:
+            state (boolean): If True, unloads unwanted Maya plugins as defined in piper's Maya config
+        """
         maya_store.set(mcfg.unload_unwanted, state)
         if state:
             plugin.unloadUnwanted()
 
     @staticmethod
     def onPortPressed(state):
+        """
+        Opens/Closes a port based on the given state. Useful for commands that may come from another DCC.
+
+        Args:
+            state (boolean): If True, will open port, else will close it.
+        """
         maya_store.set(mcfg.open_port, state)
         settings.openPort() if state else settings.closePort()
 
     def onSetHdrImagePressed(self):
+        """
+        Opens a file dialog for user to pick HDR image to use as the default image for shader backgrounds
+        """
         dialog = QtWidgets.QFileDialog()
         starting_directory = maya_paths.getArtDirectory()
         file_path = dialog.getOpenFileName(self, 'Choose HDR Image', starting_directory)
@@ -338,6 +375,9 @@ class MayaSettingsMenu(MayaPiperMenu):
 
     @staticmethod
     def uninstall():
+        """
+        Removes the module file from the user's Documents/Maya directory. Must restart Maya for effect to take place.
+        """
         pm.warning('Uninstall currently not implemented')
 
 

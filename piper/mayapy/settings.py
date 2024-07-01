@@ -1,6 +1,6 @@
 #  Copyright (c) Christian Corsica. All Rights Reserved.
 
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om2
 import pymel.core as pm
 
 import piper.config.maya as mcfg
@@ -36,7 +36,9 @@ def removeCallbacks():
     Deletes/removes all callbacks that piper has registered.
     """
     global callbacks
-    [om.MEventMessage.removeCallback(callback) for callback in callbacks]
+
+    om2.MMessage.removeCallbacks(callbacks)
+    callbacks.clear()
     callbacks = []
 
 
@@ -84,7 +86,7 @@ def loadDefaults(force=False):
 
 def loadRender():
     """
-    Sets the viewport's render engine to DirectX11 and the tone map to use Stingray
+    Sets the viewport's render engine to DirectX11 and the tone map to use the tonemapping set in Piper's Maya config.
     """
     # DX11 required for rendering engine
     plugin.load('dx11Shader')
@@ -134,13 +136,63 @@ def onNewSceneOpened(*args):
         loadRender()
 
 
+def onBeforeOpen(*args):
+    """
+    Called BEFORE a scene is opened.
+
+    Returns:
+        (boolean): If True, load the scene. Else scene will not be loaded.
+    """
+    if pm.about(batch=True):
+        return True
+
+    if not maya_store.get(mcfg.use_perforce):
+        return True
+
+    file_object = args[0]
+    path = file_object.resolvedFullName()
+
+    # if path doesn't exist (which would be rare), then we won't be able to find it in p4
+    if not path:
+        return True
+
+    p4 = perforce.PerforceMaya()
+    with p4.connect():
+        is_latest = p4.isLatest(path=path)
+
+    if is_latest:
+        return True
+
+    answer = window.beforeOpen()
+    if answer != 'Get Latest':
+        return True
+
+    with p4.connect():
+        p4.getLatest(path=path)
+
+    return True
+
+
 def onSceneOpened(*args):
     """
     Called AFTER a scene is opened and all references have been loaded, usually through a callback registed on startup.
     """
     # reloading references breaks references during headless mode, so don't.
-    if not pm.about(batch=True):
-        pm.evalDeferred(pipernode.reloadRigReferences, lp=True)
+    if pm.about(batch=True):
+        return
+
+    pm.evalDeferred(pipernode.reloadRigReferences, lp=True)
+
+    if not maya_store.get(mcfg.use_perforce):
+        return
+
+    is_checked_out_by_other = False
+    p4 = perforce.PerforceMaya()
+    with p4.connect():
+        result = p4.isCheckedOutByOther()
+
+    if is_checked_out_by_other:
+        pm.warning(f'Scene is checked out by {result["other_open"][0]}!')
 
 
 def onBeforeSave(*args):
@@ -170,16 +222,20 @@ def registerCallbacks():
     """
     global callbacks
 
-    callback = om.MEventMessage.addEventCallback('NewSceneOpened', onNewSceneOpened)
+    callback = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterNew, onNewSceneOpened)
     callbacks.append(callback)
 
-    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneOpened)
+    # must use om2 since addCheckFileCallback only works in om2
+    callback = om2.MSceneMessage.addCheckFileCallback(om2.MSceneMessage.kBeforeOpenCheck, onBeforeOpen)
     callbacks.append(callback)
 
-    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeSave, onBeforeSave)
+    callback = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterOpen, onSceneOpened)
     callbacks.append(callback)
 
-    callback = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterSave, onAfterSave)
+    callback = om2.MSceneMessage.addCallback(om2.MSceneMessage.kBeforeSave, onBeforeSave)
+    callbacks.append(callback)
+
+    callback = om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterSave, onAfterSave)
     callbacks.append(callback)
 
 

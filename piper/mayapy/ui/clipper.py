@@ -2,10 +2,11 @@
 
 import json
 
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om2
 import pymel.core as pm
 
 from Qt import QtCompat
+import piper.config as pcfg
 from piper.ui.widget import manager
 from piper.ui.clipper import Clipper
 from piper.mayapy.ui.widget import Controller
@@ -14,7 +15,7 @@ import piper.mayapy.animation.bookmark as bookmark
 
 class MayaClipper(Clipper):
 
-    label = 'Clipper'
+    label = pcfg.clipper_name
     instance = None  # useful to be singleton while window is open
     ui_name = label.replace(' ', '')  # same as label, but without spaces
     create_command = 'import {0}; {0}.show()'.format(__name__)
@@ -23,8 +24,8 @@ class MayaClipper(Clipper):
     def __init__(self, *args, **kwargs):
         super(MayaClipper, self).__init__(*args, **kwargs)
         manager.register(self, self.create_command)
-        self.callbacks = [om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.refresh),
-                          om.MSceneMessage.addCallback(om.MSceneMessage.kAfterNew, self.refresh)]
+        self.callbacks = [om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterOpen, self.refresh),
+                          om2.MSceneMessage.addCallback(om2.MSceneMessage.kAfterNew, self.refresh)]
         self.setObjectName(self.__class__.ui_name)
         self.controller = None
 
@@ -118,7 +119,7 @@ def unregister():
     if MayaClipper.instance is None:
         return
 
-    [om.MEventMessage.removeCallback(callback) for callback in MayaClipper.instance.callbacks]
+    om2.MMessage.removeCallbacks(MayaClipper.instance.callbacks)
     manager.unregister(MayaClipper.instance)
     QtCompat.delete(MayaClipper.instance)
     MayaClipper.instance = None
